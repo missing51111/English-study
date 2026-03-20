@@ -254,8 +254,15 @@ export default function HomePage() {
   const [lockedTarget, setLockedTarget] = useState<{ id: string; label: string } | null>(null);
   const [themeId, setThemeId] = useState("pink");
   const [themeOpen, setThemeOpen] = useState(false);
+  const [missionQuiz, setMissionQuiz] = useState(0);
 
-  // 起動時にlocalStorageからテーマ・難易度を読み込む（useLayoutEffectで点滅を防止）
+  // 今日の日付を YYYY-MM-DD 形式（ローカル時間）で返す
+  const getTodayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  // 起動時にlocalStorageからテーマ・難易度・ミッションを読み込む
   useLayoutEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     if (savedTheme && THEMES.find(th => th.id === savedTheme)) {
@@ -265,6 +272,13 @@ export default function HomePage() {
     const validIds = LEVELS.map(l => l.id);
     if (savedLevel && validIds.includes(savedLevel)) {
       setSelectedLevel(savedLevel);
+    }
+    const savedM = localStorage.getItem("dailyMissions");
+    if (savedM) {
+      const parsed = JSON.parse(savedM);
+      if (parsed.date === getTodayStr()) {
+        setMissionQuiz(parsed.quizCount ?? 0);
+      }
     }
   }, []);
 
@@ -352,8 +366,8 @@ export default function HomePage() {
       <div className="flex gap-2 items-stretch">
         <div className={`rounded-2xl p-3 border flex flex-col gap-2 flex-1 min-w-0 ${t.card} ${t.border}`}>
           <p className={`text-xs font-bold uppercase tracking-wider ${t.subText}`}>{lu.missionLabel}</p>
-          <MissionRow icon="📝" label={lu.mission1} current={3} target={5} t={t} />
-          <MissionRow icon="🔁" label={lu.mission2} current={1} target={3} t={t} />
+          <MissionRow icon="📝" label={lu.mission1} current={Math.min(missionQuiz, 5)} target={5} t={t} />
+          <MissionRow icon="🔁" label={lu.mission2} current={0} target={3} t={t} />
           <div className={`border-t pt-1.5 flex items-center justify-center gap-1 ${t.divider}`}>
             <span className="text-xs">🎟️</span>
             <p className={`text-xs font-bold ${t.allClearText}`}>{lu.allClear}</p>

@@ -335,6 +335,18 @@ export default function QuizPage() {
       return next;
     });
 
+    // ミッション：問題を解いた数をカウント（正誤問わず、難易度問わず）
+    const today = getTodayStr();
+    const savedM = localStorage.getItem("dailyMissions");
+    const prev = savedM ? JSON.parse(savedM) : null;
+    const prevQuiz = prev?.date === today ? (prev.quizCount ?? 0) : 0;
+    const prevReview = prev?.date === today ? (prev.reviewCount ?? 0) : 0;
+    localStorage.setItem("dailyMissions", JSON.stringify({
+      date: today,
+      quizCount: prevQuiz + 1,
+      reviewCount: prevReview,
+    }));
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     if (supabaseUrl && supabaseUrl !== "your-supabase-project-url") {
       const mockUserId = "00000000-0000-0000-0000-000000000000";
