@@ -198,16 +198,26 @@ export default function VocabularyPage() {
     const fetchWords = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("words")
-          .select("*")
-          .order("word", { ascending: true })
-          .limit(9999);
-
-        if (error || !data || data.length === 0) {
+        // レベルごとに個別クエリ（サーバー側1000件制限を回避）
+        const levels: Level[] = ["baby", "elementary", "junior", "high", "toeic"];
+        const results: Record<Level, Word[]> = {
+          baby: [], elementary: [], junior: [], high: [], toeic: [],
+        };
+        await Promise.all(
+          levels.map(async (level) => {
+            const { data } = await supabase
+              .from("words")
+              .select("*")
+              .eq("level", level)
+              .order("word", { ascending: true });
+            if (data) results[level] = data as Word[];
+          })
+        );
+        const total = Object.values(results).reduce((s, arr) => s + arr.length, 0);
+        if (total === 0) {
           setWordsByLevel(groupByLevel(MOCK_WORDS));
         } else {
-          setWordsByLevel(groupByLevel(data as Word[]));
+          setWordsByLevel(results);
         }
       } catch {
         setWordsByLevel(groupByLevel(MOCK_WORDS));
