@@ -8,6 +8,7 @@ export interface Question {
   words: string[];       // 並び替え用の単語リスト（句読点除く）
   punctuation: string;   // 末尾句読点（例: "." "?" "!"）常時表示・判定除外
   hint: string | null;   // ヒント（オプション）
+  word?: string | null;  // 対象単語（取得済み判定に使用）
   created_at: string;
 }
 

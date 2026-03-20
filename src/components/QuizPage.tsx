@@ -335,6 +335,16 @@ export default function QuizPage() {
       return next;
     });
 
+    // 正解時：対象単語をacquiredWordsに追加
+    if (isCorrect && currentQ.word) {
+      const savedAcq = localStorage.getItem("acquiredWords");
+      const acqArr: string[] = savedAcq ? JSON.parse(savedAcq) : [];
+      if (!acqArr.includes(currentQ.word)) {
+        acqArr.push(currentQ.word);
+        localStorage.setItem("acquiredWords", JSON.stringify(acqArr));
+      }
+    }
+
     // ミッション：問題を解いた数をカウント（正誤問わず、難易度問わず）
     const today = getTodayStr();
     const savedM = localStorage.getItem("dailyMissions");

@@ -187,11 +187,16 @@ export default function VocabularyPage() {
   });
   const [loading, setLoading] = useState(true);
   const [themeId, setThemeId] = useState("pink");
+  const [acquiredWords, setAcquiredWords] = useState<Set<string>>(new Set());
 
-  // localStorageからテーマを読み込む（useLayoutEffectで点滅を防止）
+  // localStorageからテーマ・取得済み単語を読み込む
   useLayoutEffect(() => {
     const saved = localStorage.getItem("theme");
     if (saved && THEMES.find(th => th.id === saved)) setThemeId(saved);
+    const savedAcq = localStorage.getItem("acquiredWords");
+    if (savedAcq) {
+      try { setAcquiredWords(new Set(JSON.parse(savedAcq))); } catch { /* ignore */ }
+    }
   }, []);
 
   useEffect(() => {
@@ -331,6 +336,26 @@ export default function VocabularyPage() {
               </div>
             </div>
 
+            {/* 取得済み件数バナー */}
+            {(() => {
+              const acquired = currentWords.filter(w => acquiredWords.has(w.word)).length;
+              const total = currentWords.length;
+              return (
+                <div className={`mb-3 rounded-xl px-3 py-2 flex items-center gap-2 ${t.innerCard}`}>
+                  <span className="text-lg">🔓</span>
+                  <div className="flex-1">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className={t.bodyText + " font-bold"}>取得済み</span>
+                      <span className={t.subText}>{acquired} / {total}</span>
+                    </div>
+                    <div className={`h-1.5 rounded-full ${t.divider} overflow-hidden`}>
+                      <div className={`h-full ${t.bar} rounded-full transition-all`} style={{ width: `${total > 0 ? (acquired / total) * 100 : 0}%` }} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="grid grid-cols-2 gap-2">
               {currentWords.map((w) => (
                 <WordCard
@@ -340,6 +365,7 @@ export default function VocabularyPage() {
                   levelColor={t.navActive}
                   emojiBg={t.innerCard}
                   t={t}
+                  acquired={acquiredWords.has(w.word)}
                 />
               ))}
             </div>
@@ -389,12 +415,14 @@ function WordCard({
   level,
   emojiBg,
   t,
+  acquired,
 }: {
   word: Word;
   level: Level;
   levelColor: string;
   emojiBg: string;
   t: Theme;
+  acquired: boolean;
 }) {
   const emoji = EMOJI_MAP[word.word.toLowerCase()] ?? null;
   const pos = word.part_of_speech ?? null;
@@ -406,29 +434,45 @@ function WordCard({
   const posColor = pos ? (POS_COLOR[pos] ?? "bg-gray-100 text-gray-600") : null;
 
   return (
-    <div className={`rounded-xl border ${t.border} ${t.card} shadow-sm flex items-stretch overflow-hidden`}>
+    <div className={`rounded-xl border ${t.border} shadow-sm flex items-stretch overflow-hidden relative transition-opacity ${acquired ? t.card : "bg-gray-100"} ${acquired ? "" : "opacity-50"}`}>
       {/* 左：上段=品詞＋日本語、下段=英語（大） */}
       <div className="flex-1 min-w-0 flex flex-col justify-center gap-1 px-3 py-2.5">
         {/* 上段：日本語＋品詞バッジ */}
         <div className="flex items-center gap-1.5 min-w-0">
-          <p className={`${t.subText} text-sm leading-none truncate`}>{word.meaning}</p>
-          {posLabel && (
-            <span className={`flex-shrink-0 rounded-md px-1.5 py-0.5 font-bold leading-none ${posColor} ${level === "baby" ? "text-[9px]" : "text-[10px]"}`}>
-              {posLabel.replace("\n", "")}
-            </span>
+          {acquired ? (
+            <>
+              <p className={`${t.subText} text-sm leading-none truncate`}>{word.meaning}</p>
+              {posLabel && (
+                <span className={`flex-shrink-0 rounded-md px-1.5 py-0.5 font-bold leading-none ${posColor} ${level === "baby" ? "text-[9px]" : "text-[10px]"}`}>
+                  {posLabel.replace("\n", "")}
+                </span>
+              )}
+            </>
+          ) : (
+            <p className="text-gray-400 text-sm leading-none">???</p>
           )}
         </div>
         {/* 下段：英語（大きく） */}
-        <p className={`font-bold ${t.bodyText} text-xl leading-tight break-all`}>
-          {word.word}
-        </p>
+        {acquired ? (
+          <p className={`font-bold ${t.bodyText} text-xl leading-tight break-all`}>
+            {word.word}
+          </p>
+        ) : (
+          <p className="font-bold text-gray-400 text-xl leading-tight tracking-widest">
+            {"*".repeat(Math.min(word.word.length, 6))}
+          </p>
+        )}
       </div>
 
-      {/* 右：絵文字（カード高さいっぱいに広げる） */}
-      {emoji ? (
+      {/* 右：絵文字 or ロックアイコン */}
+      {acquired && emoji ? (
         <div className={`${emojiBg} flex items-center justify-center flex-shrink-0`}
           style={{ width: "4rem" }}>
           <span style={{ fontSize: "2.25rem", lineHeight: 1 }}>{emoji}</span>
+        </div>
+      ) : !acquired ? (
+        <div className="bg-gray-200 flex items-center justify-center flex-shrink-0" style={{ width: "4rem" }}>
+          <span style={{ fontSize: "2rem", lineHeight: 1 }}>🔒</span>
         </div>
       ) : (
         <div style={{ width: "0.75rem" }} />
