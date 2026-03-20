@@ -255,11 +255,16 @@ export default function HomePage() {
   const [themeId, setThemeId] = useState("pink");
   const [themeOpen, setThemeOpen] = useState(false);
 
-  // 起動時にlocalStorageからテーマを読み込む（useLayoutEffectで点滅を防止）
+  // 起動時にlocalStorageからテーマ・難易度を読み込む（useLayoutEffectで点滅を防止）
   useLayoutEffect(() => {
-    const saved = localStorage.getItem("theme");
-    if (saved && THEMES.find(th => th.id === saved)) {
-      setThemeId(saved);
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme && THEMES.find(th => th.id === savedTheme)) {
+      setThemeId(savedTheme);
+    }
+    const savedLevel = localStorage.getItem("level");
+    const validIds = LEVELS.map(l => l.id);
+    if (savedLevel && validIds.includes(savedLevel)) {
+      setSelectedLevel(savedLevel);
     }
   }, []);
 
@@ -278,7 +283,10 @@ export default function HomePage() {
 
   const handleLevelSelect = (lv: typeof LEVELS[number]) => {
     if (!lv.free) setLockedTarget(lv);
-    else setSelectedLevel(lv.id);
+    else {
+      setSelectedLevel(lv.id);
+      localStorage.setItem("level", lv.id);
+    }
     setDropdownOpen(false);
   };
 
