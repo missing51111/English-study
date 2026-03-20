@@ -301,16 +301,16 @@ export default function HomePage() {
           <span className="whitespace-nowrap">{currentLevel.label}</span>
           <span className="text-white/70">{dropdownOpen ? "▲" : "▼"}</span>
           {dropdownOpen && (
-            <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-700 rounded-2xl shadow-xl z-50 overflow-hidden min-w-max"
+            <div className={`absolute top-full left-0 mt-1 ${t.card} border ${t.border} rounded-2xl shadow-xl z-50 overflow-hidden min-w-max`}
               onClick={e => e.stopPropagation()}>
               {LEVELS.map(lv => (
                 <button key={lv.id} onClick={() => handleLevelSelect(lv)}
-                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-gray-700 transition-all ${selectedLevel === lv.id ? "bg-gray-700" : ""}`}>
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${t.itemHover} transition-all ${selectedLevel === lv.id ? t.innerCard : ""}`}>
                   <span className="text-lg">{lv.free ? lv.emoji : "🔒"}</span>
-                  <span className={`font-bold ${lv.free ? "text-white" : "text-gray-400"}`}>{lv.label}</span>
-                  <span className="text-gray-500 text-xs ml-auto pl-4">{lv.sub}</span>
-                  {!lv.free && <span className="text-yellow-400 text-xs font-bold ml-1">PRO</span>}
-                  {selectedLevel === lv.id && <span className="text-indigo-400 ml-1">✓</span>}
+                  <span className={`font-bold ${lv.free ? t.bodyText : t.subText}`}>{lv.label}</span>
+                  <span className={`text-xs ml-auto pl-4 ${t.subText}`}>{lv.sub}</span>
+                  {!lv.free && <span className="text-yellow-500 text-xs font-bold ml-1">PRO</span>}
+                  {selectedLevel === lv.id && <span className={`ml-1 ${t.accent}`}>✓</span>}
                 </button>
               ))}
             </div>
@@ -320,8 +320,8 @@ export default function HomePage() {
           <button onClick={() => setThemeOpen(v => !v)}
             className={`w-8 h-8 rounded-full border-2 border-white shadow-md flex-shrink-0 ${THEMES.find(th => th.id === themeId)?.preview}`} />
           {themeOpen && (
-            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 p-3 min-w-max">
-              <p className="text-xs text-gray-500 mb-2 font-bold text-center">テーマ</p>
+            <div className={`absolute right-0 top-full mt-1 ${t.card} border ${t.border} rounded-2xl shadow-xl z-50 p-3 min-w-max`}>
+              <p className={`text-xs mb-2 font-bold text-center ${t.subText}`}>テーマ</p>
               <ThemePicker current={themeId} onChange={(id: string) => { setThemeId(id); setThemeOpen(false); }} />
             </div>
           )}

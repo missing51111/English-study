@@ -13,6 +13,7 @@ export const THEMES = [
     reviewBtn: "bg-rose-200 hover:bg-rose-300", reviewText: "text-rose-900",
     ticketNum: "text-rose-700", allClearText: "text-rose-700",
     bannerBg: "bg-gradient-to-r from-rose-400 to-pink-400",
+    itemHover: "hover:bg-rose-100",
   },
   {
     id: "mint", label: "ミント", preview: "bg-teal-400",
@@ -28,6 +29,7 @@ export const THEMES = [
     reviewBtn: "bg-teal-200 hover:bg-teal-300", reviewText: "text-teal-900",
     ticketNum: "text-teal-700", allClearText: "text-teal-700",
     bannerBg: "bg-gradient-to-r from-teal-400 to-cyan-400",
+    itemHover: "hover:bg-teal-100",
   },
   {
     id: "cream", label: "クリーム", preview: "bg-amber-400",
@@ -43,6 +45,7 @@ export const THEMES = [
     reviewBtn: "bg-amber-200 hover:bg-amber-300", reviewText: "text-amber-900",
     ticketNum: "text-amber-700", allClearText: "text-amber-700",
     bannerBg: "bg-gradient-to-r from-amber-400 to-yellow-400",
+    itemHover: "hover:bg-amber-100",
   },
   {
     id: "mono", label: "茶色", preview: "bg-amber-800",
@@ -58,6 +61,7 @@ export const THEMES = [
     reviewBtn: "bg-stone-200 hover:bg-stone-300", reviewText: "text-stone-900",
     ticketNum: "text-amber-800", allClearText: "text-amber-800",
     bannerBg: "bg-gradient-to-r from-amber-800 to-amber-400",
+    itemHover: "hover:bg-stone-100",
   },
   {
     id: "dark", label: "ダーク", preview: "bg-gray-700",
@@ -73,6 +77,7 @@ export const THEMES = [
     reviewBtn: "bg-slate-600 hover:bg-slate-500", reviewText: "text-gray-100",
     ticketNum: "text-yellow-300", allClearText: "text-yellow-300",
     bannerBg: "bg-gradient-to-r from-indigo-700 to-slate-600",
+    itemHover: "hover:bg-slate-500",
   },
 ];
 
