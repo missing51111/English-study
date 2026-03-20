@@ -27,6 +27,7 @@ const LEVEL_UI = {
     mission2: "じつりょくを ためそう！",
     ticketLabel: "まい",
     allClear: "ぜんぶできたらチケット1まい！",
+    allClearDone: "きょうの チケットを もらったよ！",
     startLabel: "📝　もんだいを とこう！",
     reviewLabel: "🏆　じつりょくを ためそう！",
     startRound: "rounded-3xl", startSize: "py-5 text-xl",
@@ -44,6 +45,7 @@ const LEVEL_UI = {
     mission2: "実力を 試そう！",
     ticketLabel: "まい",
     allClear: "全部できたらチケット1まい！",
+    allClearDone: "今日の チケットを もらったよ！",
     startLabel: "📝　問題を とこう！",
     reviewLabel: "🏆　実力を 試そう！",
     startRound: "rounded-2xl", startSize: "py-5 text-xl",
@@ -61,6 +63,7 @@ const LEVEL_UI = {
     mission2: "実力を試そう！",
     ticketLabel: "枚",
     allClear: "全クリアでチケット1枚獲得！",
+    allClearDone: "今日のチケットを獲得しました！",
     startLabel: "📝　問題を解く",
     reviewLabel: "🏆　実力を試そう！",
     startRound: "rounded-2xl", startSize: "py-4 text-lg",
@@ -78,6 +81,7 @@ const LEVEL_UI = {
     mission2: "実力を試そう！",
     ticketLabel: "枚",
     allClear: "全達成でチケット1枚獲得！",
+    allClearDone: "本日のチケットを獲得しました！",
     startLabel: "📝　問題を解く",
     reviewLabel: "🏆　実力を試そう！",
     startRound: "rounded-xl", startSize: "py-4 text-base",
@@ -256,6 +260,8 @@ export default function HomePage() {
   const [themeOpen, setThemeOpen] = useState(false);
   const [missionQuiz, setMissionQuiz] = useState(0);
   const [missionReview, setMissionReview] = useState(0);
+  const [tickets, setTickets] = useState(0);
+  const [ticketAwarded, setTicketAwarded] = useState(false);
 
   // 今日の日付を YYYY-MM-DD 形式（ローカル時間）で返す
   const getTodayStr = () => {
@@ -274,12 +280,15 @@ export default function HomePage() {
     if (savedLevel && validIds.includes(savedLevel)) {
       setSelectedLevel(savedLevel);
     }
+    const savedT = localStorage.getItem("tickets");
+    if (savedT) setTickets(parseInt(savedT));
     const savedM = localStorage.getItem("dailyMissions");
     if (savedM) {
       const parsed = JSON.parse(savedM);
       if (parsed.date === getTodayStr()) {
         setMissionQuiz(parsed.quizCount ?? 0);
         setMissionReview(parsed.reviewCount ?? 0);
+        setTicketAwarded(parsed.ticketAwarded ?? false);
       }
     }
   }, []);
@@ -289,7 +298,21 @@ export default function HomePage() {
     localStorage.setItem("theme", themeId);
   }, [themeId]);
 
-  const tickets = 2;
+  // ミッション1・2両方達成でチケット1枚付与（1日1回）
+  useEffect(() => {
+    if (missionQuiz >= 5 && missionReview >= 3 && !ticketAwarded) {
+      const today = getTodayStr();
+      const savedM = localStorage.getItem("dailyMissions");
+      const prev = savedM ? JSON.parse(savedM) : null;
+      if (prev?.date === today && !prev?.ticketAwarded) {
+        const newTickets = tickets + 1;
+        localStorage.setItem("tickets", String(newTickets));
+        localStorage.setItem("dailyMissions", JSON.stringify({ ...prev, ticketAwarded: true }));
+        setTickets(newTickets);
+        setTicketAwarded(true);
+      }
+    }
+  }, [missionQuiz, missionReview, ticketAwarded, tickets]);
   const currentLevel = LEVELS.find(l => l.id === selectedLevel) ?? LEVELS[0];
   const lu = (LEVEL_UI as Record<string, typeof LEVEL_UI.baby>)[selectedLevel] ?? LEVEL_UI.high;
   const t = THEMES.find(th => th.id === themeId) ?? THEMES[0];
@@ -369,10 +392,12 @@ export default function HomePage() {
         <div className={`rounded-2xl p-3 border flex flex-col gap-2 flex-1 min-w-0 ${t.card} ${t.border}`}>
           <p className={`text-xs font-bold uppercase tracking-wider ${t.subText}`}>{lu.missionLabel}</p>
           <MissionRow icon="📝" label={lu.mission1} current={Math.min(missionQuiz, 5)} target={5} t={t} />
-          <MissionRow icon="🏆" label={lu.mission2} current={Math.min(missionReview, 1)} target={1} t={t} />
+          <MissionRow icon="🏆" label={lu.mission2} current={Math.min(missionReview, 3)} target={3} t={t} />
           <div className={`border-t pt-1.5 flex items-center justify-center gap-1 ${t.divider}`}>
             <span className="text-xs">🎟️</span>
-            <p className={`text-xs font-bold ${t.allClearText}`}>{lu.allClear}</p>
+            <p className={`text-xs font-bold ${ticketAwarded ? "text-green-600" : t.allClearText}`}>
+              {ticketAwarded ? lu.allClearDone : lu.allClear}
+            </p>
           </div>
         </div>
         <div className={`rounded-2xl border flex flex-col items-center justify-center w-[33%] flex-shrink-0 ${t.card} ${t.border}`} style={{padding: "6px"}}>
