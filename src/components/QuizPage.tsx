@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import type { Question, Level } from "@/types/database";
@@ -88,6 +88,23 @@ export default function QuizPage() {
   const [result, setResult] = useState<"correct" | "wrong" | null>(null);
   const [showHint, setShowHint] = useState(false);
   const [score, setScore] = useState({ correct: 0, total: 0 });
+
+  // 今日の日付を YYYY-MM-DD 形式（ローカル時間）で返す
+  const getTodayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  // 起動時にlocalStorageから当日スコアを復元（日付が変わっていればリセット）
+  useLayoutEffect(() => {
+    const saved = localStorage.getItem("dailyScore");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.date === getTodayStr()) {
+        setScore({ correct: parsed.correct, total: parsed.total });
+      }
+    }
+  }, []);
 
   // タッチドラッグの状態（rerenderしないのでref）
   const touchState = useRef<TouchState | null>(null);
@@ -311,7 +328,12 @@ export default function QuizPage() {
     if (!currentQ || slots.length === 0) return;
     const isCorrect = slots.map(t => t.word).join(" ") === currentQ.words.join(" ");
     setResult(isCorrect ? "correct" : "wrong");
-    setScore(prev => ({ correct: prev.correct + (isCorrect ? 1 : 0), total: prev.total + 1 }));
+    setScore(prev => {
+      const next = { correct: prev.correct + (isCorrect ? 1 : 0), total: prev.total + 1 };
+      // 当日スコアをlocalStorageに保存（0時を過ぎると自動リセット）
+      localStorage.setItem("dailyScore", JSON.stringify({ date: getTodayStr(), ...next }));
+      return next;
+    });
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     if (supabaseUrl && supabaseUrl !== "your-supabase-project-url") {
