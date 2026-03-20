@@ -10,7 +10,7 @@ export const THEMES = [
     nav: "bg-slate-800", navBorder: "border-slate-600", navActive: "text-indigo-300", navInactive: "text-gray-400",
     avatarBg: "bg-indigo-500", avatarText: "text-white",
     startBtn: "bg-indigo-500 hover:bg-indigo-400", startText: "text-white",
-    reviewBtn: "bg-slate-200 hover:bg-slate-100", reviewText: "text-slate-900",
+    reviewBtn: "bg-slate-600 hover:bg-slate-500", reviewText: "text-gray-100",
     ticketNum: "text-yellow-300", allClearText: "text-yellow-300",
   },
   {
