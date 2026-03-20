@@ -131,15 +131,24 @@ export default function QuizPage() {
 
   // ============================================================
   // タップ操作（タッチ/クリック共通）
+  // bank は常に全単語を保持。slots に選択順を管理。
   // ============================================================
   const tapBank = useCallback((token: WordToken) => {
-    setBank(prev => prev.filter(t => t.id !== token.id));
-    setSlots(prev => [...prev, token]);
+    setSlots(prev => {
+      const isSelected = prev.some(s => s.id === token.id);
+      if (isSelected) {
+        // すでに選択済み（薄い表示）→ 解除
+        return prev.filter(s => s.id !== token.id);
+      } else {
+        // 未選択 → 末尾に追加
+        return [...prev, token];
+      }
+    });
   }, []);
 
   const tapSlot = useCallback((token: WordToken) => {
+    // スロットから外す（bank はそのまま → 自動的に明るく戻る）
     setSlots(prev => prev.filter(t => t.id !== token.id));
-    setBank(prev => [...prev, token]);
   }, []);
 
   // ============================================================
@@ -234,17 +243,16 @@ export default function QuizPage() {
 
       // ドロップ先に応じて状態を更新
       if (source === "bank" && dropSource === "slots") {
-        // バンク → スロット（末尾 or 指定位置に挿入）
-        setBank(prev => prev.filter((_, i) => i !== index));
+        // バンク → スロット（bank は消さず slots に追加）
         setSlots(prev => {
+          if (prev.some(s => s.id === token.id)) return prev; // すでに選択済みなら無視
           const arr = [...prev];
           arr.splice(dropIndex !== null ? dropIndex : arr.length, 0, token);
           return arr;
         });
       } else if (source === "slots" && dropSource === "bank") {
-        // スロット → バンク（返却）
+        // スロット → バンク（slots から外すだけ。bank はそのまま）
         setSlots(prev => prev.filter((_, i) => i !== index));
-        setBank(prev => [...prev, token]);
       } else if (source === "slots" && dropSource === "slots" && dropIndex !== null && dropIndex !== index) {
         // スロット内並び替え
         setSlots(prev => {
@@ -433,25 +441,31 @@ export default function QuizPage() {
         <p className={`text-xs font-bold mb-2 ${t.subText}`}>{isBaby ? "ことば" : "単語"}</p>
         {/* data-drop-area="bank"：バンクエリアへのドロップを受け付ける */}
         <div className="flex flex-wrap gap-2 min-h-[40px]" data-drop-area="bank">
-          {bank.map((token, i) => (
-            <div
-              key={token.id}
-              data-token-source="bank"
-              data-token-index={String(i)}
-              onTouchStart={e => handleTokenTouchStart(e, token, "bank", i)}
-              onClick={() => handleTokenClick(() => tapBank(token))}
-              style={{ touchAction: "none" }}
-              className={`
-                px-3 py-2 rounded-xl border font-bold cursor-pointer select-none
-                transition-all active:scale-95
-                ${t.innerCard} ${t.border} ${t.bodyText}
-                ${isBaby ? "text-lg" : "text-sm"}
-              `}
-            >
-              {token.word}
-            </div>
-          ))}
-          {bank.length === 0 && !result && (
+          {bank.map((token, i) => {
+            const isSelected = slots.some(s => s.id === token.id);
+            return (
+              <div
+                key={token.id}
+                data-token-source="bank"
+                data-token-index={String(i)}
+                onTouchStart={e => handleTokenTouchStart(e, token, "bank", i)}
+                onClick={() => handleTokenClick(() => tapBank(token))}
+                style={{ touchAction: "none" }}
+                className={`
+                  px-3 py-2 rounded-xl border font-bold select-none
+                  transition-all
+                  ${t.innerCard} ${t.border} ${t.bodyText}
+                  ${isBaby ? "text-lg" : "text-sm"}
+                  ${isSelected
+                    ? "opacity-30 cursor-pointer"
+                    : "cursor-pointer active:scale-95"}
+                `}
+              >
+                {token.word}
+              </div>
+            );
+          })}
+          {bank.every(t => slots.some(s => s.id === t.id)) && bank.length > 0 && !result && (
             <p className={`text-xs ${t.subText}`}>{isBaby ? "ぜんぶ えらんだね！" : "すべて選択済み"}</p>
           )}
         </div>
@@ -469,7 +483,7 @@ export default function QuizPage() {
               {isBaby ? "✅ こたえる！" : "✅ 回答する"}
             </button>
             <button
-              onClick={() => { setBank(shuffle(wordsToTokens(currentQ.words))); setSlots([]); }}
+              onClick={() => { setBank(shuffle(wordsToTokens(currentQ.words))); setSlots([]); setResult(null); }}
               className={`w-full py-3 rounded-2xl font-bold text-sm border transition-all active:scale-95 ${t.innerCard} ${t.border} ${t.bodyText}`}
             >
               {isBaby ? "🔄 やりなおす" : "🔄 リセット"}
