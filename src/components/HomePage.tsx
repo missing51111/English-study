@@ -295,7 +295,7 @@ export default function HomePage() {
         </span>
         <button
           onClick={() => setDropdownOpen(v => !v)}
-          className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r ${currentLevel.color} text-white shadow relative`}
+          className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r ${t.levelBtn} text-white shadow relative`}
         >
           <span>{currentLevel.free ? currentLevel.emoji : "🔒"}</span>
           <span className="whitespace-nowrap">{currentLevel.label}</span>
