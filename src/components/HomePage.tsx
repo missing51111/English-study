@@ -121,7 +121,7 @@ const MiniGraph = ({ values, t }: { values: number[]; t: Theme }) => {
         <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
           <div className={`w-full rounded-sm ${v >= 80 ? "bg-green-400" : v >= 60 ? "bg-yellow-400" : "bg-red-400"}`}
             style={{ height: `${(v / max) * 32}px` }} />
-          <span className="text-xs text-gray-900">{days[i]}</span>
+          <span className={`text-xs ${t.subText}`}>{days[i]}</span>
         </div>
       ))}
     </div>
@@ -170,7 +170,7 @@ function ParentPanel({ lu, t, levelId }: { lu: LevelUI; t: Theme; levelId: strin
               <span>👨‍👩‍👧</span>
               <span className={`text-sm font-bold ${isKid ? "text-pink-700" : t.bodyText}`}>{lu.parentLabel}</span>
             </div>
-            <span className="text-xs text-gray-900">▲ とじる</span>
+            <span className={`text-xs ${t.subText}`}>▲ とじる</span>
           </div>
         )}
       </button>
@@ -184,24 +184,24 @@ function ParentPanel({ lu, t, levelId }: { lu: LevelUI; t: Theme; levelId: strin
             </div>
           </div>
           <div className="space-y-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-gray-900">正答率</p>
+            <p className={`text-xs font-bold uppercase tracking-wider ${t.bodyText}`}>正答率</p>
             <div className="space-y-1">
               <div className="flex justify-between text-xs">
-                <span className="text-gray-900">今日</span>
-                <span className="font-bold text-gray-900">{d.accuracyToday}%</span>
+                <span className={t.subText}>今日</span>
+                <span className={`font-bold ${t.bodyText}`}>{d.accuracyToday}%</span>
               </div>
               <div className={`w-full rounded-full h-2 ${t.innerCard}`}>
                 <div className="bg-green-400 h-2 rounded-full" style={{ width: `${d.accuracyToday}%` }} />
               </div>
             </div>
-            <p className="text-xs text-gray-900">直近7日間</p>
+            <p className={`text-xs ${t.subText}`}>直近7日間</p>
             <MiniGraph values={d.accuracyWeek} t={t} />
           </div>
           <div className="space-y-2">
-            <p className="text-xs font-bold uppercase tracking-wider text-gray-900">今週おぼえた単語</p>
+            <p className={`text-xs font-bold uppercase tracking-wider ${t.bodyText}`}>今週おぼえた単語</p>
             <div className="flex items-end gap-2">
               <span className={`text-3xl font-bold ${t.accent}`}>{d.wordsThisWeek}</span>
-              <span className="text-sm mb-1 text-gray-900">/ 目標 {d.wordsGoal} 語</span>
+              <span className={`text-sm mb-1 ${t.subText}`}>/ 目標 {d.wordsGoal} 語</span>
             </div>
             <div className={`w-full rounded-full h-2 ${t.innerCard}`}>
               <div className={`h-2 rounded-full ${t.bar}`} style={{ width: `${Math.min((d.wordsThisWeek / d.wordsGoal) * 100, 100)}%` }} />
@@ -322,7 +322,7 @@ export default function HomePage() {
       </div>
 
       {/* バナー（全難易度） */}
-      <div className={`${lu.bannerBg} ${isBaby ? "rounded-3xl" : "rounded-2xl"} p-4 flex items-center gap-3 shadow-lg`}>
+      <div className={`${t.bannerBg} ${isBaby ? "rounded-3xl" : "rounded-2xl"} p-4 flex items-center gap-3 shadow-lg`}>
         <span className={isBaby ? "text-5xl" : "text-4xl"}>{lu.mascot}</span>
         <div className="flex-1">
           <p className={`text-white font-black leading-tight ${isBaby ? "text-lg" : "text-base"}`}

@@ -12,6 +12,7 @@ export const THEMES = [
     startBtn: "bg-indigo-500 hover:bg-indigo-400", startText: "text-white",
     reviewBtn: "bg-slate-600 hover:bg-slate-500", reviewText: "text-gray-100",
     ticketNum: "text-yellow-300", allClearText: "text-yellow-300",
+    bannerBg: "bg-gradient-to-r from-indigo-700 to-slate-600",
   },
   {
     id: "pink", label: "ピンク", preview: "bg-rose-400",
@@ -26,6 +27,7 @@ export const THEMES = [
     startBtn: "bg-rose-600 hover:bg-rose-500", startText: "text-white",
     reviewBtn: "bg-rose-200 hover:bg-rose-300", reviewText: "text-rose-900",
     ticketNum: "text-rose-700", allClearText: "text-rose-700",
+    bannerBg: "bg-gradient-to-r from-rose-400 to-pink-400",
   },
   {
     id: "mint", label: "ミント", preview: "bg-teal-400",
@@ -40,6 +42,7 @@ export const THEMES = [
     startBtn: "bg-teal-600 hover:bg-teal-500", startText: "text-white",
     reviewBtn: "bg-teal-200 hover:bg-teal-300", reviewText: "text-teal-900",
     ticketNum: "text-teal-700", allClearText: "text-teal-700",
+    bannerBg: "bg-gradient-to-r from-teal-400 to-cyan-400",
   },
   {
     id: "cream", label: "クリーム", preview: "bg-amber-400",
@@ -54,6 +57,7 @@ export const THEMES = [
     startBtn: "bg-amber-600 hover:bg-amber-500", startText: "text-white",
     reviewBtn: "bg-amber-200 hover:bg-amber-300", reviewText: "text-amber-900",
     ticketNum: "text-amber-700", allClearText: "text-amber-700",
+    bannerBg: "bg-gradient-to-r from-amber-400 to-yellow-400",
   },
   {
     id: "mono", label: "グレー", preview: "bg-gray-400",
@@ -68,6 +72,7 @@ export const THEMES = [
     startBtn: "bg-gray-700 hover:bg-gray-600", startText: "text-white",
     reviewBtn: "bg-gray-300 hover:bg-gray-400", reviewText: "text-gray-900",
     ticketNum: "text-gray-700", allClearText: "text-gray-700",
+    bannerBg: "bg-gradient-to-r from-gray-500 to-gray-600",
   },
 ];
 
