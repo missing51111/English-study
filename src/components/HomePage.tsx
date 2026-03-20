@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { THEMES, type Theme } from "@/lib/themes";
 type LevelUI = typeof LEVEL_UI.baby;
@@ -137,16 +137,16 @@ function ParentPanel({ lu, t, levelId }: { lu: LevelUI; t: Theme; levelId: strin
   const isBaby = levelId === "baby";
   const isKid = levelId === "baby" || levelId === "elementary";
   return (
-    <div className={`rounded-2xl overflow-hidden border ${isKid ? "bg-pink-100 border-pink-300" : `${t.card} ${t.border}`}`}>
+    <div className={`rounded-2xl overflow-hidden border ${t.card} ${t.border}`}>
       <button onClick={() => setOpen(v => !v)} className="w-full text-left">
         {!open ? (
           <div className="px-4 py-3 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <span>👨‍👩‍👧</span>
-                <span className={`text-sm font-bold ${isKid ? "text-pink-700" : t.bodyText}`}>{lu.parentLabel}</span>
+                <span className={`text-sm font-bold ${t.bodyText}`}>{lu.parentLabel}</span>
               </div>
-              <span className={`text-xs ${isKid ? "text-pink-500" : t.subText}`}>▼ くわしく見る</span>
+              <span className={`text-xs ${t.subText}`}>▼ くわしく見る</span>
             </div>
             <div className="flex gap-2">
               {[
@@ -255,8 +255,8 @@ export default function HomePage() {
   const [themeId, setThemeId] = useState("pink");
   const [themeOpen, setThemeOpen] = useState(false);
 
-  // 起動時にlocalStorageからテーマを読み込む
-  useEffect(() => {
+  // 起動時にlocalStorageからテーマを読み込む（useLayoutEffectで点滅を防止）
+  useLayoutEffect(() => {
     const saved = localStorage.getItem("theme");
     if (saved && THEMES.find(th => th.id === saved)) {
       setThemeId(saved);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { THEMES, type Theme } from "@/lib/themes";
@@ -186,12 +186,12 @@ export default function VocabularyPage() {
     baby: [], elementary: [], junior: [], high: [], toeic: [],
   });
   const [loading, setLoading] = useState(true);
-  const [themeId, setThemeId] = useState("dark");
+  const [themeId, setThemeId] = useState("pink");
 
-  // localStorageからテーマを読み込む
-  useEffect(() => {
+  // localStorageからテーマを読み込む（useLayoutEffectで点滅を防止）
+  useLayoutEffect(() => {
     const saved = localStorage.getItem("theme");
-    if (saved) setThemeId(saved);
+    if (saved && THEMES.find(th => th.id === saved)) setThemeId(saved);
   }, []);
 
   useEffect(() => {
@@ -264,11 +264,11 @@ export default function VocabularyPage() {
                 key={lv.id}
                 onClick={() => setSelectedLevel(lv.id)}
                 className={`flex-1 min-w-[4rem] py-2 text-xs font-medium border-b-2 transition-colors ${
-                  isActive ? `${lv.color} border-current` : `${t.navInactive} border-transparent`
+                  isActive ? `${t.navActive} border-current` : `${t.navInactive} border-transparent`
                 }`}
               >
                 <div>{lv.label}</div>
-                <div className={`text-[10px] mt-0.5 ${isActive ? lv.color : t.navInactive}`}>
+                <div className={`text-[10px] mt-0.5 ${isActive ? t.navActive : t.navInactive}`}>
                   {count}語
                 </div>
               </button>
@@ -292,7 +292,7 @@ export default function VocabularyPage() {
         ) : (
           <>
             <div className="flex items-center gap-2 mb-3">
-              <span className={`text-xs font-bold text-white px-2 py-0.5 rounded-full ${currentLevel.badge}`}>
+              <span className={`text-xs font-bold text-white px-2 py-0.5 rounded-full ${t.bar}`}>
                 {currentLevel.label}
               </span>
               <span className={`text-xs ${t.subText}`}>{currentWords.length}語</span>
@@ -301,7 +301,7 @@ export default function VocabularyPage() {
                   onClick={() => setSortOrder("az")}
                   className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors ${
                     sortOrder === "az"
-                      ? `${currentLevel.badge} text-white`
+                      ? `${t.bar} text-white`
                       : `${t.card} ${t.bodyText} border ${t.border}`
                   }`}
                 >
@@ -311,7 +311,7 @@ export default function VocabularyPage() {
                   onClick={() => setSortOrder("kana")}
                   className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors ${
                     sortOrder === "kana"
-                      ? `${currentLevel.badge} text-white`
+                      ? `${t.bar} text-white`
                       : `${t.card} ${t.bodyText} border ${t.border}`
                   }`}
                 >
@@ -326,8 +326,8 @@ export default function VocabularyPage() {
                   key={w.id}
                   word={w}
                   level={selectedLevel}
-                  levelColor={currentLevel.color}
-                  emojiBg={currentLevel.emojiBg}
+                  levelColor={t.navActive}
+                  emojiBg={t.innerCard}
                   t={t}
                 />
               ))}
