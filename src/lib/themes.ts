@@ -1,20 +1,5 @@
 export const THEMES = [
   {
-    id: "dark", label: "ダーク", preview: "bg-gray-700",
-    bg: "bg-gray-900", card: "bg-slate-700", border: "border-slate-500", innerCard: "bg-slate-600",
-    titleText: "text-white", bodyText: "text-gray-100", subText: "text-gray-300",
-    accent: "text-indigo-300", bar: "bg-indigo-400",
-    staminaFill: "bg-yellow-400", staminaBorder: "border-yellow-300",
-    reviewFill: "bg-blue-400", reviewBorder: "border-blue-300",
-    divider: "border-slate-500",
-    nav: "bg-slate-800", navBorder: "border-slate-600", navActive: "text-indigo-300", navInactive: "text-gray-400",
-    avatarBg: "bg-indigo-500", avatarText: "text-white",
-    startBtn: "bg-indigo-500 hover:bg-indigo-400", startText: "text-white",
-    reviewBtn: "bg-slate-600 hover:bg-slate-500", reviewText: "text-gray-100",
-    ticketNum: "text-yellow-300", allClearText: "text-yellow-300",
-    bannerBg: "bg-gradient-to-r from-indigo-700 to-slate-600",
-  },
-  {
     id: "pink", label: "ピンク", preview: "bg-rose-400",
     bg: "bg-rose-50", card: "bg-white", border: "border-rose-300", innerCard: "bg-rose-100",
     titleText: "text-rose-900", bodyText: "text-rose-800", subText: "text-rose-500",
@@ -60,7 +45,7 @@ export const THEMES = [
     bannerBg: "bg-gradient-to-r from-amber-400 to-yellow-400",
   },
   {
-    id: "mono", label: "茶色", preview: "bg-stone-600",
+    id: "mono", label: "茶色", preview: "bg-amber-800",
     bg: "bg-stone-50", card: "bg-white", border: "border-stone-400", innerCard: "bg-stone-100",
     titleText: "text-stone-900", bodyText: "text-stone-900", subText: "text-stone-600",
     accent: "text-amber-800", bar: "bg-amber-700",
@@ -73,6 +58,21 @@ export const THEMES = [
     reviewBtn: "bg-stone-200 hover:bg-stone-300", reviewText: "text-stone-900",
     ticketNum: "text-amber-800", allClearText: "text-amber-800",
     bannerBg: "bg-gradient-to-r from-amber-800 to-amber-400",
+  },
+  {
+    id: "dark", label: "ダーク", preview: "bg-gray-700",
+    bg: "bg-gray-900", card: "bg-slate-700", border: "border-slate-500", innerCard: "bg-slate-600",
+    titleText: "text-white", bodyText: "text-gray-100", subText: "text-gray-300",
+    accent: "text-indigo-300", bar: "bg-indigo-400",
+    staminaFill: "bg-yellow-400", staminaBorder: "border-yellow-300",
+    reviewFill: "bg-blue-400", reviewBorder: "border-blue-300",
+    divider: "border-slate-500",
+    nav: "bg-slate-800", navBorder: "border-slate-600", navActive: "text-indigo-300", navInactive: "text-gray-400",
+    avatarBg: "bg-indigo-500", avatarText: "text-white",
+    startBtn: "bg-indigo-500 hover:bg-indigo-400", startText: "text-white",
+    reviewBtn: "bg-slate-600 hover:bg-slate-500", reviewText: "text-gray-100",
+    ticketNum: "text-yellow-300", allClearText: "text-yellow-300",
+    bannerBg: "bg-gradient-to-r from-indigo-700 to-slate-600",
   },
 ];
 
