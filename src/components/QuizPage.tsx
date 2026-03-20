@@ -341,10 +341,12 @@ export default function QuizPage() {
     const prev = savedM ? JSON.parse(savedM) : null;
     const prevQuiz = prev?.date === today ? (prev.quizCount ?? 0) : 0;
     const prevReview = prev?.date === today ? (prev.reviewCount ?? 0) : 0;
+    const prevTicketAwarded = prev?.date === today ? (prev.ticketAwarded ?? false) : false;
     localStorage.setItem("dailyMissions", JSON.stringify({
       date: today,
       quizCount: prevQuiz + 1,
       reviewCount: prevReview,
+      ticketAwarded: prevTicketAwarded,
     }));
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
