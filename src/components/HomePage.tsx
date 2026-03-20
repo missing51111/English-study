@@ -24,11 +24,11 @@ const LEVEL_UI = {
     mascot: "🐣",
     missionLabel: "みっしょん",
     mission1: "もんだいをとく",
-    mission2: "ふくしゅうする",
+    mission2: "じつりょくを ためそう！",
     ticketLabel: "まい",
     allClear: "ぜんぶできたらチケット1まい！",
     startLabel: "📝　もんだいを とこう！",
-    reviewLabel: "🔁　ふくしゅうする",
+    reviewLabel: "🏆　じつりょくを ためそう！",
     startRound: "rounded-3xl", startSize: "py-5 text-xl",
     reviewRound: "rounded-3xl", reviewSize: "py-4 text-lg",
     parentLabel: "れんらくちょう",
@@ -41,11 +41,11 @@ const LEVEL_UI = {
     mascot: "🐥",
     missionLabel: "ミッション",
     mission1: "問題を とく",
-    mission2: "ふくしゅうする",
+    mission2: "実力を 試そう！",
     ticketLabel: "まい",
     allClear: "全部できたらチケット1まい！",
     startLabel: "📝　問題を とこう！",
-    reviewLabel: "🔁　ふくしゅうする",
+    reviewLabel: "🏆　実力を 試そう！",
     startRound: "rounded-2xl", startSize: "py-5 text-xl",
     reviewRound: "rounded-2xl", reviewSize: "py-4 text-lg",
     parentLabel: "れんらくちょう",
@@ -58,11 +58,11 @@ const LEVEL_UI = {
     mascot: "📘",
     missionLabel: "ミッション",
     mission1: "問題を解く",
-    mission2: "復習する",
+    mission2: "実力を試そう！",
     ticketLabel: "枚",
     allClear: "全クリアでチケット1枚獲得！",
     startLabel: "📝　問題を解く",
-    reviewLabel: "🔁　復習する",
+    reviewLabel: "🏆　実力を試そう！",
     startRound: "rounded-2xl", startSize: "py-4 text-lg",
     reviewRound: "rounded-2xl", reviewSize: "py-3 text-base",
     parentLabel: "保護者向け",
@@ -75,11 +75,11 @@ const LEVEL_UI = {
     mascot: "🎯",
     missionLabel: "ミッション",
     mission1: "問題を解く",
-    mission2: "復習する",
+    mission2: "実力を試そう！",
     ticketLabel: "枚",
     allClear: "全達成でチケット1枚獲得！",
     startLabel: "📝　問題を解く",
-    reviewLabel: "🔁　復習する",
+    reviewLabel: "🏆　実力を試そう！",
     startRound: "rounded-xl", startSize: "py-4 text-base",
     reviewRound: "rounded-xl", reviewSize: "py-3 text-base",
     parentLabel: "保護者向け",
@@ -255,6 +255,7 @@ export default function HomePage() {
   const [themeId, setThemeId] = useState("pink");
   const [themeOpen, setThemeOpen] = useState(false);
   const [missionQuiz, setMissionQuiz] = useState(0);
+  const [missionReview, setMissionReview] = useState(0);
 
   // 今日の日付を YYYY-MM-DD 形式（ローカル時間）で返す
   const getTodayStr = () => {
@@ -278,6 +279,7 @@ export default function HomePage() {
       const parsed = JSON.parse(savedM);
       if (parsed.date === getTodayStr()) {
         setMissionQuiz(parsed.quizCount ?? 0);
+        setMissionReview(parsed.reviewCount ?? 0);
       }
     }
   }, []);
@@ -367,7 +369,7 @@ export default function HomePage() {
         <div className={`rounded-2xl p-3 border flex flex-col gap-2 flex-1 min-w-0 ${t.card} ${t.border}`}>
           <p className={`text-xs font-bold uppercase tracking-wider ${t.subText}`}>{lu.missionLabel}</p>
           <MissionRow icon="📝" label={lu.mission1} current={Math.min(missionQuiz, 5)} target={5} t={t} />
-          <MissionRow icon="🔁" label={lu.mission2} current={0} target={3} t={t} />
+          <MissionRow icon="🏆" label={lu.mission2} current={Math.min(missionReview, 1)} target={1} t={t} />
           <div className={`border-t pt-1.5 flex items-center justify-center gap-1 ${t.divider}`}>
             <span className="text-xs">🎟️</span>
             <p className={`text-xs font-bold ${t.allClearText}`}>{lu.allClear}</p>
@@ -409,7 +411,9 @@ export default function HomePage() {
           className={`w-full ${t.startBtn} ${t.startText} font-bold shadow-lg active:scale-95 transition-all ${lu.startRound} ${lu.startSize}`}>
           {lu.startLabel}
         </button>
-        <button className={`w-full border font-bold active:scale-95 transition-all ${lu.reviewRound} ${lu.reviewSize} ${t.reviewBtn} ${t.reviewText} ${t.border}`}>
+        <button
+          onClick={() => router.push(`/challenge?level=${selectedLevel}`)}
+          className={`w-full border font-bold active:scale-95 transition-all ${lu.reviewRound} ${lu.reviewSize} ${t.reviewBtn} ${t.reviewText} ${t.border}`}>
           {lu.reviewLabel}
         </button>
       </div>
