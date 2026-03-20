@@ -252,8 +252,16 @@ export default function HomePage() {
   const [selectedLevel, setSelectedLevel] = useState("baby");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [lockedTarget, setLockedTarget] = useState<{ id: string; label: string } | null>(null);
-  const [themeId, setThemeId] = useState("dark");
+  const [themeId, setThemeId] = useState("pink");
   const [themeOpen, setThemeOpen] = useState(false);
+
+  // 起動時にlocalStorageからテーマを読み込む
+  useEffect(() => {
+    const saved = localStorage.getItem("theme");
+    if (saved && THEMES.find(th => th.id === saved)) {
+      setThemeId(saved);
+    }
+  }, []);
 
   // テーマをlocalStorageに保存（他ページで共有）
   useEffect(() => {
