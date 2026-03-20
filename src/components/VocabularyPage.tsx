@@ -201,7 +201,8 @@ export default function VocabularyPage() {
         const { data, error } = await supabase
           .from("words")
           .select("*")
-          .order("word", { ascending: true });
+          .order("word", { ascending: true })
+          .limit(9999);
 
         if (error || !data || data.length === 0) {
           setWordsByLevel(groupByLevel(MOCK_WORDS));
