@@ -72,7 +72,7 @@ export const THEMES = [
     startBtn: "bg-amber-800 hover:bg-amber-700", startText: "text-white",
     reviewBtn: "bg-stone-200 hover:bg-stone-300", reviewText: "text-stone-900",
     ticketNum: "text-amber-800", allClearText: "text-amber-800",
-    bannerBg: "bg-gradient-to-r from-amber-800 to-stone-600",
+    bannerBg: "bg-gradient-to-r from-amber-800 to-amber-400",
   },
 ];
 
