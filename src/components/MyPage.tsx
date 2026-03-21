@@ -300,10 +300,6 @@ function AboutSection() {
       icon: "🎰", title: "ガチャ機能", prio: 3,
       desc: "チケットを消費して単語を獲得するガチャ。未取得単語を優先抽選する仕組み。",
     },
-    {
-      icon: "📱", title: "PWA対応（ホーム画面追加）", prio: 4,
-      desc: "manifest.json・Service Worker・アイコンを設定し、スマホのホーム画面にアプリとして追加できるようにする。オフラインでも基本機能を使えるようにする。",
-    },
   ];
 
   const skills = [

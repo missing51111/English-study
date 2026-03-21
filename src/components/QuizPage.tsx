@@ -458,28 +458,66 @@ export default function QuizPage() {
         <p className={`text-xs font-bold mb-2 ${t.subText}`}>{isBaby ? "こたえ" : "回答"}</p>
         {/* data-drop-area="slots"：スロット内の空きエリアへのドロップを受け付ける */}
         <div className="flex flex-wrap gap-2 min-h-[40px]" data-drop-area="slots">
-          {slots.map((token, i) => (
-            <div
-              key={token.id}
-              data-token-source="slots"
-              data-token-index={String(i)}
-              onTouchStart={e => handleTokenTouchStart(e, token, "slots", i)}
-              onClick={() => handleTokenClick(() => tapSlot(token))}
-              style={{ touchAction: "none" }}
-              className={`
-                px-3 py-2 rounded-xl font-bold cursor-pointer select-none
-                transition-all active:scale-95
-                ${result === "correct" ? "bg-green-400 text-white" :
-                  result === "wrong"   ? "bg-red-400 text-white" :
-                  `${t.startBtn} ${t.startText}`}
-                ${isBaby ? "text-lg" : "text-sm"}
-              `}
-            >
-              {token.word}
-            </div>
-          ))}
-          {slots.length > 0 && (
-            <span className={`self-center font-bold text-xl ${t.bodyText}`}>{currentQ.punctuation}</span>
+          {isBaby && !result ? (
+            // ベビー：字数ヒント枠つきスロット
+            <>
+              {currentQ.words.map((word, i) => {
+                const token = slots[i];
+                return token ? (
+                  <div
+                    key={token.id}
+                    data-token-source="slots"
+                    data-token-index={String(i)}
+                    onTouchStart={e => handleTokenTouchStart(e, token, "slots", i)}
+                    onClick={() => handleTokenClick(() => tapSlot(token))}
+                    style={{ touchAction: "none" }}
+                    className={`px-3 py-2 rounded-xl font-bold cursor-pointer select-none transition-all active:scale-95 text-lg ${t.startBtn} ${t.startText}`}
+                  >
+                    {token.word}
+                  </div>
+                ) : (
+                  <div
+                    key={`hint-${i}`}
+                    className="px-3 py-2 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center"
+                    style={{ minWidth: `${Math.max(word.length * 14, 40)}px` }}
+                  >
+                    <span className="text-gray-300 tracking-widest text-lg leading-none select-none">
+                      {"·".repeat(word.length)}
+                    </span>
+                  </div>
+                );
+              })}
+              {slots.length > 0 && (
+                <span className={`self-center font-bold text-xl ${t.bodyText}`}>{currentQ.punctuation}</span>
+              )}
+            </>
+          ) : (
+            // 通常スロット（baby結果表示 or 非babyも含む）
+            <>
+              {slots.map((token, i) => (
+                <div
+                  key={token.id}
+                  data-token-source="slots"
+                  data-token-index={String(i)}
+                  onTouchStart={e => handleTokenTouchStart(e, token, "slots", i)}
+                  onClick={() => handleTokenClick(() => tapSlot(token))}
+                  style={{ touchAction: "none" }}
+                  className={`
+                    px-3 py-2 rounded-xl font-bold cursor-pointer select-none
+                    transition-all active:scale-95
+                    ${result === "correct" ? "bg-green-400 text-white" :
+                      result === "wrong"   ? "bg-red-400 text-white" :
+                      `${t.startBtn} ${t.startText}`}
+                    ${isBaby ? "text-lg" : "text-sm"}
+                  `}
+                >
+                  {token.word}
+                </div>
+              ))}
+              {slots.length > 0 && (
+                <span className={`self-center font-bold text-xl ${t.bodyText}`}>{currentQ.punctuation}</span>
+              )}
+            </>
           )}
         </div>
 
