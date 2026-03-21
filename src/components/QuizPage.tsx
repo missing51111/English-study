@@ -75,6 +75,7 @@ export default function QuizPage() {
 
   const [bank, setBank] = useState<WordToken[]>([]);
   const [slots, setSlots] = useState<WordToken[]>([]);
+  const [selectedSlotIdx, setSelectedSlotIdx] = useState<number | null>(null);
   const [result, setResult] = useState<"correct" | "wrong" | null>(null);
   const [showHint, setShowHint] = useState(false);
   const [score, setScore] = useState({ correct: 0, total: 0 });
@@ -136,6 +137,7 @@ export default function QuizPage() {
     const q = questions[currentIndex];
     setBank(shuffle(wordsToTokens(q.words)));
     setSlots([]);
+    setSelectedSlotIdx(null);
     setResult(null);
     setShowHint(false);
   }, [questions, currentIndex]);
@@ -159,9 +161,24 @@ export default function QuizPage() {
     });
   }, []);
 
-  const tapSlot = useCallback((token: WordToken) => {
-    // スロットから外す（bank はそのまま → 自動的に明るく戻る）
-    setSlots(prev => prev.filter(t => t.id !== token.id));
+  const tapSlot = useCallback((token: WordToken, index: number) => {
+    setSelectedSlotIdx(prev => {
+      if (prev === null) {
+        // 1回目：選択してハイライト
+        return index;
+      } else if (prev === index) {
+        // 同じトークンを再タップ：選択解除
+        return null;
+      } else {
+        // 別のトークンをタップ：2つを入れ替え
+        setSlots(slots => {
+          const arr = [...slots];
+          [arr[prev], arr[index]] = [arr[index], arr[prev]];
+          return arr;
+        });
+        return null;
+      }
+    });
   }, []);
 
   // ============================================================
@@ -226,7 +243,7 @@ export default function QuizPage() {
         // タップとして処理（後から来るclickはスキップ）
         touchHandled.current = true;
         if (ts.source === "bank") tapBank(ts.token);
-        else tapSlot(ts.token);
+        else tapSlot(ts.token, ts.index);
         touchState.current = null;
         return;
       }
@@ -529,9 +546,10 @@ export default function QuizPage() {
                     data-token-source="slots"
                     data-token-index={String(i)}
                     onTouchStart={e => handleTokenTouchStart(e, token, "slots", i)}
-                    onClick={() => handleTokenClick(() => tapSlot(token))}
+                    onClick={() => handleTokenClick(() => tapSlot(token, i))}
                     style={{ touchAction: "none" }}
-                    className={`px-3 py-2 rounded-xl font-bold cursor-pointer select-none transition-all active:scale-95 text-lg ${t.startBtn} ${t.startText}`}
+                    className={`px-3 py-2 rounded-xl font-bold cursor-pointer select-none transition-all active:scale-95 text-lg
+                      ${selectedSlotIdx === i ? `${t.bar} text-white ring-2 ring-white ring-offset-1 scale-105` : `${t.startBtn} ${t.startText}`}`}
                   >
                     {token.word}
                   </div>
@@ -560,13 +578,14 @@ export default function QuizPage() {
                   data-token-source="slots"
                   data-token-index={String(i)}
                   onTouchStart={e => handleTokenTouchStart(e, token, "slots", i)}
-                  onClick={() => handleTokenClick(() => tapSlot(token))}
+                  onClick={() => handleTokenClick(() => tapSlot(token, i))}
                   style={{ touchAction: "none" }}
                   className={`
                     px-3 py-2 rounded-xl font-bold cursor-pointer select-none
                     transition-all active:scale-95
                     ${result === "correct" ? "bg-green-400 text-white" :
                       result === "wrong"   ? "bg-red-400 text-white" :
+                      selectedSlotIdx === i ? `${t.bar} text-white ring-2 ring-white ring-offset-1 scale-105` :
                       `${t.startBtn} ${t.startText}`}
                     ${isBaby ? "text-lg" : "text-sm"}
                   `}
@@ -641,7 +660,7 @@ export default function QuizPage() {
               {isBaby ? "✅ こたえる！" : "✅ 回答する"}
             </button>
             <button
-              onClick={() => { setBank(shuffle(wordsToTokens(currentQ.words))); setSlots([]); setResult(null); }}
+              onClick={() => { setBank(shuffle(wordsToTokens(currentQ.words))); setSlots([]); setSelectedSlotIdx(null); setResult(null); }}
               className={`w-full py-3 rounded-2xl font-bold text-sm border transition-all active:scale-95 ${t.innerCard} ${t.border} ${t.bodyText}`}
             >
               {isBaby ? "🔄 やりなおす" : "🔄 リセット"}

@@ -130,6 +130,7 @@ export default function ChallengePage() {
   const [loading, setLoading] = useState(true);
 
   const [slots, setSlots] = useState<WordToken[]>([]);
+  const [selectedSlotIdx, setSelectedSlotIdx] = useState<number | null>(null);
   const [result, setResult] = useState<"correct" | "wrong" | null>(null);
   const [showHint, setShowHint] = useState(false);
 
@@ -180,6 +181,7 @@ export default function ChallengePage() {
   // stepが変わったらスロットをリセット
   useEffect(() => {
     setSlots([]);
+    setSelectedSlotIdx(null);
     setResult(null);
     setShowHint(false);
   }, [step]);
@@ -196,8 +198,24 @@ export default function ChallengePage() {
     });
   }, []);
 
-  const tapSlot = useCallback((token: WordToken) => {
-    setSlots(prev => prev.filter(t => t.id !== token.id));
+  const tapSlot = useCallback((token: WordToken, index: number) => {
+    setSelectedSlotIdx(prev => {
+      if (prev === null) {
+        // 1回目：選択してハイライト
+        return index;
+      } else if (prev === index) {
+        // 同じトークンを再タップ：選択解除
+        return null;
+      } else {
+        // 別のトークンをタップ：2つを入れ替え
+        setSlots(slots => {
+          const arr = [...slots];
+          [arr[prev], arr[index]] = [arr[index], arr[prev]];
+          return arr;
+        });
+        return null;
+      }
+    });
   }, []);
 
   // ============================================================
@@ -235,7 +253,7 @@ export default function ChallengePage() {
       ts.ghost?.remove(); ts.ghost = null;
       if (!ts.isDragging) {
         touchHandled.current = true;
-        if (ts.source === "bank") tapBank(ts.token); else tapSlot(ts.token);
+        if (ts.source === "bank") tapBank(ts.token); else tapSlot(ts.token, ts.index);
         touchState.current = null; return;
       }
       const touch = e.changedTouches[0];
@@ -434,9 +452,10 @@ export default function ChallengePage() {
                     data-token-source="slots"
                     data-token-index={String(i)}
                     onTouchStart={e => handleTokenTouchStart(e, token, "slots", i)}
-                    onClick={() => handleTokenClick(() => tapSlot(token))}
+                    onClick={() => handleTokenClick(() => tapSlot(token, i))}
                     style={{ touchAction: "none" }}
-                    className={`px-3 py-2 rounded-xl font-bold cursor-pointer select-none transition-all active:scale-95 text-lg ${t.startBtn} ${t.startText}`}
+                    className={`px-3 py-2 rounded-xl font-bold cursor-pointer select-none transition-all active:scale-95 text-lg
+                      ${selectedSlotIdx === i ? `${t.bar} text-white ring-2 ring-white ring-offset-1 scale-105` : `${t.startBtn} ${t.startText}`}`}
                   >
                     {token.word}
                   </div>
@@ -465,9 +484,14 @@ export default function ChallengePage() {
                   data-token-source="slots"
                   data-token-index={String(i)}
                   onTouchStart={e => handleTokenTouchStart(e, token, "slots", i)}
-                  onClick={() => handleTokenClick(() => tapSlot(token))}
+                  onClick={() => handleTokenClick(() => tapSlot(token, i))}
                   style={{ touchAction: "none" }}
-                  className={`px-3 py-2 rounded-xl font-bold cursor-pointer select-none transition-all active:scale-95 ${result === "correct" ? "bg-green-400 text-white" : result === "wrong" ? "bg-red-400 text-white" : `${t.startBtn} ${t.startText}`} ${isBaby ? "text-lg" : "text-sm"}`}
+                  className={`px-3 py-2 rounded-xl font-bold cursor-pointer select-none transition-all active:scale-95
+                    ${result === "correct" ? "bg-green-400 text-white" :
+                      result === "wrong"   ? "bg-red-400 text-white" :
+                      selectedSlotIdx === i ? `${t.bar} text-white ring-2 ring-white ring-offset-1 scale-105` :
+                      `${t.startBtn} ${t.startText}`}
+                    ${isBaby ? "text-lg" : "text-sm"}`}
                 >
                   {token.word}
                 </div>
@@ -525,7 +549,7 @@ export default function ChallengePage() {
               {isBaby ? "✅ こたえる！" : "✅ 回答する"}
             </button>
             <button
-              onClick={() => { setSlots([]); setResult(null); }}
+              onClick={() => { setSlots([]); setSelectedSlotIdx(null); setResult(null); }}
               className={`w-full py-3 rounded-2xl font-bold text-sm border transition-all active:scale-95 ${t.innerCard} ${t.border} ${t.bodyText}`}
             >
               {isBaby ? "🔄 やりなおす" : "🔄 リセット"}
@@ -542,7 +566,7 @@ export default function ChallengePage() {
           </button>
         ) : (
           <button
-            onClick={() => { setSlots([]); setResult(null); }}
+            onClick={() => { setSlots([]); setSelectedSlotIdx(null); setResult(null); }}
             className={`w-full py-4 rounded-2xl font-bold text-lg shadow-lg transition-all active:scale-95 ${t.startBtn} ${t.startText}`}
           >
             {isBaby ? "🔄 もういちど！" : "🔄 もう一度挑戦"}
