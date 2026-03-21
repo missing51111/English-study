@@ -510,10 +510,13 @@ export default function HomePage() {
         </button>
       </div>
 
-      <div className="h-16" />
+      <div style={{ height: "calc(3.5rem + env(safe-area-inset-bottom))" }} />
 
       {/* ボトムナビ */}
-      <nav className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md border-t flex justify-around py-3 px-4 ${t.nav} ${t.navBorder}`}>
+      <nav
+        className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md border-t flex justify-around pt-2 px-4 ${t.nav} ${t.navBorder}`}
+        style={{ paddingBottom: "calc(0.35rem + env(safe-area-inset-bottom))" }}
+      >
         {[
           { icon: "🏠", label: isKid ? "ホーム" : "ホーム",     path: "/",           active: true },
           { icon: "📚", label: isKid ? "たんご" : "単語",       path: "/vocabulary", active: false },

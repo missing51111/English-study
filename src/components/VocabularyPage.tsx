@@ -232,6 +232,8 @@ export default function VocabularyPage() {
   const [streak, setStreak]           = useState(0);
   const [bestStreak, setBestStreak]   = useState(0);
   const [testCorrect, setTestCorrect] = useState(false);
+  const [lives, setLives]             = useState(3);
+  const [testGameOver, setTestGameOver] = useState(false);
 
   // localStorageからテーマ・取得済み単語を読み込む
   useLayoutEffect(() => {
@@ -311,6 +313,9 @@ export default function VocabularyPage() {
     setTestBuilt([]);
     setTestCorrect(false);
     setTestLetters(buildTestLetters(w));
+    setLives(3);
+    setTestGameOver(false);
+    setStreak(0);
     setTestMode(true);
   }, [selectedLevel, getAcqForLevel]);
 
@@ -327,7 +332,13 @@ export default function VocabularyPage() {
       const newBuilt = [...testBuilt, letter.ch];
       setTestBuilt(newBuilt);
       if (newBuilt.length === testWord.word.length) {
-        // 単語完成！
+        // 単語完成！まず発音を再生
+        if (typeof window !== "undefined" && window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+          const utt = new SpeechSynthesisUtterance(testWord.word);
+          utt.lang = "en-US"; utt.rate = 0.85;
+          window.speechSynthesis.speak(utt);
+        }
         const newStreak = streak + 1;
         setStreak(newStreak);
         setBestStreak(prev => {
@@ -348,13 +359,19 @@ export default function VocabularyPage() {
         }, 1400);
       }
     } else {
-      // 不正解 → shake
+      // 不正解 → ライフ減少 + shake
+      const newLives = lives - 1;
+      setLives(newLives);
+      if (newLives <= 0) {
+        setTestGameOver(true);
+        return;
+      }
       setTestLetters(prev => prev.map(l => l.id === id ? { ...l, shaking: true } : l));
       setTimeout(() => {
         setTestLetters(prev => prev.map(l => l.id === id ? { ...l, shaking: false } : l));
       }, 550);
     }
-  }, [testWord, testBuilt, testLetters, testCorrect, streak, selectedLevel, getAcqForLevel]);
+  }, [testWord, testBuilt, testLetters, testCorrect, streak, lives, selectedLevel, getAcqForLevel]);
 
   const speakTestWord = useCallback(() => {
     if (!testWord || typeof window === "undefined" || !window.speechSynthesis) return;
@@ -445,86 +462,141 @@ export default function VocabularyPage() {
               </div>
             </div>
 
-            {/* ヒントカード（日本語 + 発音） */}
-            <div className="px-4 pt-4 pb-2">
-              <div className={`rounded-2xl border-2 p-5 text-center space-y-3 transition-all duration-300 ${
-                testCorrect
-                  ? "border-green-400 bg-green-50"
-                  : `${t.card} ${t.border}`
-              }`}>
-                <div className="text-6xl" style={{ lineHeight: 1 }}>
-                  {EMOJI_MAP[testWord.word.toLowerCase()] ?? "📝"}
+            {/* ライフ（ハート）バー */}
+            {!testGameOver && (
+              <div className={`mx-4 mt-4 rounded-2xl border ${t.card} ${t.border} px-4 py-2.5 flex items-center gap-3`}>
+                <p className={`text-xs font-bold flex-1 leading-snug ${t.bodyText}`}>
+                  {isKid
+                    ? "まちがえると ハートが ひとつ へるよ！"
+                    : "間違えるとハートが1つ減ります"}
+                </p>
+                <div className="flex gap-1.5 flex-shrink-0">
+                  {[0, 1, 2].map(i => (
+                    <span key={i} style={{ fontSize: "1.6rem", lineHeight: 1 }}>
+                      {i < lives ? "🩷" : "🖤"}
+                    </span>
+                  ))}
                 </div>
-                <p className={`text-2xl font-black ${t.titleText}`}>{testWord.meaning}</p>
-                <button
-                  onClick={speakTestWord}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm
-                    ${t.innerCard} ${t.bodyText} active:scale-95 transition-all`}
-                >
-                  🔊 {isKid ? "はつおんを きく" : "発音を聞く"}
-                </button>
-                {testCorrect && (
-                  <p className="text-green-600 font-black text-xl animate-bounce">
-                    ✅ {isKid ? "せいかい！" : "正解！"}
-                  </p>
-                )}
               </div>
-            </div>
+            )}
 
-            {/* 入力済み文字バー */}
-            <div className="px-4 py-2">
-              <div className={`rounded-xl border ${t.card} ${t.border} p-3 flex gap-2 flex-wrap min-h-[3.2rem] items-center`}>
-                {testBuilt.map((ch, i) => (
-                  <div
-                    key={i}
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center font-black text-xl shadow ${t.bar} text-white`}
-                  >
-                    {ch.toUpperCase()}
+            {/* ヒントカード（日本語 + 発音） */}
+            {!testGameOver && (
+              <div className="px-4 pt-3 pb-2">
+                <div className={`rounded-2xl border-2 p-5 text-center space-y-3 transition-all duration-300 ${
+                  testCorrect
+                    ? "border-green-400 bg-green-50"
+                    : `${t.card} ${t.border}`
+                }`}>
+                  <div className="text-6xl" style={{ lineHeight: 1 }}>
+                    {EMOJI_MAP[testWord.word.toLowerCase()] ?? "📝"}
                   </div>
-                ))}
-                {testBuilt.length < testWord.word.length && !testCorrect && (
-                  <div className={`w-10 h-10 rounded-lg border-2 border-dashed ${t.border} flex items-center justify-center`}>
-                    <span className={`text-xl ${t.subText}`}>?</span>
-                  </div>
-                )}
-                {testBuilt.length === 0 && (
-                  <span className={`text-xs ${t.subText} ml-1`}>
-                    {isKid ? "もじを タップしてね！" : "文字をタップして並べよう"}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* 文字グリッド（単語の全文字 + ダミー3つ） */}
-            <div className="px-4 pb-6 flex-1">
-              <div
-                className="grid gap-3"
-                style={{ gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))" }}
-              >
-                {testLetters.map((letter) => (
+                  <p className={`text-2xl font-black ${t.titleText}`}>{testWord.meaning}</p>
                   <button
-                    key={letter.id}
-                    onClick={() => handleTestTap(letter.id)}
-                    disabled={letter.used || testCorrect}
-                    className={`
-                      aspect-square rounded-2xl font-black text-3xl
-                      flex items-center justify-center
-                      transition-all select-none
-                      ${letter.used || testCorrect
-                        ? "opacity-20 bg-gray-200 text-gray-400 cursor-not-allowed"
-                        : `${t.card} border-2 ${t.border} ${t.titleText} shadow-md
-                           hover:scale-105 active:scale-90`}
-                    `}
-                    style={{
-                      boxShadow: letter.used || testCorrect ? undefined : "0 3px 0 rgba(0,0,0,0.12)",
-                      animation: letter.shaking ? "dummy-wrong 0.55s ease" : undefined,
-                    }}
+                    onClick={speakTestWord}
+                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm
+                      ${t.innerCard} ${t.bodyText} active:scale-95 transition-all`}
                   >
-                    {letter.ch.toUpperCase()}
+                    🔊 {isKid ? "はつおんを きく" : "発音を聞く"}
                   </button>
-                ))}
+                  {testCorrect && (
+                    <p className="text-green-600 font-black text-xl animate-bounce">
+                      ✅ {isKid ? "せいかい！" : "正解！"}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* 入力済み文字バー・グリッド（ゲームオーバー時は非表示） */}
+            {!testGameOver && (
+              <>
+                <div className="px-4 py-2">
+                  <div className={`rounded-xl border ${t.card} ${t.border} p-3 flex gap-2 flex-wrap min-h-[3.2rem] items-center`}>
+                    {testBuilt.map((ch, i) => (
+                      <div
+                        key={i}
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center font-black text-xl shadow ${t.bar} text-white`}
+                      >
+                        {ch.toUpperCase()}
+                      </div>
+                    ))}
+                    {testBuilt.length < testWord.word.length && !testCorrect && (
+                      <div className={`w-10 h-10 rounded-lg border-2 border-dashed ${t.border} flex items-center justify-center`}>
+                        <span className={`text-xl ${t.subText}`}>?</span>
+                      </div>
+                    )}
+                    {testBuilt.length === 0 && (
+                      <span className={`text-xs ${t.subText} ml-1`}>
+                        {isKid ? "もじを タップしてね！" : "文字をタップして並べよう"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 文字グリッド（単語の全文字 + ダミー3つ） */}
+                <div className="px-4 pb-6 flex-1">
+                  <div
+                    className="grid gap-3"
+                    style={{ gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))" }}
+                  >
+                    {testLetters.map((letter) => (
+                      <button
+                        key={letter.id}
+                        onClick={() => handleTestTap(letter.id)}
+                        disabled={letter.used || testCorrect}
+                        className={`
+                          aspect-square rounded-2xl font-black text-3xl
+                          flex items-center justify-center
+                          transition-all select-none
+                          ${letter.used || testCorrect
+                            ? "opacity-20 bg-gray-200 text-gray-400 cursor-not-allowed"
+                            : `${t.card} border-2 ${t.border} ${t.titleText} shadow-md
+                               hover:scale-105 active:scale-90`}
+                        `}
+                        style={{
+                          boxShadow: letter.used || testCorrect ? undefined : "0 3px 0 rgba(0,0,0,0.12)",
+                          animation: letter.shaking ? "dummy-wrong 0.55s ease" : undefined,
+                        }}
+                      >
+                        {letter.ch.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* ゲームオーバー画面 */}
+            {testGameOver && (
+              <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 py-8">
+                <div className="text-7xl" style={{ lineHeight: 1 }}>💔</div>
+                <p className={`text-2xl font-black ${t.titleText}`}>
+                  {isKid ? "ゲームオーバー！" : "ゲームオーバー"}
+                </p>
+                <div className={`rounded-2xl border ${t.card} ${t.border} px-10 py-5 text-center space-y-1`}>
+                  <p className={`text-sm ${t.subText}`}>
+                    {isKid ? "れんぞく せいかい" : "連続正解"}
+                  </p>
+                  <p className={`text-5xl font-black ${t.titleText}`}>{streak}</p>
+                  <p className={`text-xs ${t.subText}`}>
+                    {isKid ? `👑 さいこうは ${bestStreak}もん` : `👑 最高記録: ${bestStreak}問`}
+                  </p>
+                </div>
+                <button
+                  onClick={openTest}
+                  className={`w-full py-4 rounded-2xl font-black text-xl ${t.bar} text-white active:scale-95 transition-all`}
+                >
+                  🔄 {isKid ? "もういちど" : "もう一度"}
+                </button>
+                <button
+                  onClick={() => setTestMode(false)}
+                  className={`w-full py-3 rounded-2xl font-bold border ${t.card} ${t.border} ${t.bodyText} active:scale-95 transition-all`}
+                >
+                  {isKid ? "おわる" : "終了する"}
+                </button>
+              </div>
+            )}
 
           </div>
         </div>
