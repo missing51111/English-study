@@ -282,12 +282,30 @@ function AboutSection() {
   ];
 
   const planned = [
-    { icon: "📋", title: "単語帳1列レイアウト",   prio: 4 },
-    { icon: "🔤", title: "アルファベットジャンプ", prio: 3 },
-    { icon: "👶", title: "ベビー向けヒント枠",     prio: 3 },
-    { icon: "✉️", title: "れんらくちょう(AI)",     prio: 4, api: true },
-    { icon: "🔡", title: "単語つくり機能",         prio: 5 },
-    { icon: "🎰", title: "ガチャ",                 prio: 3 },
+    {
+      icon: "📋", title: "単語帳 2列→1列レイアウト", prio: 4,
+      desc: "現在の2カラムグリッドを1列の縦スクロールリストに変更。単語の詳細情報をより広く表示できるようにする。",
+    },
+    {
+      icon: "🔤", title: "アルファベットジャンプボタン", prio: 3,
+      desc: "単語帳の上部にA〜Zのボタンを配置。タップすると、そのアルファベットで始まる単語リストの先頭へ即スクロール。",
+    },
+    {
+      icon: "👶", title: "ベビー向けヒント枠", prio: 3,
+      desc: "ベビーレベルのクイズ解答欄に、移動する単語のサイズに合わせた薄い枠（ガイド）を表示。字数のヒントになり難易度を下げる。",
+    },
+    {
+      icon: "✉️", title: "れんらくちょう（Claude API）", prio: 4, api: true,
+      desc: "その日の成績・達成ミッションをもとに、Claude APIがポジティブで保護者が課金したくなる連絡帳コメントを自動生成。有料プランの目玉機能として設計。",
+    },
+    {
+      icon: "🔡", title: "単語つくり機能（チケット消費）", prio: 5,
+      desc: "未取得単語の中から難易度が低い順に出題。①1文字目を「つくる枠」に移動 ②未取得単語の2文字目候補を全表示→選択 ③3文字目以降も同様に続ける ④単語が完成したら取得済みにする。チケット1枚を消費してプレイ。",
+    },
+    {
+      icon: "🎰", title: "ガチャ機能", prio: 3,
+      desc: "チケットを消費して単語を獲得するガチャ。未取得単語を優先抽選する仕組み。",
+    },
   ];
 
   const skills = [
@@ -360,18 +378,22 @@ function AboutSection() {
       <AboutSec title="🚀 実装予定" dark={dark}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {planned.map(f => (
-            <div key={f.title} style={{ background: dark.card, border: `1px solid ${dark.border}`, borderRadius: 10, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: "1.2rem" }}>{f.icon}</span>
+            <div key={f.title} style={{ background: dark.card, border: `1px solid ${dark.border}`, borderRadius: 10, padding: "12px 14px", display: "flex", gap: 10 }}>
+              <span style={{ fontSize: "1.4rem", flexShrink: 0, marginTop: 2 }}>{f.icon}</span>
               <div style={{ flex: 1 }}>
-                <span style={{ fontWeight: 700, fontSize: ".82rem", color: dark.text }}>{f.title}</span>
-                {f.api && <span style={{ marginLeft: 6, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 99, padding: "1px 7px", fontSize: ".62rem", color: "#1d4ed8", fontWeight: 700 }}>Claude API</span>}
-                <div style={{ display: "flex", gap: 3, marginTop: 5 }}>
+                <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, marginBottom: 4 }}>
+                  <span style={{ fontWeight: 700, fontSize: ".82rem", color: dark.text }}>{f.title}</span>
+                  {f.api && <span style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 99, padding: "1px 7px", fontSize: ".62rem", color: "#1d4ed8", fontWeight: 700 }}>Claude API</span>}
+                  <span style={{ color: dark.sub, fontSize: ".8rem", marginLeft: "auto" }}>🔒</span>
+                </div>
+                <p style={{ fontSize: ".75rem", color: dark.sub, lineHeight: 1.65, margin: "0 0 6px" }}>{f.desc}</p>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   {Array.from({ length: 5 }, (_, i) => (
                     <div key={i} style={{ width: 6, height: 6, borderRadius: 99, background: i < f.prio ? "#f0883e" : dark.border }} />
                   ))}
+                  <span style={{ fontSize: ".62rem", color: dark.sub, marginLeft: 2 }}>優先度</span>
                 </div>
               </div>
-              <span style={{ color: dark.sub, fontSize: ".8rem" }}>🔒</span>
             </div>
           ))}
         </div>
