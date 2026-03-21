@@ -551,14 +551,11 @@ export default function WordMakerPage() {
                     transition-all select-none
                     ${isDisabled
                       ? "opacity-25 cursor-not-allowed bg-gray-200 text-gray-400"
-                      : isDummy
-                        ? `${t.innerCard} border-2 border-dashed ${t.border} ${t.bodyText}
-                           hover:scale-105 active:scale-90`
-                        : `${t.card} border-2 ${t.border} ${t.titleText} shadow-md
-                           hover:scale-105 active:scale-90 active:shadow-sm`}
+                      : `${t.card} border-2 ${t.border} ${t.titleText} shadow-md
+                         hover:scale-105 active:scale-90 active:shadow-sm`}
                   `}
                   style={{
-                    boxShadow: isDisabled ? undefined : isDummy ? undefined : "0 3px 0 rgba(0,0,0,0.12)",
+                    boxShadow: isDisabled ? undefined : "0 3px 0 rgba(0,0,0,0.12)",
                     animation: isShaking ? "dummy-wrong 0.6s ease" : undefined,
                   }}
                 >
