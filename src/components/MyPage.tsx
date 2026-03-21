@@ -377,9 +377,15 @@ function AboutSection() {
       {/* 未実装 */}
       <AboutSec title="🚀 実装予定" dark={dark}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {planned.map(f => (
+          {planned.map((f, idx) => (
             <div key={f.title} style={{ background: dark.card, border: `1px solid ${dark.border}`, borderRadius: 10, padding: "12px 14px", display: "flex", gap: 10 }}>
-              <span style={{ fontSize: "1.4rem", flexShrink: 0, marginTop: 2 }}>{f.icon}</span>
+              {/* 番号バッジ */}
+              <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <div style={{ width: 26, height: 26, borderRadius: 99, background: "#f0883e", color: "#fff", fontWeight: 900, fontSize: ".8rem", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {idx + 1}
+                </div>
+                <span style={{ fontSize: "1.2rem" }}>{f.icon}</span>
+              </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, marginBottom: 4 }}>
                   <span style={{ fontWeight: 700, fontSize: ".82rem", color: dark.text }}>{f.title}</span>
