@@ -285,14 +285,10 @@ function AboutSection() {
     { icon: "👶", title: "ベビー向けヒント枠",         tags: ["字数ガイド", "UX改善"] },
     { icon: "✉️", title: "れんらくちょう（Claude API）", tags: ["Anthropic API", "AI生成", "保護者向け"] },
     { icon: "🎊", title: "単語取得お祝い演出",           tags: ["confetti", "CSS animation"] },
+    { icon: "🔡", title: "単語つくり機能（チケット消費）", tags: ["letter game", "localStorage", "Supabase"] },
   ];
 
-  const planned = [
-    {
-      icon: "🔡", title: "単語つくり機能（チケット消費）", prio: 5,
-      desc: "未取得単語の中から難易度が低い順に出題。①1文字目を「つくる枠」に移動 ②未取得単語の2文字目候補を全表示→選択 ③3文字目以降も同様に続ける ④単語が完成したら取得済みにする。チケット1枚を消費してプレイ。",
-    },
-  ];
+  const planned: { icon: string; title: string; prio: number; desc: string; api?: boolean }[] = [];
 
   const skills = [
     { cat: "フロント",  items: ["Next.js 15", "React 19", "TypeScript", "Tailwind CSS"] },

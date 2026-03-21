@@ -500,7 +500,7 @@ export default function HomePage() {
         {[
           { icon: "🏠", label: isKid ? "ホーム" : "ホーム",     path: "/",           active: true },
           { icon: "📚", label: isKid ? "たんご" : "単語",       path: "/vocabulary", active: false },
-          { icon: "🎰", label: isKid ? "がちゃ" : "ガチャ",     path: null,          active: false },
+          { icon: "🔡", label: isKid ? "たんごつくり" : "単語つくり", path: "/word-maker", active: false },
           { icon: "👤", label: isKid ? "じぶん" : "マイページ", path: "/mypage",      active: false },
         ].map(item => (
           <button
