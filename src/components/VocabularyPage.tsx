@@ -287,7 +287,7 @@ export default function VocabularyPage() {
 
       {/* 固定縦型アルファベットバー（左側） */}
       {jumpLetters.length > 0 && (
-        <div className="fixed left-0 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-0.5 py-2 px-1">
+        <div className="fixed left-0 top-[160px] z-20 flex flex-col gap-0.5 py-2 px-1 max-h-[calc(100vh-170px)] overflow-y-auto">
           {jumpLetters.map(letter => (
             <button
               key={letter}
