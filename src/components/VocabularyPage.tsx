@@ -480,22 +480,20 @@ function WordCard({
         )}
       </div>
 
-      {/* 右：絵文字＋音声ボタン or ロックアイコン */}
+      {/* 右：音声ボタン＋絵文字 or ロックアイコン */}
       {acquired ? (
-        <div className={`${emojiBg} flex flex-col items-center justify-center flex-shrink-0 gap-1 py-2`}
-          style={{ width: "4rem" }}>
-          {emoji ? (
-            <span style={{ fontSize: "1.9rem", lineHeight: 1 }}>{emoji}</span>
-          ) : (
-            <div style={{ height: "1.9rem" }} />
-          )}
+        <div className={`${emojiBg} flex flex-row items-center justify-center flex-shrink-0 gap-1 px-2`}>
           <button
             onClick={(e) => { e.stopPropagation(); speakWord(); }}
-            className="text-sm opacity-50 hover:opacity-100 active:scale-90 transition-all leading-none"
+            className="opacity-50 hover:opacity-100 active:scale-90 transition-all leading-none"
+            style={{ fontSize: "1.7rem" }}
             aria-label={`${word.word}の発音`}
           >
             🔊
           </button>
+          {emoji && (
+            <span style={{ fontSize: "1.9rem", lineHeight: 1 }}>{emoji}</span>
+          )}
         </div>
       ) : (
         <div className="bg-gray-200 flex items-center justify-center flex-shrink-0" style={{ width: "4rem" }}>
