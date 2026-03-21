@@ -26,8 +26,8 @@ const LEVEL_UI = {
     mission1: "ならびかえてね",
     mission2: "いっぱいふえてるよ！",
     ticketLabel: "まい",
-    allClear: "ぜんぶできたらチケット1まい！",
-    allClearDone: "きょうの チケットを もらったよ！",
+    allClear: "ぜんぶできたらチケット2まい！",
+    allClearDone: "きょうの チケット2まい もらったよ！",
     startLabel: "📝　ならびかえてね！",
     reviewLabel: "🏆　いっぱいふえてるよ！",
     startRound: "rounded-3xl", startSize: "py-5 text-xl",
@@ -44,8 +44,8 @@ const LEVEL_UI = {
     mission1: "問題を とく",
     mission2: "実力を 試そう！",
     ticketLabel: "まい",
-    allClear: "全部できたらチケット1まい！",
-    allClearDone: "今日の チケットを もらったよ！",
+    allClear: "全部できたらチケット2まい！",
+    allClearDone: "今日の チケット2まい もらったよ！",
     startLabel: "📝　問題を とこう！",
     reviewLabel: "🏆　実力を 試そう！",
     startRound: "rounded-2xl", startSize: "py-5 text-xl",
@@ -348,21 +348,22 @@ export default function HomePage() {
     localStorage.setItem("theme", themeId);
   }, [themeId]);
 
-  // ミッション1・2両方達成でチケット1枚付与（1日1回）
+  // ミッション1・2両方達成でチケット付与（baby/elementary=2枚, その他=1枚, 1日1回）
   useEffect(() => {
     if (missionQuiz >= 5 && missionReview >= 3 && !ticketAwarded) {
       const today = getTodayStr();
       const savedM = localStorage.getItem("dailyMissions");
       const prev = savedM ? JSON.parse(savedM) : null;
       if (prev?.date === today && !prev?.ticketAwarded) {
-        const newTickets = tickets + 1;
+        const reward = (selectedLevel === "baby" || selectedLevel === "elementary") ? 2 : 1;
+        const newTickets = tickets + reward;
         localStorage.setItem("tickets", String(newTickets));
         localStorage.setItem("dailyMissions", JSON.stringify({ ...prev, ticketAwarded: true }));
         setTickets(newTickets);
         setTicketAwarded(true);
       }
     }
-  }, [missionQuiz, missionReview, ticketAwarded, tickets]);
+  }, [missionQuiz, missionReview, ticketAwarded, tickets, selectedLevel]);
   const currentLevel = LEVELS.find(l => l.id === selectedLevel) ?? LEVELS[0];
   const lu = (LEVEL_UI as Record<string, typeof LEVEL_UI.baby>)[selectedLevel] ?? LEVEL_UI.high;
   const t = THEMES.find(th => th.id === themeId) ?? THEMES[0];
