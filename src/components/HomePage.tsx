@@ -445,7 +445,18 @@ export default function HomePage() {
           <MissionRow icon="📝" label={lu.mission1} current={Math.min(missionQuiz, 5)} target={5} t={t} />
           <MissionRow icon="🏆" label={lu.mission2} current={Math.min(missionReview, 3)} target={3} t={t} />
           <div className={`border-t pt-1.5 flex items-center justify-center gap-1 ${t.divider}`}>
-            <span className="text-xs">🎟️</span>
+            <svg viewBox="0 0 200 120" width="22" height="14" xmlns="http://www.w3.org/2000/svg" style={{flexShrink:0}}>
+              <defs>
+                <linearGradient id="tgm" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#fb7185"/>
+                  <stop offset="100%" stopColor="#f59e0b"/>
+                </linearGradient>
+              </defs>
+              <rect x="4" y="4" width="192" height="112" rx="12" fill="url(#tgm)"/>
+              <circle cx="150" cy="4" r="10" fill="white"/>
+              <circle cx="150" cy="116" r="10" fill="white"/>
+              <line x1="150" y1="14" x2="150" y2="106" stroke="white" strokeWidth="2" strokeDasharray="6,4" opacity="0.6"/>
+            </svg>
             <p className={`text-xs font-bold ${ticketAwarded ? "text-green-600" : t.allClearText}`}>
               {ticketAwarded ? lu.allClearDone : lu.allClear}
             </p>
@@ -463,11 +474,16 @@ export default function HomePage() {
 <circle cx="150" cy="4" r="10" fill="white"/>
             <circle cx="150" cy="116" r="10" fill="white"/>
             <line x1="150" y1="14" x2="150" y2="106" stroke="white" strokeWidth="2" strokeDasharray="6,4" opacity="0.6"/>
-            <text x="100" y="68" textAnchor="middle" fontSize="28" fontWeight="bold" fill="white">
-              {isBaby ? "ちけっと" : selectedLevel === "elementary" ? "ちけっと" : "TICKET"}
-            </text>
-            {(selectedLevel === "elementary") && (
-              <text x="100" y="95" textAnchor="middle" fontSize="22" fontWeight="bold" fill="white" letterSpacing="6" opacity="0.5">TICKET</text>
+            {(isBaby || selectedLevel === "elementary") ? (
+              <>
+                <text x="100" y="52" textAnchor="middle" fontSize="24" fontWeight="bold" fill="white">たんごつくり</text>
+                <text x="100" y="88" textAnchor="middle" fontSize="28" fontWeight="bold" fill="white">ちけっと</text>
+              </>
+            ) : (
+              <>
+                <text x="100" y="68" textAnchor="middle" fontSize="28" fontWeight="bold" fill="white">TICKET</text>
+                <text x="100" y="95" textAnchor="middle" fontSize="18" fontWeight="bold" fill="white" opacity="0.6">Word Maker</text>
+              </>
             )}
           </svg>
           <div className="flex items-baseline gap-0.5 mt-1">
