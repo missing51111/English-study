@@ -35,3 +35,16 @@
   40%  { transform: scale(1.25); }
   100% { transform: scale(1);    }
 }
+
+/* ダミー文字タップ時のブルブル左右回転 */
+@keyframes dummy-wrong {
+  0%   { transform: rotate(0deg)   translateX(0); }
+  12%  { transform: rotate(-20deg) translateX(-7px); }
+  24%  { transform: rotate(20deg)  translateX( 7px); }
+  36%  { transform: rotate(-18deg) translateX(-6px); }
+  48%  { transform: rotate(18deg)  translateX( 6px); }
+  60%  { transform: rotate(-12deg) translateX(-4px); }
+  72%  { transform: rotate(12deg)  translateX( 4px); }
+  86%  { transform: rotate(-5deg)  translateX(-2px); }
+  100% { transform: rotate(0deg)   translateX(0); }
+}

@@ -15,7 +15,7 @@ interface WordEntry {
 }
 
 type GamePhase =
-  | "browsing"   // 頭文字を選ぶ初期画面
+  | "browsing"   // 頭文字を選ぶ
   | "building"   // 文字を積み上げ中
   | "complete"   // 単語完成！
   | "no-ticket"  // チケット不足
@@ -25,27 +25,21 @@ type GamePhase =
 // 絵文字マップ
 // ============================================================
 const EMOJI_MAP: Record<string, string> = {
-  // animals
   cat:"🐱", dog:"🐶", cow:"🐄", pig:"🐷", fox:"🦊", ant:"🐜", bee:"🐝",
   hen:"🐔", frog:"🐸", duck:"🦆", fish:"🐟", bird:"🐦", sheep:"🐑",
   tiger:"🐯", snake:"🐍", rabbit:"🐰", horse:"🐴", lion:"🦁", bear:"🐻",
-  // nature
   sun:"☀️", moon:"🌙", star:"⭐", rain:"🌧️", snow:"❄️", wind:"🌬️",
-  fire:"🔥", tree:"🌳", flower:"🌸", cloud:"☁️", earth:"🌍", ocean:"🌊",
+  fire:"🔥", tree:"🌳", flower:"🌸", cloud:"☁️", ocean:"🌊",
   river:"🏞️", field:"🌾", stone:"🪨",
-  // food & drink
   milk:"🥛", cake:"🎂", rice:"🍚", apple:"🍎", bread:"🍞", peach:"🍑",
   fruit:"🍎", sugar:"🍬", juice:"🥤", salad:"🥗", water:"💧",
-  // objects
   book:"📚", ball:"⚽", bus:"🚌", car:"🚗", door:"🚪", bag:"👜",
   hat:"🎩", cup:"☕", box:"📦", map:"🗺️", pen:"🖊️", bed:"🛏️",
   key:"🔑", clock:"🕐", piano:"🎹", train:"🚂",
-  // body / people
   hand:"🖐️", foot:"🦶", nose:"👃", eyes:"👀", hair:"💇",
   heart:"❤️", smile:"😊",
-  // other
   red:"🔴", green:"💚", white:"🤍", music:"🎵", dance:"💃",
-  house:"🏠", chair:"🪑", table:"🪑", light:"💡", sport:"⚽",
+  house:"🏠", chair:"🪑", table:"🍽️", light:"💡", sport:"⚽",
   world:"🌏", night:"🌃", class:"🏫", floor:"🏢",
   plant:"🌱", paper:"📄", drink:"🥤",
 };
@@ -141,6 +135,13 @@ const FALLBACK_WORDS: WordEntry[] = [
 // ============================================================
 // ユーティリティ
 // ============================================================
+const LEVEL_ORDER = ["baby", "elementary", "junior", "high", "toeic"] as const;
+type AppLevel = typeof LEVEL_ORDER[number];
+
+const LEVEL_LABEL: Record<string, string> = {
+  baby: "ベビー", elementary: "小学生", junior: "中学生", high: "高校生", toeic: "TOEIC",
+};
+
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -148,6 +149,27 @@ function shuffle<T>(arr: T[]): T[] {
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
+}
+
+// 現在のprefixに続く候補文字（実単語のみ）
+function getCandidates(prefix: string, wordList: WordEntry[]): string[] {
+  return [...new Set(
+    wordList
+      .filter(w => w.word.startsWith(prefix) && w.word.length > prefix.length)
+      .map(w => w.word[prefix.length])
+  )];
+}
+
+// 次の文字が単語を完成させるか（= ラスト位置）
+function isLastPos(prefix: string, candidates: string[], wordList: WordEntry[]): boolean {
+  return candidates.some(c => wordList.some(w => w.word === prefix + c));
+}
+
+// ダミー文字を生成（実候補・禁止済みに含まれない1文字）
+function makeDummy(realCandidates: string[]): string | null {
+  const realSet = new Set(realCandidates);
+  const pool = shuffle("abcdefghijklmnopqrstuvwxyz".split("").filter(l => !realSet.has(l)));
+  return pool[0] ?? null;
 }
 
 // コンフェッティ（固定シード）
@@ -165,23 +187,26 @@ const CONFETTI = Array.from({ length: 60 }, (_, i) => ({
 // ============================================================
 export default function WordMakerPage() {
   const router = useRouter();
-  const [themeId,  setThemeId]  = useState("pink");
-  const [level,    setLevel]    = useState("baby");
-  const [tickets,  setTickets]  = useState(0);
+  const [themeId, setThemeId] = useState("pink");
+  const [level,   setLevel]   = useState("baby");
+  const [tickets, setTickets] = useState(0);
   const [allWords, setAllWords] = useState<WordEntry[]>([]);
   const [acquired, setAcquired] = useState<string[]>([]);
-  const [phase,    setPhase]    = useState<GamePhase>("browsing");
+  const [phase,   setPhase]   = useState<GamePhase>("browsing");
+  const [built,   setBuilt]   = useState<string[]>([]);
 
-  // 文字積み上げ
-  const [built,     setBuilt]     = useState<string[]>([]);   // 選んだ文字の配列
-  const [candidates, setCandidates] = useState<string[]>([]); // 次の選択肢
+  // 表示用候補（ダミー込みで固定順序）
+  const [displayCandidates, setDisplayCandidates] = useState<string[]>([]);
+  // ダミー文字
+  const [dummyLetter,  setDummyLetter]  = useState<string | null>(null);
+  // タップしてブルブル中のダミー文字
+  const [shakingDummy, setShakingDummy] = useState(false);
+  // タップ後に無効化されたダミー
+  const [dummyUsed,    setDummyUsed]    = useState(false);
 
   // 完成単語
-  const [completedEntry, setCompletedEntry] = useState<WordEntry | null>(null);
-
-  // 演出
+  const [completedEntry,   setCompletedEntry]   = useState<WordEntry | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
-  const [wrongFlash,      setWrongFlash]      = useState(false); // 念のため保持
 
   // ── 初期化 ──────────────────────────────────────────────────
   useLayoutEffect(() => {
@@ -192,56 +217,83 @@ export default function WordMakerPage() {
     const tk  = localStorage.getItem("tickets");
     setTickets(tk ? parseInt(tk) : 0);
     const acq = localStorage.getItem("acquiredWords");
-    if (acq) {
-      try { setAcquired(JSON.parse(acq)); } catch { /* ignore */ }
-    }
+    if (acq) { try { setAcquired(JSON.parse(acq)); } catch { /* ignore */ } }
   }, []);
 
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await supabase
-          .from("words")
-          .select("word, meaning, level")
-          .order("word");
+        const { data } = await supabase.from("words").select("word, meaning, level").order("word");
         setAllWords(data && data.length > 0 ? (data as WordEntry[]) : FALLBACK_WORDS);
-      } catch {
-        setAllWords(FALLBACK_WORDS);
-      }
+      } catch { setAllWords(FALLBACK_WORDS); }
     })();
   }, []);
 
-  // ── 未取得単語リスト ──────────────────────────────────────────
-  const unacquired = useMemo(() =>
-    allWords
+  // ── アクティブレベル（一番下の未取得レベル） ──────────────────
+  const activeLevel = useMemo((): AppLevel | null => {
+    for (const lvl of LEVEL_ORDER) {
+      const inLevel = allWords.filter(w => w.level === lvl);
+      if (inLevel.length === 0) continue;
+      const unacqInLevel = inLevel.filter(w => !acquired.includes(w.word.toLowerCase()));
+      if (unacqInLevel.length > 0) return lvl;
+    }
+    return null;
+  }, [allWords, acquired]);
+
+  // ── 現在レベルの未取得単語 ────────────────────────────────────
+  const unacquired = useMemo(() => {
+    if (!activeLevel) return [];
+    return allWords
+      .filter(w => w.level === activeLevel)
       .map(w => ({ ...w, word: w.word.toLowerCase() }))
-      .filter(w => w.word.length >= 2 && !acquired.includes(w.word)),
-    [allWords, acquired]
-  );
+      .filter(w => w.word.length >= 2 && !acquired.includes(w.word));
+  }, [allWords, activeLevel, acquired]);
 
-  // ── 初期画面の頭文字一覧（browsing用） ──────────────────────
-  const firstLetters = useMemo(() => {
-    const letters = [...new Set(unacquired.map(w => w.word[0]))].sort();
-    return letters;
-  }, [unacquired]);
+  // ── 表示候補の再計算（built / phase が変わったとき） ──────────
+  useEffect(() => {
+    setDummyUsed(false);
+    setShakingDummy(false);
 
-  // ── 候補生成（現在のprefixに続く文字一覧） ──────────────────
-  const computeCandidates = useCallback((prefix: string): string[] => {
-    const matching = unacquired.filter(w => w.word.startsWith(prefix));
-    const chars = [...new Set(
-      matching
-        .filter(w => prefix.length < w.word.length)
-        .map(w => w.word[prefix.length])
-    )];
-    return shuffle(chars);
-  }, [unacquired]);
+    const prefix = built.join("");
 
-  // ── 文字タップ ────────────────────────────────────────────────
+    if (phase === "browsing") {
+      const letters = [...new Set(unacquired.map(w => w.word[0]))].sort();
+      setDisplayCandidates(letters);
+      setDummyLetter(null);
+      return;
+    }
+
+    if (phase === "building") {
+      const real  = getCandidates(prefix, unacquired);
+      const isLast = isLastPos(prefix, real, unacquired);
+      const isFirst = false; // phase=building means at least 1 letter is built
+
+      let dummy: string | null = null;
+      if (!isFirst && !isLast) {
+        dummy = makeDummy(real);
+      }
+      setDummyLetter(dummy);
+
+      const allCands = dummy ? shuffle([...real, dummy]) : real.sort();
+      setDisplayCandidates(allCands);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [built, phase, unacquired.length]);
+
+  // ── タップ処理 ────────────────────────────────────────────────
   const handleTap = useCallback((letter: string) => {
-    const newBuilt  = [...built, letter];
-    const newPrefix = newBuilt.join("");
+    // ダミーをタップ
+    if (letter === dummyLetter) {
+      if (dummyUsed) return; // 無効化済み
+      setShakingDummy(true);
+      setTimeout(() => {
+        setShakingDummy(false);
+        setDummyUsed(true);
+      }, 600);
+      return;
+    }
 
-    // ── 最初の一文字 → チケット消費 ─────────────────────────
+    // 最初の文字 → チケット消費
     if (built.length === 0) {
       if (tickets <= 0) { setPhase("no-ticket"); return; }
       const newTk = tickets - 1;
@@ -250,63 +302,47 @@ export default function WordMakerPage() {
       setPhase("building");
     }
 
-    setBuilt(newBuilt);
+    const newBuilt  = [...built, letter];
+    const newPrefix = newBuilt.join("");
 
-    // ── 完成チェック ─────────────────────────────────────────
+    // 完成チェック
     const exact = unacquired.find(w => w.word === newPrefix);
     if (exact) {
-      // 完成！
+      setBuilt(newBuilt);
       const newAcq = [...acquired, newPrefix];
       setAcquired(newAcq);
       localStorage.setItem("acquiredWords", JSON.stringify(newAcq));
       setCompletedEntry(exact);
       setShowCelebration(true);
-      setTimeout(() => {
-        setShowCelebration(false);
-        setPhase("complete");
-      }, 3500);
+      setTimeout(() => { setShowCelebration(false); setPhase("complete"); }, 3600);
       return;
     }
 
-    // ── 次の候補を算出 ───────────────────────────────────────
-    const next = computeCandidates(newPrefix);
-    if (next.length === 0) {
-      // 枝が途切れた（通常は発生しないがガード）
-      setBuilt([]);
-      setCandidates([]);
-      setPhase("browsing");
-      return;
-    }
-    setCandidates(next);
-  }, [built, tickets, unacquired, acquired, computeCandidates]);
+    // 次の位置へ（buildsを変更 → useEffect が候補を再計算）
+    setBuilt(newBuilt);
+  }, [dummyLetter, dummyUsed, built, tickets, unacquired, acquired]);
 
   // ── 1文字戻る ────────────────────────────────────────────────
   const handleBack = useCallback(() => {
     if (built.length === 0) return;
     if (built.length === 1) {
-      // 先頭文字まで戻る → browsing に戻す（チケット返却しない）
       setBuilt([]);
-      setCandidates([]);
       setPhase("browsing");
       return;
     }
-    const newBuilt  = built.slice(0, -1);
-    const newPrefix = newBuilt.join("");
-    setBuilt(newBuilt);
-    setCandidates(computeCandidates(newPrefix));
-  }, [built, computeCandidates]);
+    setBuilt(prev => prev.slice(0, -1));
+  }, [built]);
 
-  // ── 次の単語（complete → browsing） ─────────────────────────
+  // ── 次の単語へ ───────────────────────────────────────────────
   const nextWord = useCallback(() => {
     setBuilt([]);
-    setCandidates([]);
     setCompletedEntry(null);
-    if (unacquired.filter(w => !acquired.includes(w.word)).length <= 1) {
+    if (unacquired.length === 0 && !activeLevel) {
       setPhase("all-done");
     } else {
       setPhase("browsing");
     }
-  }, [unacquired, acquired]);
+  }, [unacquired.length, activeLevel]);
 
   // ── ヘルパー ──────────────────────────────────────────────────
   const t      = THEMES.find(th => th.id === themeId) ?? THEMES[0];
@@ -314,12 +350,10 @@ export default function WordMakerPage() {
   const isKid  = level === "baby" || level === "elementary";
   const emoji  = completedEntry ? (EMOJI_MAP[completedEntry.word] ?? "✨") : "✨";
 
-  // ── 現在のprefixに一致する残り候補単語数（ヒント）────────────
-  const matchCount = useMemo(() =>
-    built.length === 0 ? unacquired.length
-      : unacquired.filter(w => w.word.startsWith(built.join(""))).length,
-    [built, unacquired]
-  );
+  const prefix     = built.join("");
+  const matchCount = unacquired.filter(w => w.word.startsWith(prefix)).length;
+
+  const activeLevelLabel = activeLevel ? LEVEL_LABEL[activeLevel] : "";
 
   // ============================================================
   // UI
@@ -327,7 +361,7 @@ export default function WordMakerPage() {
   return (
     <div className={`min-h-screen ${t.bg} flex flex-col max-w-md mx-auto`}>
 
-      {/* ── コンフェッティオーバーレイ ───────────────────────── */}
+      {/* ── コンフェッティ＋お祝いオーバーレイ ──────────────── */}
       {showCelebration && completedEntry && (
         <div className="fixed inset-0 z-50 overflow-hidden pointer-events-none">
           {CONFETTI.map((p, i) => (
@@ -344,19 +378,13 @@ export default function WordMakerPage() {
               className="bg-white rounded-3xl px-8 py-8 text-center shadow-2xl border-4 border-yellow-400 space-y-2"
               style={{ animation: "celebrate-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards" }}
             >
-              {/* 絵文字 */}
               <div className="text-7xl" style={{ animation: "star-spin 1s ease-in-out infinite" }}>
                 {emoji}
               </div>
-              {/* GET! */}
-              <p className="text-3xl font-black text-yellow-500 tracking-wide drop-shadow-md">
-                GET!
-              </p>
-              {/* 単語 */}
+              <p className="text-3xl font-black text-yellow-500 tracking-wide drop-shadow-md">GET!</p>
               <p className="text-4xl font-black text-gray-900 tracking-widest">
                 {completedEntry.word.toUpperCase()}
               </p>
-              {/* 日本語 */}
               <p className={`text-xl font-bold ${isKid ? "text-pink-500" : "text-indigo-500"}`}>
                 {completedEntry.meaning}
               </p>
@@ -369,57 +397,61 @@ export default function WordMakerPage() {
       )}
 
       {/* ── ヘッダー ──────────────────────────────────────────── */}
-      <div className={`flex items-center gap-3 px-4 pt-4 pb-3`}>
+      <div className="flex items-center gap-3 px-4 pt-4 pb-2">
         <button onClick={() => router.push("/")} className={`text-2xl ${t.subText}`}>←</button>
-        <div className="flex-1">
-          <p className={`font-black text-base ${t.titleText}`}>
+        <div className="flex-1 min-w-0">
+          <p className={`font-black text-base truncate ${t.titleText}`}>
             🔡 {isBaby ? "たんごを さがそう！" : "単語つくりゲーム"}
           </p>
+          {/* 現在のレベル表示 */}
+          {activeLevel && (
+            <p className={`text-xs ${t.subText}`}>
+              {isBaby ? `🎯 ${activeLevelLabel}のたんご` : `🎯 ${activeLevelLabel}レベル`}
+            </p>
+          )}
         </div>
-        <div className={`rounded-xl px-3 py-1.5 flex items-center gap-1 ${t.innerCard}`}>
+        <div className={`rounded-xl px-3 py-1.5 flex items-center gap-1 ${t.innerCard} flex-shrink-0`}>
           <span className="text-lg">🎫</span>
           <span className={`font-black text-xl ${t.accent}`}>{tickets}</span>
           <span className={`text-xs ${t.subText}`}>{isKid ? "まい" : "枚"}</span>
         </div>
       </div>
 
-      {/* ── 積み上げ文字表示バー（browsing/building共通） ────── */}
+      {/* ── 積み上げ文字バー ──────────────────────────────────── */}
       {(phase === "browsing" || phase === "building") && (
         <div className="px-4 pb-2">
           <div className={`rounded-2xl p-3 border ${t.card} ${t.border}`}>
             <div className="flex items-center gap-2 flex-wrap">
-              {/* 積んだ文字 */}
               {built.map((ch, i) => (
                 <div
                   key={i}
-                  className={`w-11 h-11 rounded-xl flex items-center justify-center font-black text-xl
-                    ${t.startBtn} ${t.startText} shadow`}
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center
+                    font-black text-xl shadow ${t.startBtn} ${t.startText}`}
                 >
                   {ch.toUpperCase()}
                 </div>
               ))}
-              {/* プレースホルダー（次の文字） */}
               {phase === "building" && (
-                <div className={`w-11 h-11 rounded-xl border-2 border-dashed ${t.border} flex items-center justify-center`}>
+                <div className={`w-11 h-11 rounded-xl border-2 border-dashed ${t.border}
+                  flex items-center justify-center`}>
                   <span className={`text-xl ${t.subText}`}>?</span>
                 </div>
               )}
-              {/* 戻るボタン */}
               {built.length > 0 && (
                 <button
                   onClick={handleBack}
-                  className={`ml-auto px-3 py-1.5 rounded-xl text-sm font-bold border ${t.innerCard} ${t.border} ${t.bodyText} active:scale-95 transition-all`}
+                  className={`ml-auto px-3 py-1.5 rounded-xl text-sm font-bold border
+                    ${t.innerCard} ${t.border} ${t.bodyText} active:scale-95 transition-all`}
                 >
                   {isBaby ? "← もどる" : "← 戻る"}
                 </button>
               )}
             </div>
-            {/* ヒント：一致する単語数 */}
             <p className={`text-xs mt-2 ${t.subText}`}>
               {phase === "browsing"
                 ? (isBaby
                     ? `みつかる たんご: ${unacquired.length}こ`
-                    : `見つかる単語: ${unacquired.length}語`)
+                    : `${activeLevelLabel}の未取得単語: ${unacquired.length}語`)
                 : (isBaby
                     ? `あてはまる たんご: ${matchCount}こ`
                     : `該当する単語: ${matchCount}語`)}
@@ -436,9 +468,7 @@ export default function WordMakerPage() {
             {isBaby ? "チケットが ないよ！" : "チケットが足りません"}
           </p>
           <p className={`text-sm ${t.bodyText}`}>
-            {isBaby
-              ? "ミッションをクリアして\nチケットをもらおう！"
-              : "ミッションをクリアして\nチケットを入手しましょう。"}
+            {isBaby ? "ミッションをクリアして\nチケットをもらおう！" : "ミッションをクリアしてチケットを入手しましょう。"}
           </p>
           <button onClick={() => router.push("/")} className={`w-full py-3 rounded-2xl font-bold ${t.startBtn} ${t.startText}`}>
             🏠 {isBaby ? "ホームへ" : "ホームへ戻る"}
@@ -453,16 +483,13 @@ export default function WordMakerPage() {
           <p className={`text-lg font-black ${t.titleText}`}>
             {isBaby ? "ぜんぶ おぼえたよ！" : "全単語取得済み！"}
           </p>
-          <p className={`text-sm ${t.bodyText}`}>
-            {isBaby ? "すごい！ぜんぶ クリア！🎉" : "すべての単語を取得しました🎉"}
-          </p>
           <button onClick={() => router.push("/")} className={`w-full py-3 rounded-2xl font-bold ${t.startBtn} ${t.startText}`}>
             🏠 {isBaby ? "ホームへ" : "ホームへ戻る"}
           </button>
         </div>
       )}
 
-      {/* ── 完成後の結果カード ───────────────────────────────── */}
+      {/* ── 完成後カード ─────────────────────────────────────── */}
       {phase === "complete" && completedEntry && (
         <div className="px-4 flex flex-col gap-3 mt-2">
           <div className={`rounded-2xl p-6 border ${t.card} ${t.border} text-center space-y-3`}>
@@ -471,20 +498,17 @@ export default function WordMakerPage() {
               {completedEntry.word.toUpperCase()}
             </p>
             <p className={`text-2xl font-bold ${t.titleText}`}>{completedEntry.meaning}</p>
-            <p className={`text-xs ${t.subText}`}>
-              {isBaby ? "あたらしい たんごを おぼえたよ！" : "新しい単語を取得しました！"}
-            </p>
           </div>
           <button
             onClick={nextWord}
-            disabled={tickets <= 0 && unacquired.filter(w => !acquired.includes(w.word)).length > 1}
+            disabled={tickets <= 0 && unacquired.length > 1}
             className={`w-full py-5 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-all
               ${tickets > 0 || unacquired.length <= 1
                 ? `${t.startBtn} ${t.startText}`
                 : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
           >
             {tickets > 0
-              ? (isBaby ? `🔍 つぎの たんごを さがす！（🎫${tickets}まい）` : `🔍 次の単語を探す（🎫${tickets}枚）`)
+              ? (isBaby ? `🔍 つぎを さがす！（🎫${tickets}まい）` : `🔍 次の単語を探す（🎫${tickets}枚）`)
               : (isBaby ? "😢 チケットが ないよ" : "😢 チケットが足りません")}
           </button>
           <button
@@ -496,60 +520,62 @@ export default function WordMakerPage() {
         </div>
       )}
 
-      {/* ── 文字選択グリッド（browsing / building 共通） ──────── */}
+      {/* ── 文字選択グリッド ──────────────────────────────────── */}
       {(phase === "browsing" || phase === "building") && (
         <div className="px-4 pb-6 flex-1">
-          {/* ガイドテキスト */}
           <p className={`text-sm font-bold mb-3 ${t.subText}`}>
             {phase === "browsing"
-              ? (isBaby
-                  ? (tickets > 0 ? "🎫 もじを タップしてね！" : "😢 チケットが ないよ…")
-                  : (tickets > 0 ? "🎫 頭文字をタップしてください" : "😢 チケットが足りません"))
+              ? (tickets > 0
+                  ? (isBaby ? "🎫 もじを タップしてね！" : "🎫 頭文字をタップしてください")
+                  : (isBaby ? "😢 チケットが ないよ…"   : "😢 チケットが足りません"))
               : (isBaby ? "つぎの もじを えらぼう！" : "次の文字を選んでください")}
           </p>
 
-          {/* 選択肢グリッド */}
           <div
-            className="grid gap-2"
-            style={{
-              gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))",
-            }}
+            className="grid gap-3"
+            style={{ gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))" }}
           >
-            {(phase === "browsing" ? firstLetters : candidates).map((letter, i) => (
-              <button
-                key={i}
-                onClick={() => handleTap(letter)}
-                disabled={phase === "browsing" && tickets <= 0}
-                className={`
-                  aspect-square rounded-2xl font-black text-3xl
-                  flex items-center justify-center
-                  shadow-md transition-all active:scale-90
-                  ${phase === "browsing" && tickets <= 0
-                    ? "opacity-30 cursor-not-allowed bg-gray-200 text-gray-400"
-                    : `${t.card} border-2 ${t.border} ${t.titleText}
-                       hover:scale-105 active:shadow-sm`}
-                `}
-                style={{
-                  boxShadow: phase === "browsing" && tickets <= 0
-                    ? undefined
-                    : "0 3px 0 rgba(0,0,0,0.12)",
-                }}
-              >
-                {letter.toUpperCase()}
-              </button>
-            ))}
+            {displayCandidates.map((letter) => {
+              const isDummy    = letter === dummyLetter;
+              const isDisabled = (phase === "browsing" && tickets <= 0) || (isDummy && dummyUsed);
+              const isShaking  = isDummy && shakingDummy;
+
+              return (
+                <button
+                  key={letter}
+                  onClick={() => !isDisabled && handleTap(letter)}
+                  disabled={isDisabled}
+                  className={`
+                    aspect-square rounded-2xl font-black text-3xl
+                    flex items-center justify-center
+                    transition-all select-none
+                    ${isDisabled
+                      ? "opacity-25 cursor-not-allowed bg-gray-200 text-gray-400"
+                      : isDummy
+                        ? `${t.innerCard} border-2 border-dashed ${t.border} ${t.bodyText}
+                           hover:scale-105 active:scale-90`
+                        : `${t.card} border-2 ${t.border} ${t.titleText} shadow-md
+                           hover:scale-105 active:scale-90 active:shadow-sm`}
+                  `}
+                  style={{
+                    boxShadow: isDisabled ? undefined : isDummy ? undefined : "0 3px 0 rgba(0,0,0,0.12)",
+                    animation: isShaking ? "dummy-wrong 0.6s ease" : undefined,
+                  }}
+                >
+                  {letter.toUpperCase()}
+                </button>
+              );
+            })}
           </div>
 
-          {/* チケット0の場合のバナー */}
+          {/* チケット0バナー */}
           {phase === "browsing" && tickets <= 0 && (
             <div className={`mt-4 rounded-2xl p-4 border-2 border-dashed ${t.border} text-center space-y-2`}>
-              <p className={`font-bold ${t.bodyText}`}>
+              <p className={`font-bold text-sm ${t.bodyText}`}>
                 {isBaby ? "ミッションをクリアしてチケットをもらおう！" : "ミッションをクリアしてチケットを入手しよう！"}
               </p>
-              <button
-                onClick={() => router.push("/")}
-                className={`px-6 py-2 rounded-xl font-bold text-sm ${t.startBtn} ${t.startText}`}
-              >
+              <button onClick={() => router.push("/")}
+                className={`px-6 py-2 rounded-xl font-bold text-sm ${t.startBtn} ${t.startText}`}>
                 🏠 {isBaby ? "ホームへ" : "ホームへ戻る"}
               </button>
             </div>
