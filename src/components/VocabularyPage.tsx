@@ -268,7 +268,7 @@ export default function VocabularyPage() {
         <div className="flex items-center gap-3 px-4 py-3 max-w-lg mx-auto">
           <button
             onClick={() => router.push("/")}
-            className={`${t.subText} text-xl leading-none`}
+            className={`${t.bodyText} text-3xl font-bold leading-none px-1 active:scale-90 transition-all`}
             aria-label="戻る"
           >
             ←
