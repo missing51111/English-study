@@ -398,7 +398,7 @@ export default function VocabularyPage() {
                       key={letter}
                       onClick={() => scrollToLetter(letter)}
                       style={{ fontSize: `clamp(8px, ${Math.floor(100 / jumpLetters.length)}vh, 13px)` }}
-                      className={`flex-1 min-h-0 w-6 rounded font-black ${t.bar} text-white active:scale-90 transition-all shadow-sm flex items-center justify-center`}
+                      className={`flex-1 min-h-0 w-6 rounded font-black ${t.bar} text-white active:scale-90 transition-all shadow-sm flex items-center justify-center border border-black/40`}
                     >
                       {letter}
                     </button>
