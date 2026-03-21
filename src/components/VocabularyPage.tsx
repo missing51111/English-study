@@ -605,45 +605,45 @@ export default function VocabularyPage() {
       {/* ── ヘッダー ───────────────────────────────────────────── */}
       <header ref={headerRef} className={`${t.nav} border-b ${t.navBorder} sticky top-0 z-10`}>
 
-        {/* タイトル行 */}
-        <div className="flex items-center gap-3 px-4 py-3 max-w-lg mx-auto">
+        {/* タイトル行（1行目） */}
+        <div className="flex items-center gap-2 px-4 pt-3 pb-1 max-w-lg mx-auto">
           <button
             onClick={() => router.push("/")}
-            className={`${t.bodyText} text-3xl font-bold leading-none px-1 active:scale-90 transition-all`}
+            className={`${t.bodyText} text-3xl font-bold leading-none px-1 active:scale-90 transition-all flex-shrink-0`}
             aria-label="戻る"
           >
             ←
           </button>
-          <h1 className={`font-bold ${t.titleText} text-lg`}>
+          <h1 className={`font-bold ${t.titleText} text-lg flex-1 min-w-0 truncate`}>
             {isKid ? "たんごちょう" : "単語帳"}
           </h1>
+          <span className={`text-xs ${t.subText} flex-shrink-0`}>全 {totalCount} 語</span>
+        </div>
 
-          {/* ── 中央：テストボタン ＋ 連続正解 / 取得数 ── */}
-          <div className="flex-1 flex items-center justify-center gap-2">
-            <button
-              onClick={openTest}
-              disabled={!testAvail}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl font-bold text-sm
-                ${t.bar} text-white active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed`}
-            >
-              🎯 {isKid ? "テスト" : "テスト"}
-            </button>
-            <div className={`flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 ${t.innerCard}`}>
-              <div className="flex items-center gap-1 text-xs font-bold">
-                <span>🔥</span>
-                <span className={t.titleText}>{streak}</span>
-                <span className={`${t.subText} mx-0.5`}>/</span>
-                <span className={t.bodyText}>{acqCount}</span>
-                <span className={t.subText}>{isKid ? "語" : "語"}</span>
-              </div>
-              <div className="flex items-center gap-0.5">
-                <span className="text-[9px]">👑</span>
-                <span className={`text-[10px] font-bold ${t.subText}`}>{bestStreak}</span>
-              </div>
+        {/* テスト行（2行目） */}
+        <div className="flex items-center gap-2 px-4 pb-2 max-w-lg mx-auto">
+          <button
+            onClick={openTest}
+            disabled={!testAvail}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-sm flex-shrink-0
+              ${t.bar} text-white active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed`}
+          >
+            🎯 {isKid ? "テスト" : "テスト"}
+          </button>
+          <div className={`flex items-center gap-3 rounded-lg px-3 py-1 flex-1 min-w-0 ${t.innerCard}`}>
+            <div className="flex items-center gap-1 text-xs font-bold flex-shrink-0">
+              <span>🔥</span>
+              <span className={`font-black ${t.titleText}`}>{streak}</span>
+              <span className={`${t.subText} mx-0.5`}>/</span>
+              <span className={t.bodyText}>{acqCount}</span>
+              <span className={t.subText}>{isKid ? "語" : "語"}</span>
+            </div>
+            <div className="flex items-center gap-0.5 text-xs">
+              <span>👑</span>
+              <span className={`font-bold ${t.subText}`}>{isKid ? "さいこう" : "最高"}</span>
+              <span className={`font-black ${t.titleText} ml-0.5`}>{bestStreak}</span>
             </div>
           </div>
-
-          <span className={`text-sm ${t.subText} flex-shrink-0`}>全 {totalCount} 語</span>
         </div>
 
         {/* レベルタブ */}
