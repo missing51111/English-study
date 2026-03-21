@@ -335,7 +335,7 @@ export default function VocabularyPage() {
             <p className="text-xs text-gray-300">seed_vocabulary.sql を Supabase で実行してください</p>
           </div>
         ) : (
-          {/* 2カラム：左A-Zジャンプ ＋ 右（ソートバー＋取得済み＋単語リスト） */}
+          /* 2カラム：左A-Zジャンプ ＋ 右（ソートバー＋取得済み＋単語リスト） */
           <div className="flex gap-1 items-start">
             {/* 左：アルファベットジャンプバー（sticky・ソートバーと同じ高さからスタート） */}
             {jumpLetters.length > 0 && (
