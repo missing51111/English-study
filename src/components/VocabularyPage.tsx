@@ -285,21 +285,6 @@ export default function VocabularyPage() {
   return (
     <div className={`min-h-screen ${t.bg}`}>
 
-      {/* 固定縦型アルファベットバー（左側） */}
-      {jumpLetters.length > 0 && (
-        <div className="fixed left-0 top-[160px] z-20 flex flex-col gap-0.5 py-2 px-1 max-h-[calc(100vh-170px)] overflow-y-auto">
-          {jumpLetters.map(letter => (
-            <button
-              key={letter}
-              onClick={() => scrollToLetter(letter)}
-              className={`w-6 h-6 rounded text-[10px] font-black ${t.bar} text-white active:scale-90 transition-all shadow-sm`}
-            >
-              {letter}
-            </button>
-          ))}
-        </div>
-      )}
-
       {/* ヘッダー */}
       <header className={`${t.nav} border-b ${t.navBorder} sticky top-0 z-10`}>
         <div className="flex items-center gap-3 px-4 py-3 max-w-lg mx-auto">
@@ -400,29 +385,47 @@ export default function VocabularyPage() {
               );
             })()}
 
-            {/* 1列リスト（文字グループ別） */}
-            <div className="flex flex-col gap-1">
-              {wordGroups.map(({ key, words }) => (
-                <div key={key} ref={key ? (el) => { letterRefs.current[key] = el; } : undefined}>
-                  {key && (
-                    <p className={`text-xs font-black ${t.subText} pt-3 pb-1 sticky top-[88px] ${t.bg} z-[5]`}>
-                      — {key} —
-                    </p>
-                  )}
-                  {words.map((w) => (
-                    <div key={w.id} className="mb-1.5">
-                      <WordCard
-                        word={w}
-                        level={selectedLevel}
-                        levelColor={t.navActive}
-                        emojiBg={t.innerCard}
-                        t={t}
-                        acquired={acquiredWords.has(w.word)}
-                      />
-                    </div>
+            {/* 2カラム：左A-Zジャンプ ＋ 右単語リスト */}
+            <div className="flex gap-1 items-start">
+              {/* 左：アルファベットジャンプバー（sticky） */}
+              {jumpLetters.length > 0 && (
+                <div className={`sticky top-[88px] flex flex-col gap-0.5 py-1 flex-shrink-0 max-h-[calc(100vh-100px)] overflow-y-auto`}>
+                  {jumpLetters.map(letter => (
+                    <button
+                      key={letter}
+                      onClick={() => scrollToLetter(letter)}
+                      className={`w-6 h-6 rounded text-[10px] font-black ${t.bar} text-white active:scale-90 transition-all shadow-sm`}
+                    >
+                      {letter}
+                    </button>
                   ))}
                 </div>
-              ))}
+              )}
+
+              {/* 右：単語リスト */}
+              <div className="flex-1 min-w-0 flex flex-col gap-1">
+                {wordGroups.map(({ key, words }) => (
+                  <div key={key} ref={key ? (el) => { letterRefs.current[key] = el; } : undefined}>
+                    {key && (
+                      <p className={`text-xs font-black ${t.subText} pt-3 pb-1 sticky top-[88px] ${t.bg} z-[5]`}>
+                        — {key} —
+                      </p>
+                    )}
+                    {words.map((w) => (
+                      <div key={w.id} className="mb-1.5">
+                        <WordCard
+                          word={w}
+                          level={selectedLevel}
+                          levelColor={t.navActive}
+                          emojiBg={t.innerCard}
+                          t={t}
+                          acquired={acquiredWords.has(w.word)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
           </>
         )}
