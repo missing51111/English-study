@@ -219,11 +219,18 @@ export default function VocabularyPage() {
           })
         );
         const total = Object.values(results).reduce((s, arr) => s + arr.length, 0);
-        if (total === 0) {
-          setWordsByLevel(groupByLevel(MOCK_WORDS));
-        } else {
-          setWordsByLevel(results);
-        }
+        const wordData = total === 0 ? groupByLevel(MOCK_WORDS) : results;
+        setWordsByLevel(wordData);
+
+        // 名詞は全て取得済みにする（初回 + 新規追加時も対応）
+        const allWords = Object.values(wordData).flat();
+        const nounWords = allWords.filter(w => w.part_of_speech === "noun").map(w => w.word);
+        setAcquiredWords(prev => {
+          const next = new Set(prev);
+          nounWords.forEach(w => next.add(w));
+          localStorage.setItem("acquiredWords", JSON.stringify([...next]));
+          return next;
+        });
       } catch {
         setWordsByLevel(groupByLevel(MOCK_WORDS));
       } finally {
