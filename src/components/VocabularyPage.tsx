@@ -429,7 +429,10 @@ export default function VocabularyPage() {
                 {wordGroups.map(({ key, words }) => (
                   <div key={key} ref={key ? (el) => { letterRefs.current[key] = el; } : undefined}>
                     {key && (
-                      <p className={`text-xs font-black ${t.subText} pt-3 pb-1 sticky top-[88px] ${t.bg} z-[5]`}>
+                      <p
+                        className={`text-xs font-black ${t.subText} pt-3 pb-1 sticky ${t.bg} z-[5]`}
+                        style={{ top: `${headerH}px` }}
+                      >
                         — {key} —
                       </p>
                     )}
