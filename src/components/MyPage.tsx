@@ -307,13 +307,13 @@ function AboutSection() {
     { num: "1,110", label: "小学生問題文",  color: "#92400e" },
   ];
 
-  const dark = { bg: "#161b22", border: "#30363d", text: "#e6edf3", sub: "#8b949e", card: "#0d1117" };
+  const dark = { bg: "#f8fafc", border: "#e2e8f0", text: "#0f172a", sub: "#475569", card: "#ffffff" };
 
   return (
     <div style={{ fontFamily: "inherit" }}>
 
       {/* Hero */}
-      <div style={{ background: "linear-gradient(135deg,#161b22,#1f2937)", border: `1px solid ${dark.border}`, borderRadius: 16, padding: "24px 20px", marginBottom: 16, textAlign: "center" }}>
+      <div style={{ background: "linear-gradient(135deg,#1e293b,#334155)", border: `1px solid ${dark.border}`, borderRadius: 16, padding: "24px 20px", marginBottom: 16, textAlign: "center" }}>
         <div style={{ fontSize: "2.5rem" }}>📦</div>
         <p style={{ fontWeight: 900, fontSize: "1.2rem", color: dark.text, margin: "6px 0 4px" }}>英語ボックス</p>
         <p style={{ fontSize: ".78rem", color: dark.sub }}>子ども向け英語学習ゲームアプリ — 2歳〜高校生</p>
@@ -346,11 +346,11 @@ function AboutSection() {
                 <span style={{ fontWeight: 700, fontSize: ".82rem", color: dark.text }}>{f.title}</span>
                 <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 4 }}>
                   {f.tags.map(tg => (
-                    <span key={tg} style={{ background: "#21262d", border: `1px solid ${dark.border}`, borderRadius: 99, padding: "1px 8px", fontSize: ".62rem", color: "#58a6ff", fontWeight: 700 }}>{tg}</span>
+                    <span key={tg} style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 99, padding: "1px 8px", fontSize: ".62rem", color: "#1d4ed8", fontWeight: 700 }}>{tg}</span>
                   ))}
                 </div>
               </div>
-              <span style={{ color: "#3ecf8e", fontWeight: 700, fontSize: ".8rem" }}>✔</span>
+              <span style={{ color: "#16a34a", fontWeight: 700, fontSize: ".8rem" }}>✔</span>
             </div>
           ))}
         </div>
@@ -364,7 +364,7 @@ function AboutSection() {
               <span style={{ fontSize: "1.2rem" }}>{f.icon}</span>
               <div style={{ flex: 1 }}>
                 <span style={{ fontWeight: 700, fontSize: ".82rem", color: dark.text }}>{f.title}</span>
-                {f.api && <span style={{ marginLeft: 6, border: "1px solid #388bfd55", borderRadius: 99, padding: "1px 7px", fontSize: ".62rem", color: "#58a6ff", fontWeight: 700 }}>Claude API</span>}
+                {f.api && <span style={{ marginLeft: 6, background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 99, padding: "1px 7px", fontSize: ".62rem", color: "#1d4ed8", fontWeight: 700 }}>Claude API</span>}
                 <div style={{ display: "flex", gap: 3, marginTop: 5 }}>
                   {Array.from({ length: 5 }, (_, i) => (
                     <div key={i} style={{ width: 6, height: 6, borderRadius: 99, background: i < f.prio ? "#f0883e" : dark.border }} />
@@ -385,7 +385,7 @@ function AboutSection() {
               <div style={{ fontSize: ".68rem", fontWeight: 800, color: "#f0883e", marginBottom: 6, textTransform: "uppercase", letterSpacing: ".06em" }}>{sk.cat}</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                 {sk.items.map(it => (
-                  <span key={it} style={{ background: "#21262d", border: `1px solid ${dark.border}`, borderRadius: 6, padding: "3px 10px", fontSize: ".72rem", color: dark.text }}>{it}</span>
+                  <span key={it} style={{ background: "#f1f5f9", border: `1px solid ${dark.border}`, borderRadius: 6, padding: "3px 10px", fontSize: ".72rem", color: dark.text, fontWeight: 600 }}>{it}</span>
                 ))}
               </div>
             </div>
