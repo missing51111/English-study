@@ -3,6 +3,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { THEMES } from "@/lib/themes";
 import type { Question, Level } from "@/types/database";
 
 // ============================================================
@@ -43,19 +44,8 @@ function wordsToTokens(words: string[]): WordToken[] {
 const DRAG_THRESHOLD = 8;
 
 // ============================================================
-// テーマ
+// レベルラベル
 // ============================================================
-const LEVEL_THEME: Record<string, {
-  bg: string; card: string; border: string; innerCard: string;
-  titleText: string; bodyText: string; subText: string;
-  accent: string; bar: string; startBtn: string; startText: string;
-}> = {
-  baby:       { bg: "bg-rose-50",   card: "bg-white", border: "border-rose-300",   innerCard: "bg-rose-100",   titleText: "text-rose-900",   bodyText: "text-rose-800",   subText: "text-rose-500",   accent: "text-rose-700",   bar: "bg-rose-500",   startBtn: "bg-rose-600 hover:bg-rose-500",    startText: "text-white" },
-  elementary: { bg: "bg-amber-50",  card: "bg-white", border: "border-amber-300",  innerCard: "bg-amber-100",  titleText: "text-amber-900",  bodyText: "text-amber-900",  subText: "text-amber-600",  accent: "text-amber-700",  bar: "bg-amber-500",  startBtn: "bg-amber-600 hover:bg-amber-500",   startText: "text-white" },
-  junior:     { bg: "bg-blue-50",   card: "bg-white", border: "border-blue-300",   innerCard: "bg-blue-100",   titleText: "text-blue-900",   bodyText: "text-blue-900",   subText: "text-blue-600",   accent: "text-blue-700",   bar: "bg-blue-500",   startBtn: "bg-blue-600 hover:bg-blue-500",    startText: "text-white" },
-  high:       { bg: "bg-violet-50", card: "bg-white", border: "border-violet-300", innerCard: "bg-violet-100", titleText: "text-violet-900", bodyText: "text-violet-900", subText: "text-violet-600", accent: "text-violet-700", bar: "bg-violet-500", startBtn: "bg-violet-600 hover:bg-violet-500", startText: "text-white" },
-  toeic:      { bg: "bg-gray-100",  card: "bg-white", border: "border-gray-400",   innerCard: "bg-gray-200",   titleText: "text-gray-900",   bodyText: "text-gray-900",   subText: "text-gray-600",   accent: "text-gray-700",   bar: "bg-gray-600",   startBtn: "bg-gray-700 hover:bg-gray-600",    startText: "text-white" },
-};
 
 const LEVEL_LABEL: Record<string, string> = {
   baby: "ベビー", elementary: "小学生", junior: "中学生", high: "高校生", toeic: "TOEIC",
@@ -77,8 +67,8 @@ export default function QuizPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const level = (searchParams.get("level") ?? "baby") as Level;
-  const t = LEVEL_THEME[level] ?? LEVEL_THEME.baby;
 
+  const [themeId, setThemeId] = useState("pink");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -95,8 +85,10 @@ export default function QuizPage() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   };
 
-  // 起動時にlocalStorageから当日スコアを復元（日付が変わっていればリセット）
+  // 起動時にlocalStorageからテーマ・当日スコアを復元
   useLayoutEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme && THEMES.find(th => th.id === savedTheme)) setThemeId(savedTheme);
     const saved = localStorage.getItem("dailyScore");
     if (saved) {
       const parsed = JSON.parse(saved);
@@ -393,6 +385,8 @@ export default function QuizPage() {
     if (currentIndex + 1 < questions.length) setCurrentIndex(prev => prev + 1);
     else router.push("/");
   };
+
+  const t = THEMES.find(th => th.id === themeId) ?? THEMES[0];
 
   // ============================================================
   // ローディング / 問題なし

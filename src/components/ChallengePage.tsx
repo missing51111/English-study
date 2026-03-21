@@ -3,6 +3,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { THEMES } from "@/lib/themes";
 import type { Question, Level } from "@/types/database";
 
 // ============================================================
@@ -48,19 +49,8 @@ const DRAG_THRESHOLD = 8;
 const TOTAL_STEPS = 3;
 
 // ============================================================
-// テーマ
+// レベルラベル
 // ============================================================
-const LEVEL_THEME: Record<string, {
-  bg: string; card: string; border: string; innerCard: string;
-  titleText: string; bodyText: string; subText: string;
-  accent: string; bar: string; startBtn: string; startText: string;
-}> = {
-  baby:       { bg: "bg-rose-50",   card: "bg-white", border: "border-rose-300",   innerCard: "bg-rose-100",   titleText: "text-rose-900",   bodyText: "text-rose-800",   subText: "text-rose-500",   accent: "text-rose-700",   bar: "bg-rose-500",   startBtn: "bg-rose-600 hover:bg-rose-500",    startText: "text-white" },
-  elementary: { bg: "bg-amber-50",  card: "bg-white", border: "border-amber-300",  innerCard: "bg-amber-100",  titleText: "text-amber-900",  bodyText: "text-amber-900",  subText: "text-amber-600",  accent: "text-amber-700",  bar: "bg-amber-500",  startBtn: "bg-amber-600 hover:bg-amber-500",   startText: "text-white" },
-  junior:     { bg: "bg-blue-50",   card: "bg-white", border: "border-blue-300",   innerCard: "bg-blue-100",   titleText: "text-blue-900",   bodyText: "text-blue-900",   subText: "text-blue-600",   accent: "text-blue-700",   bar: "bg-blue-500",   startBtn: "bg-blue-600 hover:bg-blue-500",    startText: "text-white" },
-  high:       { bg: "bg-violet-50", card: "bg-white", border: "border-violet-300", innerCard: "bg-violet-100", titleText: "text-violet-900", bodyText: "text-violet-900", subText: "text-violet-600", accent: "text-violet-700", bar: "bg-violet-500", startBtn: "bg-violet-600 hover:bg-violet-500", startText: "text-white" },
-  toeic:      { bg: "bg-gray-100",  card: "bg-white", border: "border-gray-400",   innerCard: "bg-gray-200",   titleText: "text-gray-900",   bodyText: "text-gray-900",   subText: "text-gray-600",   accent: "text-gray-700",   bar: "bg-gray-600",   startBtn: "bg-gray-700 hover:bg-gray-600",    startText: "text-white" },
-};
 
 const LEVEL_LABEL: Record<string, string> = {
   baby: "ベビー", elementary: "小学生", junior: "中学生", high: "高校生", toeic: "TOEIC",
@@ -131,9 +121,9 @@ export default function ChallengePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const level = (searchParams.get("level") ?? "baby") as Level;
-  const t = LEVEL_THEME[level] ?? LEVEL_THEME.baby;
   const isBaby = level === "baby";
 
+  const [themeId, setThemeId] = useState("pink");
   const [pairs, setPairs] = useState<QuestionPair[]>([]);
   const [step, setStep] = useState(0);          // 0〜2: 現在の問題番号
   const [doneCount, setDoneCount] = useState(0); // 今日の達成済み数（0〜3）
@@ -152,9 +142,11 @@ export default function ChallengePage() {
   };
 
   // ============================================================
-  // 初期化：今日の達成数チェック＋問題取得
+  // 初期化：テーマ・今日の達成数チェック＋問題取得
   // ============================================================
   useLayoutEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme && THEMES.find(th => th.id === savedTheme)) setThemeId(savedTheme);
     const savedM = localStorage.getItem("dailyMissions");
     if (savedM) {
       const parsed = JSON.parse(savedM);
@@ -329,6 +321,8 @@ export default function ChallengePage() {
       setStep(prev => prev + 1);
     }
   };
+
+  const t = THEMES.find(th => th.id === themeId) ?? THEMES[0];
 
   // ============================================================
   // ローディング
