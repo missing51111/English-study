@@ -230,6 +230,7 @@ export default function VocabularyPage() {
   const [testBuilt, setTestBuilt]     = useState<string[]>([]);
   const [testLetters, setTestLetters] = useState<TestLetter[]>([]);
   const [streak, setStreak]           = useState(0);
+  const [bestStreak, setBestStreak]   = useState(0);
   const [testCorrect, setTestCorrect] = useState(false);
 
   // localStorageからテーマ・取得済み単語を読み込む
@@ -242,6 +243,8 @@ export default function VocabularyPage() {
     if (savedAcq) {
       try { setAcquiredWords(new Set(JSON.parse(savedAcq))); } catch { /* ignore */ }
     }
+    const savedBest = localStorage.getItem("vocabBestStreak");
+    if (savedBest) setBestStreak(parseInt(savedBest));
   }, []);
 
   useEffect(() => {
@@ -325,7 +328,13 @@ export default function VocabularyPage() {
       setTestBuilt(newBuilt);
       if (newBuilt.length === testWord.word.length) {
         // 単語完成！
-        setStreak(s => s + 1);
+        const newStreak = streak + 1;
+        setStreak(newStreak);
+        setBestStreak(prev => {
+          const next = Math.max(prev, newStreak);
+          localStorage.setItem("vocabBestStreak", String(next));
+          return next;
+        });
         setTestCorrect(true);
         setTimeout(() => {
           const acq = getAcqForLevel(selectedLevel);
@@ -345,7 +354,7 @@ export default function VocabularyPage() {
         setTestLetters(prev => prev.map(l => l.id === id ? { ...l, shaking: false } : l));
       }, 550);
     }
-  }, [testWord, testBuilt, testLetters, testCorrect, selectedLevel, getAcqForLevel]);
+  }, [testWord, testBuilt, testLetters, testCorrect, streak, selectedLevel, getAcqForLevel]);
 
   const speakTestWord = useCallback(() => {
     if (!testWord || typeof window === "undefined" || !window.speechSynthesis) return;
@@ -424,9 +433,15 @@ export default function VocabularyPage() {
               <p className={`font-black text-base flex-1 text-center ${t.titleText}`}>
                 🎯 {isKid ? "たんごテスト" : "単語テスト"}
               </p>
-              <div className={`flex items-center gap-1 rounded-lg px-2 py-0.5 ${t.innerCard}`}>
-                <span className="text-base">🔥</span>
-                <span className={`font-black text-lg ${t.titleText}`}>{streak}</span>
+              <div className="flex flex-col items-end gap-0.5">
+                <div className={`flex items-center gap-1 rounded-lg px-2 py-0.5 ${t.innerCard}`}>
+                  <span className="text-base">🔥</span>
+                  <span className={`font-black text-lg ${t.titleText}`}>{streak}</span>
+                </div>
+                <div className="flex items-center gap-0.5 px-2">
+                  <span className="text-[10px]">👑</span>
+                  <span className={`text-[11px] font-bold ${t.subText}`}>{isKid ? "さいこう" : "最高"} {bestStreak}</span>
+                </div>
               </div>
             </div>
 
@@ -541,12 +556,18 @@ export default function VocabularyPage() {
             >
               🎯 {isKid ? "テスト" : "テスト"}
             </button>
-            <div className={`flex items-center gap-1 text-xs font-bold rounded-lg px-2 py-1 ${t.innerCard}`}>
-              <span>🔥</span>
-              <span className={t.titleText}>{streak}</span>
-              <span className={`${t.subText} mx-0.5`}>/</span>
-              <span className={t.bodyText}>{acqCount}</span>
-              <span className={t.subText}>{isKid ? "語" : "語"}</span>
+            <div className={`flex flex-col items-center gap-0.5 rounded-lg px-2 py-1 ${t.innerCard}`}>
+              <div className="flex items-center gap-1 text-xs font-bold">
+                <span>🔥</span>
+                <span className={t.titleText}>{streak}</span>
+                <span className={`${t.subText} mx-0.5`}>/</span>
+                <span className={t.bodyText}>{acqCount}</span>
+                <span className={t.subText}>{isKid ? "語" : "語"}</span>
+              </div>
+              <div className="flex items-center gap-0.5">
+                <span className="text-[9px]">👑</span>
+                <span className={`text-[10px] font-bold ${t.subText}`}>{bestStreak}</span>
+              </div>
             </div>
           </div>
 
