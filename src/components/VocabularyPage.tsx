@@ -189,6 +189,8 @@ export default function VocabularyPage() {
   const [loading, setLoading] = useState(true);
   const [themeId, setThemeId] = useState("pink");
   const [acquiredWords, setAcquiredWords] = useState<Set<string>>(new Set());
+  const headerRef = useRef<HTMLElement>(null);
+  const [headerH, setHeaderH] = useState(100);
 
   // localStorageからテーマ・取得済み単語を読み込む
   useLayoutEffect(() => {
@@ -282,11 +284,22 @@ export default function VocabularyPage() {
     letterRefs.current[letter]?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+  // ヘッダー高さを動的計測（端末・フォントサイズ差異に対応）
+  useEffect(() => {
+    if (!headerRef.current) return;
+    const obs = new ResizeObserver(() => {
+      if (headerRef.current) setHeaderH(headerRef.current.offsetHeight);
+    });
+    obs.observe(headerRef.current);
+    setHeaderH(headerRef.current.offsetHeight);
+    return () => obs.disconnect();
+  }, []);
+
   return (
     <div className={`min-h-screen ${t.bg}`}>
 
       {/* ヘッダー */}
-      <header className={`${t.nav} border-b ${t.navBorder} sticky top-0 z-10`}>
+      <header ref={headerRef} className={`${t.nav} border-b ${t.navBorder} sticky top-0 z-10`}>
         <div className="flex items-center gap-3 px-4 py-3 max-w-lg mx-auto">
           <button
             onClick={() => router.push("/")}
@@ -340,8 +353,8 @@ export default function VocabularyPage() {
             {/* 左：アルファベットジャンプバー（sticky・ソートバーと同じ高さからスタート） */}
             {jumpLetters.length > 0 && (
               <div
-                className="sticky top-[88px] flex flex-col flex-shrink-0 py-0.5"
-                style={{ height: "calc(100dvh - 88px)" }}
+                className="sticky flex flex-col flex-shrink-0 py-0.5"
+                style={{ top: `${headerH}px`, height: `calc(100dvh - ${headerH}px)` }}
               >
                 {jumpLetters.map(letter => (
                   <button
