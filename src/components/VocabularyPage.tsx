@@ -21,6 +21,13 @@ interface Word {
   example_ja: string | null;
 }
 
+interface TestLetter {
+  id: number;
+  ch: string;
+  used: boolean;
+  shaking: boolean;
+}
+
 // ============================================================
 // 単語 → 絵文字マップ
 // ============================================================
@@ -174,6 +181,31 @@ const MOCK_WORDS: Word[] = [
 ];
 
 // ============================================================
+// ユーティリティ
+// ============================================================
+function shuffleArr<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function make3Dummies(word: string): string[] {
+  const used = new Set(word.toLowerCase().split(""));
+  const pool = shuffleArr("abcdefghijklmnopqrstuvwxyz".split("").filter(l => !used.has(l)));
+  return pool.slice(0, 3);
+}
+
+function buildTestLetters(word: Word): TestLetter[] {
+  const letters = word.word.toLowerCase().split("");
+  const dummies = make3Dummies(word.word);
+  const all = shuffleArr([...letters, ...dummies]);
+  return all.map((ch, i) => ({ id: i, ch, used: false, shaking: false }));
+}
+
+// ============================================================
 // メインコンポーネント
 // ============================================================
 type SortOrder = "az" | "kana";
@@ -192,10 +224,20 @@ export default function VocabularyPage() {
   const headerRef = useRef<HTMLElement>(null);
   const [headerH, setHeaderH] = useState(100);
 
+  // ── テストモード ────────────────────────────────────────────
+  const [testMode, setTestMode]       = useState(false);
+  const [testWord, setTestWord]       = useState<Word | null>(null);
+  const [testBuilt, setTestBuilt]     = useState<string[]>([]);
+  const [testLetters, setTestLetters] = useState<TestLetter[]>([]);
+  const [streak, setStreak]           = useState(0);
+  const [testCorrect, setTestCorrect] = useState(false);
+
   // localStorageからテーマ・取得済み単語を読み込む
   useLayoutEffect(() => {
     const saved = localStorage.getItem("theme");
     if (saved && THEMES.find(th => th.id === saved)) setThemeId(saved);
+    const savedLevel = localStorage.getItem("level") as Level | null;
+    if (savedLevel && LEVELS.find(l => l.id === savedLevel)) setSelectedLevel(savedLevel);
     const savedAcq = localStorage.getItem("acquiredWords");
     if (savedAcq) {
       try { setAcquiredWords(new Set(JSON.parse(savedAcq))); } catch { /* ignore */ }
@@ -253,9 +295,73 @@ export default function VocabularyPage() {
     return result;
   };
 
+  // ── テスト操作 ───────────────────────────────────────────────
+  const getAcqForLevel = useCallback((level: Level) =>
+    (wordsByLevel[level] ?? []).filter(w => acquiredWords.has(w.word)),
+  [wordsByLevel, acquiredWords]);
+
+  const openTest = useCallback(() => {
+    const acq = getAcqForLevel(selectedLevel);
+    if (acq.length === 0) return;
+    const w = acq[Math.floor(Math.random() * acq.length)];
+    setTestWord(w);
+    setTestBuilt([]);
+    setTestCorrect(false);
+    setTestLetters(buildTestLetters(w));
+    setTestMode(true);
+  }, [selectedLevel, getAcqForLevel]);
+
+  const handleTestTap = useCallback((id: number) => {
+    if (!testWord || testCorrect) return;
+    const letter = testLetters.find(l => l.id === id);
+    if (!letter || letter.used || letter.shaking) return;
+
+    const expected = testWord.word.toLowerCase()[testBuilt.length];
+    if (letter.ch === expected) {
+      // 正解
+      const newLetters = testLetters.map(l => l.id === id ? { ...l, used: true } : l);
+      setTestLetters(newLetters);
+      const newBuilt = [...testBuilt, letter.ch];
+      setTestBuilt(newBuilt);
+      if (newBuilt.length === testWord.word.length) {
+        // 単語完成！
+        setStreak(s => s + 1);
+        setTestCorrect(true);
+        setTimeout(() => {
+          const acq = getAcqForLevel(selectedLevel);
+          const candidates = acq.filter(w => w.id !== testWord.id);
+          const pool = candidates.length > 0 ? candidates : acq;
+          const next = pool[Math.floor(Math.random() * pool.length)];
+          setTestWord(next);
+          setTestBuilt([]);
+          setTestCorrect(false);
+          setTestLetters(buildTestLetters(next));
+        }, 1400);
+      }
+    } else {
+      // 不正解 → shake
+      setTestLetters(prev => prev.map(l => l.id === id ? { ...l, shaking: true } : l));
+      setTimeout(() => {
+        setTestLetters(prev => prev.map(l => l.id === id ? { ...l, shaking: false } : l));
+      }, 550);
+    }
+  }, [testWord, testBuilt, testLetters, testCorrect, selectedLevel, getAcqForLevel]);
+
+  const speakTestWord = useCallback(() => {
+    if (!testWord || typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(testWord.word);
+    utt.lang = "en-US";
+    utt.rate = 0.85;
+    window.speechSynthesis.speak(utt);
+  }, [testWord]);
+
+  // ── ヘルパー ─────────────────────────────────────────────────
   const t: Theme = THEMES.find((th) => th.id === themeId) ?? THEMES[0];
   const currentLevel = LEVELS.find((l) => l.id === selectedLevel) ?? LEVELS[0];
   const totalCount = Object.values(wordsByLevel).reduce((s, arr) => s + arr.length, 0);
+  const isBaby = selectedLevel === "baby";
+  const isKid = selectedLevel === "baby" || selectedLevel === "elementary";
 
   const rawWords = wordsByLevel[selectedLevel] ?? [];
   const currentWords = [...rawWords].sort((a, b) =>
@@ -275,7 +381,6 @@ export default function VocabularyPage() {
     });
     Object.keys(map).sort().forEach(k => wordGroups.push({ key: k, words: map[k] }));
   } else {
-    // かな順はグループ分けなし
     wordGroups.push({ key: "", words: currentWords });
   }
   const jumpLetters = sortOrder === "az" ? wordGroups.map(g => g.key) : [];
@@ -295,11 +400,125 @@ export default function VocabularyPage() {
     return () => obs.disconnect();
   }, []);
 
+  // テストで使う取得済み件数（現在レベル）
+  const acqCount  = currentWords.filter(w => acquiredWords.has(w.word)).length;
+  const testAvail = acqCount > 0;
+
   return (
     <div className={`min-h-screen ${t.bg}`}>
 
-      {/* ヘッダー */}
+      {/* ── テストオーバーレイ ──────────────────────────────────── */}
+      {testMode && testWord && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-black/70">
+          <div className={`flex-1 flex flex-col max-w-md mx-auto w-full ${t.bg} overflow-y-auto`}>
+
+            {/* テストヘッダー */}
+            <div className={`flex items-center gap-2 px-4 py-3 border-b ${t.navBorder} sticky top-0 z-10 ${t.nav}`}>
+              <button
+                onClick={() => { setTestMode(false); setStreak(0); }}
+                className={`text-2xl font-bold leading-none px-1 active:scale-90 transition-all ${t.bodyText}`}
+                aria-label="テストを閉じる"
+              >
+                ×
+              </button>
+              <p className={`font-black text-base flex-1 text-center ${t.titleText}`}>
+                🎯 {isKid ? "たんごテスト" : "単語テスト"}
+              </p>
+              <div className={`flex items-center gap-1 rounded-lg px-2 py-0.5 ${t.innerCard}`}>
+                <span className="text-base">🔥</span>
+                <span className={`font-black text-lg ${t.titleText}`}>{streak}</span>
+              </div>
+            </div>
+
+            {/* ヒントカード（日本語 + 発音） */}
+            <div className="px-4 pt-4 pb-2">
+              <div className={`rounded-2xl border-2 p-5 text-center space-y-3 transition-all duration-300 ${
+                testCorrect
+                  ? "border-green-400 bg-green-50"
+                  : `${t.card} ${t.border}`
+              }`}>
+                <div className="text-6xl" style={{ lineHeight: 1 }}>
+                  {EMOJI_MAP[testWord.word.toLowerCase()] ?? "📝"}
+                </div>
+                <p className={`text-2xl font-black ${t.titleText}`}>{testWord.meaning}</p>
+                <button
+                  onClick={speakTestWord}
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm
+                    ${t.innerCard} ${t.bodyText} active:scale-95 transition-all`}
+                >
+                  🔊 {isKid ? "はつおんを きく" : "発音を聞く"}
+                </button>
+                {testCorrect && (
+                  <p className="text-green-600 font-black text-xl animate-bounce">
+                    ✅ {isKid ? "せいかい！" : "正解！"}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* 入力済み文字バー */}
+            <div className="px-4 py-2">
+              <div className={`rounded-xl border ${t.card} ${t.border} p-3 flex gap-2 flex-wrap min-h-[3.2rem] items-center`}>
+                {testBuilt.map((ch, i) => (
+                  <div
+                    key={i}
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center font-black text-xl shadow ${t.bar} text-white`}
+                  >
+                    {ch.toUpperCase()}
+                  </div>
+                ))}
+                {testBuilt.length < testWord.word.length && !testCorrect && (
+                  <div className={`w-10 h-10 rounded-lg border-2 border-dashed ${t.border} flex items-center justify-center`}>
+                    <span className={`text-xl ${t.subText}`}>?</span>
+                  </div>
+                )}
+                {testBuilt.length === 0 && (
+                  <span className={`text-xs ${t.subText} ml-1`}>
+                    {isKid ? "もじを タップしてね！" : "文字をタップして並べよう"}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* 文字グリッド（単語の全文字 + ダミー3つ） */}
+            <div className="px-4 pb-6 flex-1">
+              <div
+                className="grid gap-3"
+                style={{ gridTemplateColumns: "repeat(auto-fill, minmax(72px, 1fr))" }}
+              >
+                {testLetters.map((letter) => (
+                  <button
+                    key={letter.id}
+                    onClick={() => handleTestTap(letter.id)}
+                    disabled={letter.used || testCorrect}
+                    className={`
+                      aspect-square rounded-2xl font-black text-3xl
+                      flex items-center justify-center
+                      transition-all select-none
+                      ${letter.used || testCorrect
+                        ? "opacity-20 bg-gray-200 text-gray-400 cursor-not-allowed"
+                        : `${t.card} border-2 ${t.border} ${t.titleText} shadow-md
+                           hover:scale-105 active:scale-90`}
+                    `}
+                    style={{
+                      boxShadow: letter.used || testCorrect ? undefined : "0 3px 0 rgba(0,0,0,0.12)",
+                      animation: letter.shaking ? "dummy-wrong 0.55s ease" : undefined,
+                    }}
+                  >
+                    {letter.ch.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ── ヘッダー ───────────────────────────────────────────── */}
       <header ref={headerRef} className={`${t.nav} border-b ${t.navBorder} sticky top-0 z-10`}>
+
+        {/* タイトル行 */}
         <div className="flex items-center gap-3 px-4 py-3 max-w-lg mx-auto">
           <button
             onClick={() => router.push("/")}
@@ -308,8 +527,30 @@ export default function VocabularyPage() {
           >
             ←
           </button>
-          <h1 className={`font-bold ${t.titleText} text-lg flex-1`}>単語帳</h1>
-          <span className={`text-sm ${t.subText}`}>全 {totalCount} 語</span>
+          <h1 className={`font-bold ${t.titleText} text-lg`}>
+            {isKid ? "たんごちょう" : "単語帳"}
+          </h1>
+
+          {/* ── 中央：テストボタン ＋ 連続正解 / 取得数 ── */}
+          <div className="flex-1 flex items-center justify-center gap-2">
+            <button
+              onClick={openTest}
+              disabled={!testAvail}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-xl font-bold text-sm
+                ${t.bar} text-white active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed`}
+            >
+              🎯 {isKid ? "テスト" : "テスト"}
+            </button>
+            <div className={`flex items-center gap-1 text-xs font-bold rounded-lg px-2 py-1 ${t.innerCard}`}>
+              <span>🔥</span>
+              <span className={t.titleText}>{streak}</span>
+              <span className={`${t.subText} mx-0.5`}>/</span>
+              <span className={t.bodyText}>{acqCount}</span>
+              <span className={t.subText}>{isKid ? "語" : "語"}</span>
+            </div>
+          </div>
+
+          <span className={`text-sm ${t.subText} flex-shrink-0`}>全 {totalCount} 語</span>
         </div>
 
         {/* レベルタブ */}
