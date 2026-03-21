@@ -391,7 +391,7 @@ export default function VocabularyPage() {
               {jumpLetters.length > 0 && (
                 <div
                   className="sticky top-[88px] flex flex-col flex-shrink-0 py-0.5"
-                  style={{ height: "calc(100vh - 100px)" }}
+                  style={{ height: "calc(100dvh - 88px)" }}
                 >
                   {jumpLetters.map(letter => (
                     <button
