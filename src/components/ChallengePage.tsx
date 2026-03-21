@@ -410,7 +410,7 @@ export default function ChallengePage() {
           <p className={`text-xs font-bold ${t.subText}`}>{isBaby ? "にほんごのいみ" : "日本語の意味"}</p>
           <button
             onClick={() => speakSentence(currentPair.main.words.join(" ") + currentPair.main.punctuation)}
-            className="text-base opacity-50 hover:opacity-100 active:scale-90 transition-all leading-none"
+            className="text-3xl opacity-60 hover:opacity-100 active:scale-90 transition-all leading-none"
             aria-label="英文を読み上げる"
           >🔊</button>
         </div>
