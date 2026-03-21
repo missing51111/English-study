@@ -366,6 +366,9 @@ export default function VocabularyPage() {
                     {letter}
                   </button>
                 ))}
+                {/* 下限調整用の透明スペーサー×2 */}
+                <div className="flex-1 min-h-0 w-6 opacity-0 pointer-events-none" />
+                <div className="flex-1 min-h-0 w-6 opacity-0 pointer-events-none" />
               </div>
             )}
 
