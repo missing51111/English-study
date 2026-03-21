@@ -230,7 +230,9 @@ export default function VocabularyPage() {
   const [testBuilt, setTestBuilt]     = useState<string[]>([]);
   const [testLetters, setTestLetters] = useState<TestLetter[]>([]);
   const [streak, setStreak]           = useState(0);
-  const [bestStreak, setBestStreak]   = useState(0);
+  const [bestStreakMap, setBestStreakMap] = useState<Record<Level, number>>({
+    baby: 0, elementary: 0, junior: 0, high: 0, toeic: 0,
+  });
   const [testCorrect, setTestCorrect] = useState(false);
   const [lives, setLives]             = useState(3);
   const [testGameOver, setTestGameOver] = useState(false);
@@ -247,7 +249,14 @@ export default function VocabularyPage() {
       try { setAcquiredWords(new Set(JSON.parse(savedAcq))); } catch { /* ignore */ }
     }
     const savedBest = localStorage.getItem("vocabBestStreak");
-    if (savedBest) setBestStreak(parseInt(savedBest));
+    if (savedBest) {
+      try {
+        const parsed = JSON.parse(savedBest);
+        if (typeof parsed === "object" && parsed !== null) {
+          setBestStreakMap(prev => ({ ...prev, ...parsed }));
+        }
+      } catch { /* ignore */ }
+    }
   }, []);
 
   useEffect(() => {
@@ -343,10 +352,11 @@ export default function VocabularyPage() {
         }
         const newStreak = streak + 1;
         setStreak(newStreak);
-        setBestStreak(prev => {
-          const next = Math.max(prev, newStreak);
-          localStorage.setItem("vocabBestStreak", String(next));
-          return next;
+        setBestStreakMap(prev => {
+          const next = Math.max(prev[selectedLevel] ?? 0, newStreak);
+          const updated = { ...prev, [selectedLevel]: next };
+          localStorage.setItem("vocabBestStreak", JSON.stringify(updated));
+          return updated;
         });
         setTestCorrect(true);
         setTimeout(() => {
@@ -385,6 +395,7 @@ export default function VocabularyPage() {
   }, [testWord]);
 
   // ── ヘルパー ─────────────────────────────────────────────────
+  const bestStreak = bestStreakMap[selectedLevel] ?? 0;
   const t: Theme = THEMES.find((th) => th.id === themeId) ?? THEMES[0];
   const currentLevel = LEVELS.find((l) => l.id === selectedLevel) ?? LEVELS[0];
   const totalCount = Object.values(wordsByLevel).reduce((s, arr) => s + arr.length, 0);
