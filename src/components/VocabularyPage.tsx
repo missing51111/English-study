@@ -389,12 +389,16 @@ export default function VocabularyPage() {
             <div className="flex gap-1 items-start">
               {/* 左：アルファベットジャンプバー（sticky） */}
               {jumpLetters.length > 0 && (
-                <div className={`sticky top-[88px] flex flex-col gap-0.5 py-1 flex-shrink-0 max-h-[calc(100vh-100px)] overflow-y-auto`}>
+                <div
+                  className="sticky top-[88px] flex flex-col flex-shrink-0 py-0.5"
+                  style={{ height: "calc(100vh - 100px)" }}
+                >
                   {jumpLetters.map(letter => (
                     <button
                       key={letter}
                       onClick={() => scrollToLetter(letter)}
-                      className={`w-6 h-6 rounded text-[10px] font-black ${t.bar} text-white active:scale-90 transition-all shadow-sm`}
+                      style={{ fontSize: `clamp(8px, ${Math.floor(100 / jumpLetters.length)}vh, 13px)` }}
+                      className={`flex-1 min-h-0 w-6 rounded font-black ${t.bar} text-white active:scale-90 transition-all shadow-sm flex items-center justify-center`}
                     >
                       {letter}
                     </button>
