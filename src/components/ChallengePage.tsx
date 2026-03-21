@@ -283,12 +283,25 @@ export default function ChallengePage() {
   };
 
   // ============================================================
+  // 音声読み上げ
+  // ============================================================
+  const speakSentence = useCallback((sentence: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(sentence);
+    utt.lang = "en-US";
+    utt.rate = 0.85;
+    window.speechSynthesis.speak(utt);
+  }, []);
+
+  // ============================================================
   // 判定
   // ============================================================
   const judge = () => {
     if (!currentPair || slots.length === 0) return;
     const isCorrect = slots.map(s => s.word).join(" ") === currentPair.main.words.join(" ");
     setResult(isCorrect ? "correct" : "wrong");
+    speakSentence(currentPair.main.words.join(" ") + currentPair.main.punctuation);
     if (isCorrect) {
       // reviewCount をインクリメント
       const today = getTodayStr();
@@ -393,7 +406,14 @@ export default function ChallengePage() {
 
       {/* 日本語の意味 */}
       <div className={`rounded-2xl p-4 border ${t.card} ${t.border}`}>
-        <p className={`text-xs font-bold mb-1 ${t.subText}`}>{isBaby ? "にほんごのいみ" : "日本語の意味"}</p>
+        <div className="flex items-center justify-between mb-1">
+          <p className={`text-xs font-bold ${t.subText}`}>{isBaby ? "にほんごのいみ" : "日本語の意味"}</p>
+          <button
+            onClick={() => speakSentence(currentPair.main.words.join(" ") + currentPair.main.punctuation)}
+            className="text-base opacity-50 hover:opacity-100 active:scale-90 transition-all leading-none"
+            aria-label="英文を読み上げる"
+          >🔊</button>
+        </div>
         <p className={`font-bold leading-relaxed ${isBaby ? "text-lg" : "text-base"} ${t.titleText}`}>{currentPair.main.japanese}</p>
         {currentPair.main.hint && (
           <div className="mt-2">
