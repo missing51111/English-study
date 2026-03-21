@@ -283,13 +283,11 @@ function AboutSection() {
     { icon: "📋", title: "単語帳 1列レイアウト",      tags: ["UX改善"] },
     { icon: "🔤", title: "アルファベットジャンプ",     tags: ["scrollIntoView", "useRef"] },
     { icon: "👶", title: "ベビー向けヒント枠",         tags: ["字数ガイド", "UX改善"] },
+    { icon: "✉️", title: "れんらくちょう（Claude API）", tags: ["Anthropic API", "AI生成", "保護者向け"] },
+    { icon: "🎊", title: "単語取得お祝い演出",           tags: ["confetti", "CSS animation"] },
   ];
 
   const planned = [
-    {
-      icon: "✉️", title: "れんらくちょう（Claude API）", prio: 4, api: true,
-      desc: "その日の成績・達成ミッションをもとに、Claude APIがポジティブで保護者が課金したくなる連絡帳コメントを自動生成。有料プランの目玉機能として設計。",
-    },
     {
       icon: "🔡", title: "単語つくり機能（チケット消費）", prio: 5,
       desc: "未取得単語の中から難易度が低い順に出題。①1文字目を「つくる枠」に移動 ②未取得単語の2文字目候補を全表示→選択 ③3文字目以降も同様に続ける ④単語が完成したら取得済みにする。チケット1枚を消費してプレイ。",
@@ -377,7 +375,7 @@ function AboutSection() {
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6, marginBottom: 4 }}>
                   <span style={{ fontWeight: 700, fontSize: ".82rem", color: dark.text }}>{f.title}</span>
-                  {f.api && <span style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 99, padding: "1px 7px", fontSize: ".62rem", color: "#1d4ed8", fontWeight: 700 }}>Claude API</span>}
+                  {("api" in f) && <span style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 99, padding: "1px 7px", fontSize: ".62rem", color: "#1d4ed8", fontWeight: 700 }}>Claude API</span>}
                   <span style={{ color: dark.sub, fontSize: ".8rem", marginLeft: "auto" }}>🔒</span>
                 </div>
                 <p style={{ fontSize: ".75rem", color: dark.sub, lineHeight: 1.65, margin: "0 0 6px" }}>{f.desc}</p>

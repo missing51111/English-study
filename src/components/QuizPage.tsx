@@ -79,6 +79,10 @@ export default function QuizPage() {
   const [showHint, setShowHint] = useState(false);
   const [score, setScore] = useState({ correct: 0, total: 0 });
 
+  // 単語取得お祝い演出
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebWord, setCelebWord] = useState("");
+
   // 今日の日付を YYYY-MM-DD 形式（ローカル時間）で返す
   const getTodayStr = () => {
     const d = new Date();
@@ -340,13 +344,17 @@ export default function QuizPage() {
       return next;
     });
 
-    // 正解時：対象単語をacquiredWordsに追加
+    // 正解時：対象単語をacquiredWordsに追加（新規取得なら派手な演出）
     if (isCorrect && currentQ.word) {
       const savedAcq = localStorage.getItem("acquiredWords");
       const acqArr: string[] = savedAcq ? JSON.parse(savedAcq) : [];
       if (!acqArr.includes(currentQ.word)) {
         acqArr.push(currentQ.word);
         localStorage.setItem("acquiredWords", JSON.stringify(acqArr));
+        // 新規単語取得！お祝い演出を起動
+        setCelebWord(currentQ.word);
+        setShowCelebration(true);
+        setTimeout(() => setShowCelebration(false), 3200);
       }
     }
 
@@ -412,11 +420,63 @@ export default function QuizPage() {
   const isBaby = level === "baby";
   const progressPct = ((currentIndex + 1) / questions.length) * 100;
 
+  // コンフェッティのピース（固定シードで毎回同じ位置）
+  const CONFETTI = Array.from({ length: 50 }, (_, i) => ({
+    color: ["#fb7185","#fbbf24","#34d399","#60a5fa","#a78bfa","#f97316","#ec4899","#facc15"][i % 8],
+    left:  ((i * 19 + 7)  % 97),
+    delay: ((i * 0.073)   % 1.2),
+    dur:   1.6 + (i * 0.11) % 1.1,
+    size:  8 + (i * 7)   % 14,
+    round: i % 3 === 0,
+  }));
+
   // ============================================================
   // UI
   // ============================================================
   return (
     <div className={`min-h-screen ${t.bg} flex flex-col max-w-md mx-auto p-4 gap-4`}>
+
+      {/* ======================================================
+          単語取得お祝いオーバーレイ
+          ====================================================== */}
+      {showCelebration && (
+        <div className="fixed inset-0 z-50 pointer-events-none overflow-hidden">
+          {/* コンフェッティ */}
+          {CONFETTI.map((p, i) => (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                left: `${p.left}%`,
+                top: "-24px",
+                width:  `${p.size}px`,
+                height: `${p.size}px`,
+                backgroundColor: p.color,
+                borderRadius: p.round ? "50%" : "3px",
+                animation: `confetti-fall ${p.dur}s ${p.delay}s ease-in forwards`,
+              }}
+            />
+          ))}
+
+          {/* 中央カード */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              className="bg-white rounded-3xl px-8 py-7 text-center shadow-2xl border-4 border-yellow-400"
+              style={{ animation: "celebrate-pop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards" }}
+            >
+              <div
+                className="text-6xl mb-3 inline-block"
+                style={{ animation: "star-spin 1s ease-in-out infinite" }}
+              >⭐</div>
+              <p className="text-3xl font-black text-yellow-500 tracking-wide drop-shadow">NEW!</p>
+              <p className="text-2xl font-black text-gray-800 mt-1 tracking-widest">{celebWord}</p>
+              <p className={`text-base font-bold mt-2 ${isBaby ? "text-pink-500" : "text-indigo-500"}`}>
+                {isBaby ? "たんごを ゲット！🎊" : "単語を取得しました🎊"}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ヘッダー */}
       <div className="flex items-center gap-3">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { THEMES, type Theme } from "@/lib/themes";
 type LevelUI = typeof LEVEL_UI.baby;
@@ -137,9 +137,73 @@ const MiniGraph = ({ values, t }: { values: number[]; t: Theme }) => {
 // ============================================================
 function ParentPanel({ lu, t, levelId }: { lu: LevelUI; t: Theme; levelId: string }) {
   const [open, setOpen] = useState(false);
-  const d = MOCK_PARENT;
   const isBaby = levelId === "baby";
-  const isKid = levelId === "baby" || levelId === "elementary";
+  const isKid  = levelId === "baby" || levelId === "elementary";
+
+  // ── リアルデータをlocalStorageから取得 ──────────────────
+  const getTodayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  };
+  const todayStr = getTodayStr();
+
+  const [stats, setStats] = useState({ accuracyToday: 0, correct: 0, total: 0, acquiredCount: 0, quizCount: 0 });
+
+  useEffect(() => {
+    const score = localStorage.getItem("dailyScore");
+    const parsed = score ? JSON.parse(score) : null;
+    const correct = parsed?.date === todayStr ? (parsed.correct ?? 0) : 0;
+    const total   = parsed?.date === todayStr ? (parsed.total   ?? 0) : 0;
+    const acq     = localStorage.getItem("acquiredWords");
+    const acquiredCount = acq ? JSON.parse(acq).length : 0;
+    const missions = localStorage.getItem("dailyMissions");
+    const parsedM  = missions ? JSON.parse(missions) : null;
+    const quizCount = parsedM?.date === todayStr ? (parsedM.quizCount ?? 0) : 0;
+    const accuracyToday = total > 0 ? Math.round((correct / total) * 100) : 0;
+    setStats({ accuracyToday, correct, total, acquiredCount, quizCount });
+  }, [open]); // パネルを開くたびに最新値を取得
+
+  // ── AIコメント生成 ────────────────────────────────────
+  const [aiComment, setAiComment] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const levelLabelMap: Record<string, string> = {
+    baby: "ベビー", elementary: "小学生", junior: "中学生", high: "高校生", toeic: "TOEIC",
+  };
+
+  const generateComment = useCallback(async () => {
+    setAiLoading(true);
+    setAiComment("");
+    try {
+      const res = await fetch("/api/renrakucho", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          level: levelId,
+          levelLabel: levelLabelMap[levelId] ?? levelId,
+          correctCount:   stats.correct,
+          totalCount:     stats.total,
+          acquiredCount:  stats.acquiredCount,
+          quizCount:      stats.quizCount,
+        }),
+      });
+      const data = await res.json();
+      setAiComment(data.comment ?? "コメントを生成できませんでした。");
+    } catch {
+      setAiComment("通信エラーが発生しました。");
+    } finally {
+      setAiLoading(false);
+    }
+  }, [levelId, stats]);
+
+  // ── 統計の表示値 ──────────────────────────────────────
+  const WORDS_GOAL = 20;
+  const statCards = [
+    { label: lu.stat1Label, value: `${stats.accuracyToday}%`, color: "text-green-500" },
+    { label: lu.stat2Label, value: `${stats.acquiredCount}語`, color: t.accent },
+    { label: lu.stat3Label, value: `${stats.quizCount}問`,     color: t.accent },
+  ];
+
   return (
     <div className={`rounded-2xl overflow-hidden border ${t.card} ${t.border}`}>
       <button onClick={() => setOpen(v => !v)} className="w-full text-left">
@@ -153,20 +217,18 @@ function ParentPanel({ lu, t, levelId }: { lu: LevelUI; t: Theme; levelId: strin
               <span className={`text-xs ${t.subText}`}>▼ くわしく見る</span>
             </div>
             <div className="flex gap-2">
-              {[
-                { label: lu.stat1Label, value: `${d.accuracyToday}%`, color: "text-green-500" },
-                { label: lu.stat2Label, value: `${d.wordsThisWeek}語`, color: t.accent },
-                { label: lu.stat3Label, value: `${120 - d.wordsThisWeek}語`, color: t.accent },
-              ].map(item => (
+              {statCards.map(item => (
                 <div key={item.label} className={`flex-1 rounded-xl px-2 py-2 text-center ${t.innerCard}`}>
                   <p className={`text-xs mb-0.5 ${t.subText}`}>{item.label}</p>
                   <p className={`text-lg font-bold ${item.color}`}>{item.value}</p>
                 </div>
               ))}
             </div>
-            <p className={`text-xs rounded-xl px-3 py-2 leading-relaxed ${t.innerCard} ${t.bodyText}`}>
-              📊 {d.parentComment}
-            </p>
+            {aiComment && (
+              <p className={`text-xs rounded-xl px-3 py-2 leading-relaxed ${t.innerCard} ${t.bodyText}`}>
+                🤖 {aiComment}
+              </p>
+            )}
           </div>
         ) : (
           <div className="px-4 py-3 flex items-center justify-between">
@@ -178,45 +240,75 @@ function ParentPanel({ lu, t, levelId }: { lu: LevelUI; t: Theme; levelId: strin
           </div>
         )}
       </button>
+
       {open && (
         <div className={`px-4 pb-4 space-y-4 pt-3 border-t ${t.divider}`}>
-          <div className={`rounded-xl px-3 py-2.5 flex gap-2 items-start ${t.innerCard}`}>
-            <span className="text-xl">{lu.mascot}</span>
-            <div>
-              <p className={`text-xs font-bold mb-0.5 ${t.accent}`}>きょうのひとこと</p>
-              <p className={`text-sm leading-relaxed ${t.bodyText}`}>{d.childComment}</p>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <p className={`text-xs font-bold uppercase tracking-wider ${t.bodyText}`}>正答率</p>
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs">
-                <span className={t.subText}>今日</span>
-                <span className={`font-bold ${t.bodyText}`}>{d.accuracyToday}%</span>
+
+          {/* 今日の成績サマリー */}
+          <div className="flex gap-2">
+            {statCards.map(item => (
+              <div key={item.label} className={`flex-1 rounded-xl px-2 py-2 text-center ${t.innerCard}`}>
+                <p className={`text-xs mb-0.5 ${t.subText}`}>{item.label}</p>
+                <p className={`text-xl font-bold ${item.color}`}>{item.value}</p>
               </div>
-              <div className={`w-full rounded-full h-2 ${t.innerCard}`}>
-                <div className="bg-green-400 h-2 rounded-full" style={{ width: `${d.accuracyToday}%` }} />
-              </div>
-            </div>
-            <p className={`text-xs ${t.subText}`}>直近7日間</p>
-            <MiniGraph values={d.accuracyWeek} t={t} />
+            ))}
           </div>
-          <div className="space-y-2">
-            <p className={`text-xs font-bold uppercase tracking-wider ${t.bodyText}`}>今週おぼえた単語</p>
-            <div className="flex items-end gap-2">
-              <span className={`text-3xl font-bold ${t.accent}`}>{d.wordsThisWeek}</span>
-              <span className={`text-sm mb-1 ${t.subText}`}>/ 目標 {d.wordsGoal} 語</span>
+
+          {/* 正答率バー */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs">
+              <span className={t.subText}>{isBaby ? "せいかいりつ" : "今日の正答率"}</span>
+              <span className={`font-bold ${t.bodyText}`}>{stats.accuracyToday}%</span>
             </div>
             <div className={`w-full rounded-full h-2 ${t.innerCard}`}>
-              <div className={`h-2 rounded-full ${t.bar}`} style={{ width: `${Math.min((d.wordsThisWeek / d.wordsGoal) * 100, 100)}%` }} />
+              <div className="bg-green-400 h-2 rounded-full transition-all" style={{ width: `${stats.accuracyToday}%` }} />
             </div>
           </div>
-          <div className={`flex items-center gap-2 rounded-xl px-3 py-2 ${t.innerCard}`}>
-            <span className="text-xl">📚</span>
-            <span className={`text-sm ${t.bodyText}`}>のこりの単語は<span className="font-bold"> {120 - d.wordsThisWeek}語</span>です！</span>
+
+          {/* 取得単語バー */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs">
+              <span className={t.subText}>{isBaby ? "ゲットしたことば" : "取得済み単語"}</span>
+              <span className={`font-bold ${t.bodyText}`}>{stats.acquiredCount} / 目標{WORDS_GOAL}語</span>
+            </div>
+            <div className={`w-full rounded-full h-2 ${t.innerCard}`}>
+              <div className={`h-2 rounded-full ${t.bar} transition-all`} style={{ width: `${Math.min((stats.acquiredCount / WORDS_GOAL) * 100, 100)}%` }} />
+            </div>
           </div>
+
+          {/* ✉️ AIコメント生成ブロック */}
+          <div className={`rounded-xl border-2 border-dashed ${isKid ? "border-pink-300" : "border-indigo-300"} p-3 space-y-2`}>
+            <p className={`text-xs font-bold ${isKid ? "text-pink-600" : "text-indigo-600"}`}>
+              ✉️ {isBaby ? "きょうの れんらくちょう（AI）" : "今日の連絡帳（AI生成）"}
+            </p>
+            {aiComment ? (
+              <p className={`text-sm leading-relaxed ${t.bodyText}`}>{aiComment}</p>
+            ) : (
+              <p className={`text-xs ${t.subText}`}>
+                {isBaby
+                  ? "ボタンをおすと AIがコメントをかいてくれるよ！"
+                  : "ボタンを押すとAIが今日の成績をもとにコメントを生成します。"}
+              </p>
+            )}
+            <button
+              onClick={generateComment}
+              disabled={aiLoading}
+              className={`w-full py-2 rounded-xl font-bold text-sm transition-all active:scale-95
+                ${isKid
+                  ? "bg-gradient-to-r from-pink-400 to-rose-400 text-white"
+                  : "bg-gradient-to-r from-indigo-500 to-blue-500 text-white"}
+                ${aiLoading ? "opacity-60 cursor-not-allowed" : ""}`}
+            >
+              {aiLoading
+                ? (isBaby ? "⏳ かいてるよ…" : "⏳ 生成中…")
+                : (aiComment
+                    ? (isBaby ? "🔄 もういちどつくる" : "🔄 再生成する")
+                    : (isBaby ? "✨ コメントをつくる！" : "✨ コメントを生成する"))}
+            </button>
+          </div>
+
           <button className="w-full py-2.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-400 text-gray-900 font-bold text-sm">
-            📈 もっとくわしい記録を見る（PRO）
+            📈 {isBaby ? "もっとくわしい きろく（PRO）" : "もっとくわしい記録を見る（PRO）"}
           </button>
         </div>
       )}
