@@ -378,7 +378,7 @@ export default function ChallengePage() {
         <div className="flex-1">
           <div className="flex justify-between items-center mb-1">
             <span className={`text-sm font-black ${t.titleText}`}>
-              {isBaby ? "🏆 じつりょくを ためそう！" : "🏆 実力を試そう！"}
+              {isBaby ? "🏆 いっぱいふえてるよ！" : "🏆 実力を試そう！"}
             </span>
             <span className={`text-xs font-bold ${t.accent}`}>{step + 1} / {TOTAL_STEPS}</span>
           </div>
@@ -423,21 +423,59 @@ export default function ChallengePage() {
       <div className={`rounded-2xl p-4 border min-h-[80px] ${t.card} ${t.border}`}>
         <p className={`text-xs font-bold mb-2 ${t.subText}`}>{isBaby ? "こたえ" : "回答"}</p>
         <div className="flex flex-wrap gap-2 min-h-[40px]" data-drop-area="slots">
-          {slots.map((token, i) => (
-            <div
-              key={token.id}
-              data-token-source="slots"
-              data-token-index={String(i)}
-              onTouchStart={e => handleTokenTouchStart(e, token, "slots", i)}
-              onClick={() => handleTokenClick(() => tapSlot(token))}
-              style={{ touchAction: "none" }}
-              className={`px-3 py-2 rounded-xl font-bold cursor-pointer select-none transition-all active:scale-95 ${result === "correct" ? "bg-green-400 text-white" : result === "wrong" ? "bg-red-400 text-white" : `${t.startBtn} ${t.startText}`} ${isBaby ? "text-lg" : "text-sm"}`}
-            >
-              {token.word}
-            </div>
-          ))}
-          {slots.length > 0 && (
-            <span className={`self-center font-bold text-xl ${t.bodyText}`}>{currentPair.main.punctuation}</span>
+          {isBaby && !result ? (
+            // ベビー：字数ヒント枠つきスロット
+            <>
+              {currentPair.main.words.map((word, i) => {
+                const token = slots[i];
+                return token ? (
+                  <div
+                    key={token.id}
+                    data-token-source="slots"
+                    data-token-index={String(i)}
+                    onTouchStart={e => handleTokenTouchStart(e, token, "slots", i)}
+                    onClick={() => handleTokenClick(() => tapSlot(token))}
+                    style={{ touchAction: "none" }}
+                    className={`px-3 py-2 rounded-xl font-bold cursor-pointer select-none transition-all active:scale-95 text-lg ${t.startBtn} ${t.startText}`}
+                  >
+                    {token.word}
+                  </div>
+                ) : (
+                  <div
+                    key={`hint-${i}`}
+                    className="px-3 py-2 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center"
+                    style={{ minWidth: `${Math.max(word.length * 14, 40)}px` }}
+                  >
+                    <span className="text-gray-300 tracking-widest text-lg leading-none select-none">
+                      {"·".repeat(word.length)}
+                    </span>
+                  </div>
+                );
+              })}
+              {slots.length > 0 && (
+                <span className={`self-center font-bold text-xl ${t.bodyText}`}>{currentPair.main.punctuation}</span>
+              )}
+            </>
+          ) : (
+            // 通常スロット（baby結果表示 or 非babyも含む）
+            <>
+              {slots.map((token, i) => (
+                <div
+                  key={token.id}
+                  data-token-source="slots"
+                  data-token-index={String(i)}
+                  onTouchStart={e => handleTokenTouchStart(e, token, "slots", i)}
+                  onClick={() => handleTokenClick(() => tapSlot(token))}
+                  style={{ touchAction: "none" }}
+                  className={`px-3 py-2 rounded-xl font-bold cursor-pointer select-none transition-all active:scale-95 ${result === "correct" ? "bg-green-400 text-white" : result === "wrong" ? "bg-red-400 text-white" : `${t.startBtn} ${t.startText}`} ${isBaby ? "text-lg" : "text-sm"}`}
+                >
+                  {token.word}
+                </div>
+              ))}
+              {slots.length > 0 && (
+                <span className={`self-center font-bold text-xl ${t.bodyText}`}>{currentPair.main.punctuation}</span>
+              )}
+            </>
           )}
         </div>
         {result === "correct" && (

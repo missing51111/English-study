@@ -67,10 +67,11 @@ export default function MyPage() {
     { icon: "🎨", label: isKid ? "テーマ" : "テーマ切替",          done: true  },
     { icon: "📚", label: isKid ? "たんごちょう" : "単語帳",         done: true  },
     { icon: "🧩", label: isKid ? "もんだい" : "クイズ",             done: true  },
-    { icon: "🏆", label: isKid ? "じつりょくをためそう" : "チャレンジ", done: true },
+    { icon: "🏆", label: isKid ? "いっぱいふえてるよ" : "チャレンジ", done: true },
     { icon: "🎯", label: isKid ? "みっしょん" : "ミッション",        done: true  },
     { icon: "🔊", label: isKid ? "おとがでる" : "音声読み上げ",      done: true  },
     { icon: "📱", label: "PWA",                                    done: true  },
+    { icon: "👶", label: isKid ? "ベビーヒントわく" : "ベビーヒント枠", done: true },
     { icon: "✉️", label: isKid ? "れんらくちょう" : "連絡帳(AI)",    done: false },
     { icon: "🔡", label: isKid ? "たんごをつくる" : "単語つくり",    done: false },
     { icon: "🎰", label: isKid ? "がちゃ" : "ガチャ",               done: false },
@@ -149,7 +150,7 @@ export default function MyPage() {
         <Section title={isKid ? "🎯 みっしょん" : "🎯 ミッション"} t={t}>
           <MissionBar
             icon="📝"
-            label={isKid ? "もんだいをとく" : "問題を解く"}
+            label={isKid ? "ならびかえてね" : "問題を解く"}
             current={Math.min(missionQuiz, 5)}
             target={5}
             done={m1ok}
@@ -158,7 +159,7 @@ export default function MyPage() {
           <div className="mt-2">
             <MissionBar
               icon="🏆"
-              label={isKid ? "じつりょくをためそう" : "実力を試そう"}
+              label={isKid ? "いっぱいふえてるよ！" : "実力を試そう"}
               current={Math.min(missionReview, 3)}
               target={3}
               done={m2ok}
@@ -281,13 +282,10 @@ function AboutSection() {
     { icon: "👤", title: "マイページ",                tags: ["Next.js App Router"] },
     { icon: "📋", title: "単語帳 1列レイアウト",      tags: ["UX改善"] },
     { icon: "🔤", title: "アルファベットジャンプ",     tags: ["scrollIntoView", "useRef"] },
+    { icon: "👶", title: "ベビー向けヒント枠",         tags: ["字数ガイド", "UX改善"] },
   ];
 
   const planned = [
-    {
-      icon: "👶", title: "ベビー向けヒント枠", prio: 3,
-      desc: "ベビーレベルのクイズ解答欄に、移動する単語のサイズに合わせた薄い枠（ガイド）を表示。字数のヒントになり難易度を下げる。",
-    },
     {
       icon: "✉️", title: "れんらくちょう（Claude API）", prio: 4, api: true,
       desc: "その日の成績・達成ミッションをもとに、Claude APIがポジティブで保護者が課金したくなる連絡帳コメントを自動生成。有料プランの目玉機能として設計。",
