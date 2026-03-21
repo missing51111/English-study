@@ -284,6 +284,22 @@ export default function VocabularyPage() {
 
   return (
     <div className={`min-h-screen ${t.bg}`}>
+
+      {/* 固定縦型アルファベットバー（左側） */}
+      {jumpLetters.length > 0 && (
+        <div className="fixed left-0 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-0.5 py-2 px-1">
+          {jumpLetters.map(letter => (
+            <button
+              key={letter}
+              onClick={() => scrollToLetter(letter)}
+              className={`w-6 h-6 rounded text-[10px] font-black ${t.bar} text-white active:scale-90 transition-all shadow-sm`}
+            >
+              {letter}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* ヘッダー */}
       <header className={`${t.nav} border-b ${t.navBorder} sticky top-0 z-10`}>
         <div className="flex items-center gap-3 px-4 py-3 max-w-lg mx-auto">
@@ -383,21 +399,6 @@ export default function VocabularyPage() {
                 </div>
               );
             })()}
-
-            {/* アルファベットジャンプバー */}
-            {jumpLetters.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-3">
-                {jumpLetters.map(letter => (
-                  <button
-                    key={letter}
-                    onClick={() => scrollToLetter(letter)}
-                    className={`w-7 h-7 rounded-lg text-xs font-black ${t.bar} text-white active:scale-90 transition-all shadow-sm`}
-                  >
-                    {letter}
-                  </button>
-                ))}
-              </div>
-            )}
 
             {/* 1列リスト（文字グループ別） */}
             <div className="flex flex-col gap-1">
