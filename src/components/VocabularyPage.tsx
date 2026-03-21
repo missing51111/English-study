@@ -234,6 +234,7 @@ export default function VocabularyPage() {
   const [testCorrect, setTestCorrect] = useState(false);
   const [lives, setLives]             = useState(3);
   const [testGameOver, setTestGameOver] = useState(false);
+  const [testShowAnswer, setTestShowAnswer] = useState(false);
 
   // localStorageからテーマ・取得済み単語を読み込む
   useLayoutEffect(() => {
@@ -315,6 +316,7 @@ export default function VocabularyPage() {
     setTestLetters(buildTestLetters(w));
     setLives(3);
     setTestGameOver(false);
+    setTestShowAnswer(false);
     setStreak(0);
     setTestMode(true);
   }, [selectedLevel, getAcqForLevel]);
@@ -363,7 +365,7 @@ export default function VocabularyPage() {
       const newLives = lives - 1;
       setLives(newLives);
       if (newLives <= 0) {
-        setTestGameOver(true);
+        setTestShowAnswer(true);
         return;
       }
       setTestLetters(prev => prev.map(l => l.id === id ? { ...l, shaking: true } : l));
@@ -463,7 +465,7 @@ export default function VocabularyPage() {
             </div>
 
             {/* ライフ（ハート）バー */}
-            {!testGameOver && (
+            {!testGameOver && !testShowAnswer && (
               <div className={`mx-4 mt-4 rounded-2xl border ${t.card} ${t.border} px-4 py-2.5 flex items-center gap-3`}>
                 <p className={`text-xs font-bold flex-1 leading-snug ${t.bodyText}`}>
                   {isKid
@@ -481,7 +483,7 @@ export default function VocabularyPage() {
             )}
 
             {/* ヒントカード（日本語 + 発音） */}
-            {!testGameOver && (
+            {!testGameOver && !testShowAnswer && (
               <div className="px-4 pt-3 pb-2">
                 <div className={`rounded-2xl border-2 p-5 text-center space-y-3 transition-all duration-300 ${
                   testCorrect
@@ -508,8 +510,8 @@ export default function VocabularyPage() {
               </div>
             )}
 
-            {/* 入力済み文字バー・グリッド（ゲームオーバー時は非表示） */}
-            {!testGameOver && (
+            {/* 入力済み文字バー・グリッド（ゲームオーバー・こたえ表示時は非表示） */}
+            {!testGameOver && !testShowAnswer && (
               <>
                 <div className="px-4 py-2">
                   <div className={`rounded-xl border ${t.card} ${t.border} p-3 flex gap-2 flex-wrap min-h-[3.2rem] items-center`}>
@@ -565,6 +567,55 @@ export default function VocabularyPage() {
                   </div>
                 </div>
               </>
+            )}
+
+            {/* こたえ表示画面（ゲームオーバー前） */}
+            {testShowAnswer && !testGameOver && (
+              <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 py-8">
+                <div className="text-6xl" style={{ lineHeight: 1 }}>😢</div>
+                <p className={`text-xl font-black ${t.titleText}`}>
+                  {isKid ? "ざんねん！こたえは…" : "残念！正解は…"}
+                </p>
+
+                {/* こたえカード */}
+                <div className={`w-full rounded-2xl border-2 border-red-300 bg-red-50 px-6 py-5 text-center space-y-3`}>
+                  <div className="text-5xl" style={{ lineHeight: 1 }}>
+                    {EMOJI_MAP[testWord.word.toLowerCase()] ?? "📝"}
+                  </div>
+                  <p className="text-gray-500 text-base font-bold">{testWord.meaning}</p>
+                  {/* 単語を1文字ずつ大きく表示 */}
+                  <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                    {testWord.word.toUpperCase().split("").map((ch, i) => (
+                      <div
+                        key={i}
+                        className="w-11 h-11 rounded-xl bg-red-400 text-white font-black text-2xl flex items-center justify-center shadow-md"
+                      >
+                        {ch}
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (typeof window !== "undefined" && window.speechSynthesis) {
+                        window.speechSynthesis.cancel();
+                        const utt = new SpeechSynthesisUtterance(testWord.word);
+                        utt.lang = "en-US"; utt.rate = 0.85;
+                        window.speechSynthesis.speak(utt);
+                      }
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm bg-gray-100 text-gray-600 active:scale-95 transition-all"
+                  >
+                    🔊 {isKid ? "はつおんを きく" : "発音を聞く"}
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setTestGameOver(true)}
+                  className="w-full py-4 rounded-2xl font-black text-xl bg-red-400 text-white active:scale-95 transition-all"
+                >
+                  {isKid ? "わかった！" : "了解"}
+                </button>
+              </div>
             )}
 
             {/* ゲームオーバー画面 */}
