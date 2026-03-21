@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState, useCallback } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { THEMES, type Theme } from "@/lib/themes";
 type LevelUI = typeof LEVEL_UI.baby;
@@ -163,38 +163,21 @@ function ParentPanel({ lu, t, levelId }: { lu: LevelUI; t: Theme; levelId: strin
     setStats({ accuracyToday, correct, total, acquiredCount, quizCount });
   }, [open]); // パネルを開くたびに最新値を取得
 
-  // ── AIコメント生成 ────────────────────────────────────
-  const [aiComment, setAiComment] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-
-  const levelLabelMap: Record<string, string> = {
-    baby: "ベビー", elementary: "小学生", junior: "中学生", high: "高校生", toeic: "TOEIC",
-  };
-
-  const generateComment = useCallback(async () => {
-    setAiLoading(true);
-    setAiComment("");
-    try {
-      const res = await fetch("/api/renrakucho", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          level: levelId,
-          levelLabel: levelLabelMap[levelId] ?? levelId,
-          correctCount:   stats.correct,
-          totalCount:     stats.total,
-          acquiredCount:  stats.acquiredCount,
-          quizCount:      stats.quizCount,
-        }),
-      });
-      const data = await res.json();
-      setAiComment(data.comment ?? "コメントを生成できませんでした。");
-    } catch {
-      setAiComment("通信エラーが発生しました。");
-    } finally {
-      setAiLoading(false);
+  // ── ダミーコメント（統計をもとにテンプレート生成） ────────
+  const dummyComment = (() => {
+    const { accuracyToday, quizCount, acquiredCount } = stats;
+    if (isBaby) {
+      if (quizCount === 0) return "きょうも えいごを たのしもうね！🌟";
+      if (accuracyToday >= 80) return `きょうは ${quizCount}もん といて ${accuracyToday}てん！すごいね！🎉`;
+      if (accuracyToday >= 50) return `${quizCount}もん がんばったね！つぎは もっとできるよ😊`;
+      return `きょうも チャレンジえらい！また やってみよう🔥`;
+    } else {
+      if (quizCount === 0) return "今日も一緒に英語を学びましょう！📚";
+      if (accuracyToday >= 80) return `今日は${quizCount}問解いて正答率${accuracyToday}%！とても順調です📈 取得単語：${acquiredCount}語`;
+      if (accuracyToday >= 50) return `${quizCount}問チャレンジしました。正答率${accuracyToday}%、この調子で続けましょう💪`;
+      return `今日も${quizCount}問取り組みました。継続することが大切です！応援しています😊`;
     }
-  }, [levelId, stats]);
+  })();
 
   // ── 統計の表示値 ──────────────────────────────────────
   const WORDS_GOAL = 20;
@@ -224,11 +207,9 @@ function ParentPanel({ lu, t, levelId }: { lu: LevelUI; t: Theme; levelId: strin
                 </div>
               ))}
             </div>
-            {aiComment && (
-              <p className={`text-xs rounded-xl px-3 py-2 leading-relaxed ${t.innerCard} ${t.bodyText}`}>
-                🤖 {aiComment}
-              </p>
-            )}
+            <p className={`text-xs rounded-xl px-3 py-2 leading-relaxed ${t.innerCard} ${t.bodyText}`}>
+              ✉️ {dummyComment}
+            </p>
           </div>
         ) : (
           <div className="px-4 py-3 flex items-center justify-between">
@@ -276,35 +257,12 @@ function ParentPanel({ lu, t, levelId }: { lu: LevelUI; t: Theme; levelId: strin
             </div>
           </div>
 
-          {/* ✉️ AIコメント生成ブロック */}
-          <div className={`rounded-xl border-2 border-dashed ${isKid ? "border-pink-300" : "border-indigo-300"} p-3 space-y-2`}>
+          {/* ✉️ れんらくちょう（ダミーコメント） */}
+          <div className={`rounded-xl border-2 border-dashed ${isKid ? "border-pink-300" : "border-indigo-300"} p-3 space-y-1.5`}>
             <p className={`text-xs font-bold ${isKid ? "text-pink-600" : "text-indigo-600"}`}>
-              ✉️ {isBaby ? "きょうの れんらくちょう（AI）" : "今日の連絡帳（AI生成）"}
+              ✉️ {isBaby ? "きょうの れんらくちょう" : "今日の連絡帳"}
             </p>
-            {aiComment ? (
-              <p className={`text-sm leading-relaxed ${t.bodyText}`}>{aiComment}</p>
-            ) : (
-              <p className={`text-xs ${t.subText}`}>
-                {isBaby
-                  ? "ボタンをおすと AIがコメントをかいてくれるよ！"
-                  : "ボタンを押すとAIが今日の成績をもとにコメントを生成します。"}
-              </p>
-            )}
-            <button
-              onClick={generateComment}
-              disabled={aiLoading}
-              className={`w-full py-2 rounded-xl font-bold text-sm transition-all active:scale-95
-                ${isKid
-                  ? "bg-gradient-to-r from-pink-400 to-rose-400 text-white"
-                  : "bg-gradient-to-r from-indigo-500 to-blue-500 text-white"}
-                ${aiLoading ? "opacity-60 cursor-not-allowed" : ""}`}
-            >
-              {aiLoading
-                ? (isBaby ? "⏳ かいてるよ…" : "⏳ 生成中…")
-                : (aiComment
-                    ? (isBaby ? "🔄 もういちどつくる" : "🔄 再生成する")
-                    : (isBaby ? "✨ コメントをつくる！" : "✨ コメントを生成する"))}
-            </button>
+            <p className={`text-sm leading-relaxed ${t.bodyText}`}>{dummyComment}</p>
           </div>
 
           <button className="w-full py-2.5 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-400 text-gray-900 font-bold text-sm">
