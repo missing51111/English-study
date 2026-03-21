@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { THEMES, type Theme } from "@/lib/themes";
@@ -433,6 +433,15 @@ function WordCard({
 }) {
   const emoji = EMOJI_MAP[word.word.toLowerCase()] ?? null;
   const pos = word.part_of_speech ?? null;
+
+  const speakWord = useCallback(() => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(word.word);
+    utt.lang = "en-US";
+    utt.rate = 0.85;
+    window.speechSynthesis.speak(utt);
+  }, [word.word]);
   const posLabel = pos
     ? level === "baby"
       ? (POS_BABY[pos] ?? null)
@@ -471,18 +480,27 @@ function WordCard({
         )}
       </div>
 
-      {/* 右：絵文字 or ロックアイコン */}
-      {acquired && emoji ? (
-        <div className={`${emojiBg} flex items-center justify-center flex-shrink-0`}
+      {/* 右：絵文字＋音声ボタン or ロックアイコン */}
+      {acquired ? (
+        <div className={`${emojiBg} flex flex-col items-center justify-center flex-shrink-0 gap-1 py-2`}
           style={{ width: "4rem" }}>
-          <span style={{ fontSize: "2.25rem", lineHeight: 1 }}>{emoji}</span>
+          {emoji ? (
+            <span style={{ fontSize: "1.9rem", lineHeight: 1 }}>{emoji}</span>
+          ) : (
+            <div style={{ height: "1.9rem" }} />
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); speakWord(); }}
+            className="text-sm opacity-50 hover:opacity-100 active:scale-90 transition-all leading-none"
+            aria-label={`${word.word}の発音`}
+          >
+            🔊
+          </button>
         </div>
-      ) : !acquired ? (
+      ) : (
         <div className="bg-gray-200 flex items-center justify-center flex-shrink-0" style={{ width: "4rem" }}>
           <span style={{ fontSize: "2rem", lineHeight: 1 }}>🔒</span>
         </div>
-      ) : (
-        <div style={{ width: "0.75rem" }} />
       )}
     </div>
   );
