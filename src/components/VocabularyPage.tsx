@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { THEMES, type Theme } from "@/lib/themes";
@@ -182,6 +182,7 @@ export default function VocabularyPage() {
   const router = useRouter();
   const [selectedLevel, setSelectedLevel] = useState<Level>("baby");
   const [sortOrder, setSortOrder] = useState<SortOrder>("az");
+  const letterRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [wordsByLevel, setWordsByLevel] = useState<Record<Level, Word[]>>({
     baby: [], elementary: [], junior: [], high: [], toeic: [],
   });
@@ -260,6 +261,26 @@ export default function VocabularyPage() {
       ? a.word.localeCompare(b.word)
       : a.meaning.localeCompare(b.meaning, "ja")
   );
+
+  // アルファベット別グループ（A-Z順 or かな順）
+  const wordGroups: { key: string; words: Word[] }[] = [];
+  if (sortOrder === "az") {
+    const map: Record<string, Word[]> = {};
+    currentWords.forEach(w => {
+      const k = w.word[0].toUpperCase();
+      if (!map[k]) map[k] = [];
+      map[k].push(w);
+    });
+    Object.keys(map).sort().forEach(k => wordGroups.push({ key: k, words: map[k] }));
+  } else {
+    // かな順はグループ分けなし
+    wordGroups.push({ key: "", words: currentWords });
+  }
+  const jumpLetters = sortOrder === "az" ? wordGroups.map(g => g.key) : [];
+
+  const scrollToLetter = (letter: string) => {
+    letterRefs.current[letter]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <div className={`min-h-screen ${t.bg}`}>
@@ -363,17 +384,43 @@ export default function VocabularyPage() {
               );
             })()}
 
-            <div className="grid grid-cols-2 gap-2">
-              {currentWords.map((w) => (
-                <WordCard
-                  key={w.id}
-                  word={w}
-                  level={selectedLevel}
-                  levelColor={t.navActive}
-                  emojiBg={t.innerCard}
-                  t={t}
-                  acquired={acquiredWords.has(w.word)}
-                />
+            {/* アルファベットジャンプバー */}
+            {jumpLetters.length > 0 && (
+              <div className="flex flex-wrap gap-1 mb-3">
+                {jumpLetters.map(letter => (
+                  <button
+                    key={letter}
+                    onClick={() => scrollToLetter(letter)}
+                    className={`w-7 h-7 rounded-lg text-xs font-black ${t.bar} text-white active:scale-90 transition-all shadow-sm`}
+                  >
+                    {letter}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* 1列リスト（文字グループ別） */}
+            <div className="flex flex-col gap-1">
+              {wordGroups.map(({ key, words }) => (
+                <div key={key} ref={key ? (el) => { letterRefs.current[key] = el; } : undefined}>
+                  {key && (
+                    <p className={`text-xs font-black ${t.subText} pt-3 pb-1 sticky top-[88px] ${t.bg} z-[5]`}>
+                      — {key} —
+                    </p>
+                  )}
+                  {words.map((w) => (
+                    <div key={w.id} className="mb-1.5">
+                      <WordCard
+                        word={w}
+                        level={selectedLevel}
+                        levelColor={t.navActive}
+                        emojiBg={t.innerCard}
+                        t={t}
+                        acquired={acquiredWords.has(w.word)}
+                      />
+                    </div>
+                  ))}
+                </div>
               ))}
             </div>
           </>
@@ -450,10 +497,18 @@ function WordCard({
   const posColor = pos ? (POS_COLOR[pos] ?? "bg-gray-100 text-gray-600") : null;
 
   return (
-    <div className={`rounded-xl border ${t.border} shadow-sm flex items-stretch overflow-hidden relative transition-opacity ${acquired ? t.card : "bg-gray-100"} ${acquired ? "" : "opacity-50"}`}>
-      {/* 左：上段=品詞＋日本語、下段=英語（大） */}
-      <div className="flex-1 min-w-0 flex flex-col justify-center gap-1 px-3 py-2.5">
-        {/* 上段：日本語＋品詞バッジ */}
+    <div className={`rounded-xl border ${t.border} shadow-sm flex items-stretch overflow-hidden transition-opacity ${acquired ? t.card : "bg-gray-100"} ${acquired ? "" : "opacity-50"}`}>
+
+      {/* 左：絵文字 or ロック */}
+      <div className={`flex-shrink-0 flex items-center justify-center ${acquired ? emojiBg : "bg-gray-200"}`} style={{ width: "3.5rem" }}>
+        {acquired
+          ? <span style={{ fontSize: "1.8rem", lineHeight: 1 }}>{emoji ?? "📝"}</span>
+          : <span style={{ fontSize: "1.6rem" }}>🔒</span>
+        }
+      </div>
+
+      {/* 中央：日本語 + 品詞 + 英語 */}
+      <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5 px-3 py-2.5">
         <div className="flex items-center gap-1.5 min-w-0">
           {acquired ? (
             <>
@@ -468,11 +523,8 @@ function WordCard({
             <p className="text-gray-400 text-sm leading-none">???</p>
           )}
         </div>
-        {/* 下段：英語（大きく） */}
         {acquired ? (
-          <p className={`font-bold ${t.bodyText} text-xl leading-tight break-all`}>
-            {word.word}
-          </p>
+          <p className={`font-bold ${t.bodyText} text-xl leading-tight`}>{word.word}</p>
         ) : (
           <p className="font-bold text-gray-400 text-xl leading-tight tracking-widest">
             {"*".repeat(Math.min(word.word.length, 6))}
@@ -480,27 +532,16 @@ function WordCard({
         )}
       </div>
 
-      {/* 右：音声ボタン（白背景）＋絵文字（テーマ背景） or ロックアイコン */}
-      {acquired ? (
-        <div className="flex flex-row items-stretch flex-shrink-0">
-          <button
-            onClick={(e) => { e.stopPropagation(); speakWord(); }}
-            className="bg-white flex items-center justify-center opacity-50 hover:opacity-100 active:scale-90 transition-all px-2"
-            style={{ fontSize: "1.6rem" }}
-            aria-label={`${word.word}の発音`}
-          >
-            🔊
-          </button>
-          {emoji && (
-            <div className={`${emojiBg} flex items-center justify-center px-2`}>
-              <span style={{ fontSize: "1.9rem", lineHeight: 1 }}>{emoji}</span>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="bg-gray-200 flex items-center justify-center flex-shrink-0" style={{ width: "4rem" }}>
-          <span style={{ fontSize: "2rem", lineHeight: 1 }}>🔒</span>
-        </div>
+      {/* 右：音声ボタン */}
+      {acquired && (
+        <button
+          onClick={(e) => { e.stopPropagation(); speakWord(); }}
+          className="bg-white flex items-center justify-center flex-shrink-0 opacity-40 hover:opacity-100 active:scale-90 transition-all px-3"
+          style={{ fontSize: "1.5rem" }}
+          aria-label={`${word.word}の発音`}
+        >
+          🔊
+        </button>
       )}
     </div>
   );

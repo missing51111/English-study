@@ -271,25 +271,19 @@ function StatBox({ num, label, color }: { num: string; label: string; color: str
 // ────────────────────────────────────────────────────────────
 function AboutSection() {
   const implemented = [
-    { icon: "🎨", title: "5テーマカラー",      tags: ["Tailwind", "localStorage"] },
-    { icon: "📚", title: "単語帳",             tags: ["Supabase", "Promise.all"] },
-    { icon: "🧩", title: "並び替えクイズ",      tags: ["Drag&Drop", "useCallback"] },
-    { icon: "🏆", title: "チャレンジクイズ",    tags: ["distractor words"] },
-    { icon: "🎯", title: "ミッション＆チケット", tags: ["localStorage", "0時リセット"] },
-    { icon: "🔊", title: "音声読み上げ",        tags: ["Web Speech API"] },
-    { icon: "📱", title: "PWA対応",            tags: ["Vercel", "next-pwa"] },
-    { icon: "👤", title: "マイページ",          tags: ["Next.js App Router"] },
+    { icon: "🎨", title: "5テーマカラー",            tags: ["Tailwind", "localStorage"] },
+    { icon: "📚", title: "単語帳（1列＋ジャンプ）",   tags: ["Supabase", "useRef", "scrollIntoView"] },
+    { icon: "🧩", title: "並び替えクイズ",            tags: ["Drag&Drop", "useCallback"] },
+    { icon: "🏆", title: "チャレンジクイズ",          tags: ["distractor words"] },
+    { icon: "🎯", title: "ミッション＆チケット",       tags: ["localStorage", "0時リセット"] },
+    { icon: "🔊", title: "音声読み上げ",              tags: ["Web Speech API"] },
+    { icon: "📱", title: "PWA対応",                  tags: ["Vercel", "next-pwa"] },
+    { icon: "👤", title: "マイページ",                tags: ["Next.js App Router"] },
+    { icon: "📋", title: "単語帳 1列レイアウト",      tags: ["UX改善"] },
+    { icon: "🔤", title: "アルファベットジャンプ",     tags: ["scrollIntoView", "useRef"] },
   ];
 
   const planned = [
-    {
-      icon: "📋", title: "単語帳 2列→1列レイアウト", prio: 4,
-      desc: "現在の2カラムグリッドを1列の縦スクロールリストに変更。単語の詳細情報をより広く表示できるようにする。",
-    },
-    {
-      icon: "🔤", title: "アルファベットジャンプボタン", prio: 3,
-      desc: "単語帳の上部にA〜Zのボタンを配置。タップすると、そのアルファベットで始まる単語リストの先頭へ即スクロール。",
-    },
     {
       icon: "👶", title: "ベビー向けヒント枠", prio: 3,
       desc: "ベビーレベルのクイズ解答欄に、移動する単語のサイズに合わせた薄い枠（ガイド）を表示。字数のヒントになり難易度を下げる。",
