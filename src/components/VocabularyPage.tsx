@@ -335,79 +335,81 @@ export default function VocabularyPage() {
             <p className="text-xs text-gray-300">seed_vocabulary.sql を Supabase で実行してください</p>
           </div>
         ) : (
-          <>
-            <div className="flex items-center gap-2 mb-3">
-              <span className={`text-xs font-bold text-white px-2 py-0.5 rounded-full ${t.bar}`}>
-                {currentLevel.label}
-              </span>
-              <span className={`text-xs ${t.subText}`}>{currentWords.length}語</span>
-              <div className="ml-auto flex gap-1">
-                <button
-                  onClick={() => setSortOrder("az")}
-                  className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors ${
-                    sortOrder === "az"
-                      ? `${t.bar} text-white`
-                      : `${t.card} ${t.bodyText} border ${t.border}`
-                  }`}
-                >
-                  A-Z
-                </button>
-                <button
-                  onClick={() => setSortOrder("kana")}
-                  className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors ${
-                    sortOrder === "kana"
-                      ? `${t.bar} text-white`
-                      : `${t.card} ${t.bodyText} border ${t.border}`
-                  }`}
-                >
-                  あ-ん
-                </button>
+          {/* 2カラム：左A-Zジャンプ ＋ 右（ソートバー＋取得済み＋単語リスト） */}
+          <div className="flex gap-1 items-start">
+            {/* 左：アルファベットジャンプバー（sticky・ソートバーと同じ高さからスタート） */}
+            {jumpLetters.length > 0 && (
+              <div
+                className="sticky top-[88px] flex flex-col flex-shrink-0 py-0.5"
+                style={{ height: "calc(100dvh - 88px)" }}
+              >
+                {jumpLetters.map(letter => (
+                  <button
+                    key={letter}
+                    onClick={() => scrollToLetter(letter)}
+                    style={{ fontSize: `clamp(8px, ${Math.floor(100 / jumpLetters.length)}vh, 13px)` }}
+                    className={`flex-1 min-h-0 w-6 rounded font-black ${t.bar} text-white active:scale-90 transition-all shadow-sm flex items-center justify-center border border-black/40`}
+                  >
+                    {letter}
+                  </button>
+                ))}
               </div>
-            </div>
+            )}
 
-            {/* 取得済み件数バナー */}
-            {(() => {
-              const acquired = currentWords.filter(w => acquiredWords.has(w.word)).length;
-              const total = currentWords.length;
-              return (
-                <div className={`mb-3 rounded-xl px-3 py-2 flex items-center gap-2 ${t.innerCard}`}>
-                  <span className="text-lg">🔓</span>
-                  <div className="flex-1">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className={t.bodyText + " font-bold"}>取得済み</span>
-                      <span className={t.subText}>{acquired} / {total}</span>
-                    </div>
-                    <div className={`h-1.5 rounded-full ${t.divider} overflow-hidden`}>
-                      <div className={`h-full ${t.bar} rounded-full transition-all`} style={{ width: `${total > 0 ? (acquired / total) * 100 : 0}%` }} />
+            {/* 右：ソートバー＋取得済みバナー＋単語リスト */}
+            <div className="flex-1 min-w-0 flex flex-col">
+              {/* ソートバー */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className={`text-xs font-bold text-white px-2 py-0.5 rounded-full ${t.bar}`}>
+                  {currentLevel.label}
+                </span>
+                <span className={`text-xs ${t.subText}`}>{currentWords.length}語</span>
+                <div className="ml-auto flex gap-1">
+                  <button
+                    onClick={() => setSortOrder("az")}
+                    className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors ${
+                      sortOrder === "az"
+                        ? `${t.bar} text-white`
+                        : `${t.card} ${t.bodyText} border ${t.border}`
+                    }`}
+                  >
+                    A-Z
+                  </button>
+                  <button
+                    onClick={() => setSortOrder("kana")}
+                    className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors ${
+                      sortOrder === "kana"
+                        ? `${t.bar} text-white`
+                        : `${t.card} ${t.bodyText} border ${t.border}`
+                    }`}
+                  >
+                    あ-ん
+                  </button>
+                </div>
+              </div>
+
+              {/* 取得済み件数バナー */}
+              {(() => {
+                const acquired = currentWords.filter(w => acquiredWords.has(w.word)).length;
+                const total = currentWords.length;
+                return (
+                  <div className={`mb-3 rounded-xl px-3 py-2 flex items-center gap-2 ${t.innerCard}`}>
+                    <span className="text-lg">🔓</span>
+                    <div className="flex-1">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className={t.bodyText + " font-bold"}>取得済み</span>
+                        <span className={t.subText}>{acquired} / {total}</span>
+                      </div>
+                      <div className={`h-1.5 rounded-full ${t.divider} overflow-hidden`}>
+                        <div className={`h-full ${t.bar} rounded-full transition-all`} style={{ width: `${total > 0 ? (acquired / total) * 100 : 0}%` }} />
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })()}
+                );
+              })()}
 
-            {/* 2カラム：左A-Zジャンプ ＋ 右単語リスト */}
-            <div className="flex gap-1 items-start">
-              {/* 左：アルファベットジャンプバー（sticky） */}
-              {jumpLetters.length > 0 && (
-                <div
-                  className="sticky top-[88px] flex flex-col flex-shrink-0 py-0.5"
-                  style={{ height: "calc(100dvh - 88px)" }}
-                >
-                  {jumpLetters.map(letter => (
-                    <button
-                      key={letter}
-                      onClick={() => scrollToLetter(letter)}
-                      style={{ fontSize: `clamp(8px, ${Math.floor(100 / jumpLetters.length)}vh, 13px)` }}
-                      className={`flex-1 min-h-0 w-6 rounded font-black ${t.bar} text-white active:scale-90 transition-all shadow-sm flex items-center justify-center border border-black/40`}
-                    >
-                      {letter}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* 右：単語リスト */}
-              <div className="flex-1 min-w-0 flex flex-col gap-1">
+              {/* 単語リスト */}
+              <div className="flex flex-col gap-1">
                 {wordGroups.map(({ key, words }) => (
                   <div key={key} ref={key ? (el) => { letterRefs.current[key] = el; } : undefined}>
                     {key && (
@@ -431,7 +433,7 @@ export default function VocabularyPage() {
                 ))}
               </div>
             </div>
-          </>
+          </div>
         )}
       </main>
     </div>
