@@ -74,8 +74,7 @@ export default function MyPage() {
     { icon: "📱", label: "PWA",                                    done: true  },
     { icon: "👶", label: isKid ? "ベビーヒントわく" : "ベビーヒント枠", done: true },
     { icon: "✉️", label: isKid ? "れんらくちょう" : "連絡帳(AI)",    done: false },
-    { icon: "🔡", label: isKid ? "たんごをつくる" : "単語つくり",    done: false },
-    { icon: "🎰", label: isKid ? "がちゃ" : "ガチャ",               done: false },
+    { icon: "🔡", label: isKid ? "たんごをつくる" : "単語つくり",    done: true  },
   ];
 
   return (
@@ -604,7 +603,8 @@ function DebugPanel() {
       {/* トグルボタン */}
       <button
         onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold opacity-0 hover:opacity-100 transition-opacity select-none"
+        aria-label="DEBUGパネル"
       >
         <span className="flex items-center gap-2">🛠 DEBUGパネル</span>
         <span>{open ? "▲ 閉じる" : "▼ 開く"}</span>

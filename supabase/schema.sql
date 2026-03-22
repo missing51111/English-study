@@ -38,18 +38,10 @@ CREATE INDEX IF NOT EXISTS idx_user_answers_user_id ON user_answers(user_id);
 CREATE INDEX IF NOT EXISTS idx_wrong_answers_user_id_reviewed ON wrong_answers(user_id, reviewed);
 
 -- ============================================================
--- サンプルデータ（各レベル2問ずつ）
+-- サンプルデータ（junior / high / toeic のみ）
+-- baby / elementary は seed_elementary_questions.sql で管理
 -- ============================================================
 INSERT INTO questions (level, sentence, japanese, words, punctuation, hint) VALUES
--- baby（2〜5歳）
-('baby', 'I like cats .', 'わたしは ねこが すきです。',    ARRAY['I', 'like', 'cats'], '.', 'ねこ = cats'),
-('baby', 'This is a dog .', 'これは いぬです。',           ARRAY['This', 'is', 'a', 'dog'], '.', 'いぬ = dog'),
-('baby', 'I see a bird .', 'わたしは とりを みます。',     ARRAY['I', 'see', 'a', 'bird'], '.', 'とり = bird'),
-
--- elementary（小学生）
-('elementary', 'I play soccer every day .', 'わたしは毎日サッカーをします。',    ARRAY['I', 'play', 'soccer', 'every', 'day'], '.', 'every day = まいにち'),
-('elementary', 'She has a red umbrella .', '彼女は赤いかさを持っています。',      ARRAY['She', 'has', 'a', 'red', 'umbrella'], '.', 'red = あかい'),
-('elementary', 'We go to school by bus .', 'わたしたちはバスで学校へ行きます。',  ARRAY['We', 'go', 'to', 'school', 'by', 'bus'], '.', 'by bus = バスで'),
 
 -- junior（中学生）
 ('junior', 'I have been studying English for three years .', '私は3年間英語を勉強しています。',

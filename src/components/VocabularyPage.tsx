@@ -117,6 +117,9 @@ export default function VocabularyPage() {
   const [testShowAnswer, setTestShowAnswer] = useState(false);
   const [testPool, setTestPool]       = useState<Word[] | null>(null); // ふくしゅう用プール
   const [wrongWordList, setWrongWordList] = useState<string[]>([]); // 間違えた単語リスト
+  const [ticketReward, setTicketReward] = useState<{ count: number; reason: string } | null>(null);
+  const [lastMilestone, setLastMilestone] = useState(0);
+  const [fullClearDone, setFullClearDone] = useState(false);
 
   // localStorageからテーマ・取得済み単語を読み込む
   useLayoutEffect(() => {
@@ -217,6 +220,8 @@ export default function VocabularyPage() {
     setTestShowAnswer(false);
     setStreak(0);
     setTestPool(null);
+    setLastMilestone(0);
+    setFullClearDone(false);
     setTestMode(true);
   }, [selectedLevel, getAcqForLevel]);
 
@@ -239,6 +244,8 @@ export default function VocabularyPage() {
     setTestShowAnswer(false);
     setStreak(0);
     setTestPool(pool);
+    setLastMilestone(0);
+    setFullClearDone(false);
     setTestMode(true);
   }, [wordsByLevel]);
 
@@ -270,6 +277,25 @@ export default function VocabularyPage() {
           localStorage.setItem("vocabBestStreak", JSON.stringify(updated));
           return updated;
         });
+        // ── チケット付与チェック ──────────────────────────────────
+        const currentPoolForTicket = testPool ?? getAcqForLevel(selectedLevel);
+        const poolSize = currentPoolForTicket.length;
+        const kidMode = selectedLevel === "baby" || selectedLevel === "elementary";
+        if (!fullClearDone && poolSize > 0 && newStreak >= poolSize) {
+          // 全クリア → +5枚
+          const cur = Number(localStorage.getItem("tickets") ?? 0);
+          localStorage.setItem("tickets", String(cur + 5));
+          setFullClearDone(true);
+          setTicketReward({ count: 5, reason: kidMode ? "ぜんぶ せいかい！" : "全単語クリア達成！" });
+          setTimeout(() => setTicketReward(null), 3500);
+        } else if (newStreak % 50 === 0 && newStreak > lastMilestone) {
+          // 50問マイルストーン → +1枚
+          const cur = Number(localStorage.getItem("tickets") ?? 0);
+          localStorage.setItem("tickets", String(cur + 1));
+          setLastMilestone(newStreak);
+          setTicketReward({ count: 1, reason: kidMode ? `${newStreak}もん たっせい！` : `${newStreak}問達成！` });
+          setTimeout(() => setTicketReward(null), 3500);
+        }
         setTestCorrect(true);
         setTimeout(() => {
           const currentPool = testPool ?? getAcqForLevel(selectedLevel);
@@ -301,7 +327,7 @@ export default function VocabularyPage() {
         setTestLetters(prev => prev.map(l => l.id === id ? { ...l, shaking: false } : l));
       }, 550);
     }
-  }, [testWord, testBuilt, testLetters, testCorrect, streak, lives, selectedLevel, getAcqForLevel]);
+  }, [testWord, testBuilt, testLetters, testCorrect, streak, lives, selectedLevel, getAcqForLevel, testPool, fullClearDone, lastMilestone]);
 
   const speakTestWord = useCallback(() => {
     if (!testWord || typeof window === "undefined" || !window.speechSynthesis) return;
@@ -385,10 +411,11 @@ export default function VocabularyPage() {
                 <div className={`flex items-center gap-1 rounded-lg px-2 py-0.5 ${t.innerCard}`}>
                   <span className="text-base">🔥</span>
                   <span className={`font-black text-lg ${t.titleText}`}>{streak}</span>
+                  <span className={`text-[10px] font-bold ${t.subText}`}>{isKid ? "れんぞく" : "連続正解"}</span>
                 </div>
                 <div className="flex items-center gap-0.5 px-2">
                   <span className="text-[10px]">👑</span>
-                  <span className={`text-[11px] font-bold ${t.subText}`}>{isKid ? "さいこう" : "最高"} {bestStreak}</span>
+                  <span className={`text-[11px] font-bold ${t.subText}`}>{isKid ? "さいこう" : "最高"} {bestStreak}{isKid ? "もん" : "問"}</span>
                 </div>
               </div>
             </div>
@@ -558,10 +585,17 @@ export default function VocabularyPage() {
                   <p className={`text-sm ${t.subText}`}>
                     {isKid ? "れんぞく せいかい" : "連続正解"}
                   </p>
-                  <p className={`text-5xl font-black ${t.titleText}`}>{streak}</p>
+                  <p className={`text-5xl font-black ${t.titleText}`}>
+                    {streak}
+                    <span className={`text-lg font-bold ${t.subText} ml-1`}>{isKid ? "もん" : "問"}</span>
+                  </p>
                   <p className={`text-xs ${t.subText}`}>
                     {isKid ? `👑 さいこうは ${bestStreak}もん` : `👑 最高記録: ${bestStreak}問`}
                   </p>
+                </div>
+                <div className={`w-full rounded-xl ${t.innerCard} px-4 py-3 text-xs ${t.subText} space-y-1.5 text-center`}>
+                  <p>🎫 {isKid ? "50もんごとに チケット+1まい もらえるよ！" : "50問ごとにチケット+1枚獲得"}</p>
+                  <p>🎊 {isKid ? "ぜんぶ せいかいで チケット+5まい！" : "全単語クリアでチケット+5枚獲得"}</p>
                 </div>
                 <button
                   onClick={openTest}
@@ -578,6 +612,20 @@ export default function VocabularyPage() {
               </div>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* ── チケット付与演出オーバーレイ ─────────────────────────── */}
+      {ticketReward && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center pointer-events-none">
+          <div className="flex flex-col items-center gap-3 animate-bounce">
+            <div className="text-[6rem] leading-none animate-pulse drop-shadow-lg">🎫</div>
+            <div className="bg-yellow-400 text-yellow-900 font-black text-center px-8 py-5 rounded-3xl shadow-2xl border-4 border-yellow-300">
+              <p className="text-5xl font-black mb-1">+{ticketReward.count}</p>
+              <p className="text-base">{ticketReward.reason}</p>
+              <p className="text-sm mt-1 opacity-80">チケット獲得！</p>
+            </div>
           </div>
         </div>
       )}
@@ -606,14 +654,16 @@ export default function VocabularyPage() {
             <div className="flex items-center gap-1 text-xs font-bold flex-shrink-0">
               <span>🔥</span>
               <span className={`font-black ${t.titleText}`}>{streak}</span>
+              <span className={`${t.subText} text-[10px]`}>{isKid ? "れんぞく" : "連続正解"}</span>
               <span className={`${t.subText} mx-0.5`}>/</span>
               <span className={t.bodyText}>{acqCount}</span>
-              <span className={t.subText}>{isKid ? "語" : "語"}</span>
+              <span className={`${t.subText} text-[10px]`}>{isKid ? "ごとりちゅう" : "語取得中"}</span>
             </div>
             <div className="flex items-center gap-0.5 text-xs">
               <span>👑</span>
               <span className={`font-bold ${t.subText}`}>{isKid ? "さいこう" : "最高"}</span>
               <span className={`font-black ${t.titleText} ml-0.5`}>{bestStreak}</span>
+              <span className={`${t.subText} text-[10px]`}>{isKid ? "もん" : "問"}</span>
             </div>
           </div>
         </div>
