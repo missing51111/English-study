@@ -115,6 +115,8 @@ export default function VocabularyPage() {
   const [lives, setLives]             = useState(3);
   const [testGameOver, setTestGameOver] = useState(false);
   const [testShowAnswer, setTestShowAnswer] = useState(false);
+  const [testPool, setTestPool]       = useState<Word[] | null>(null); // ふくしゅう用プール
+  const [wrongWordList, setWrongWordList] = useState<string[]>([]); // 間違えた単語リスト
 
   // localStorageからテーマ・取得済み単語を読み込む
   useLayoutEffect(() => {
@@ -134,6 +136,10 @@ export default function VocabularyPage() {
           setBestStreakMap(prev => ({ ...prev, ...parsed }));
         }
       } catch { /* ignore */ }
+    }
+    const savedWrong = localStorage.getItem("vocabTestWrong");
+    if (savedWrong) {
+      try { setWrongWordList(JSON.parse(savedWrong)); } catch { /* ignore */ }
     }
   }, []);
 
@@ -205,8 +211,31 @@ export default function VocabularyPage() {
     setTestGameOver(false);
     setTestShowAnswer(false);
     setStreak(0);
+    setTestPool(null);
     setTestMode(true);
   }, [selectedLevel, getAcqForLevel]);
+
+  const openReview = useCallback(() => {
+    const saved = JSON.parse(localStorage.getItem("vocabTestWrong") ?? "[]") as string[];
+    if (saved.length === 0) return;
+    const allWords = Object.values(wordsByLevel).flat();
+    const pool = saved
+      .map(wStr => allWords.find(wd => wd.word === wStr))
+      .filter((wd): wd is Word => !!wd)
+      .slice(0, 10);
+    if (pool.length === 0) return;
+    const w = pool[Math.floor(Math.random() * pool.length)];
+    setTestWord(w);
+    setTestBuilt([]);
+    setTestCorrect(false);
+    setTestLetters(buildTestLetters(w));
+    setLives(3);
+    setTestGameOver(false);
+    setTestShowAnswer(false);
+    setStreak(0);
+    setTestPool(pool);
+    setTestMode(true);
+  }, [wordsByLevel]);
 
   const handleTestTap = useCallback((id: number) => {
     if (!testWord || testCorrect) return;
@@ -238,10 +267,10 @@ export default function VocabularyPage() {
         });
         setTestCorrect(true);
         setTimeout(() => {
-          const acq = getAcqForLevel(selectedLevel);
-          const candidates = acq.filter(w => w.id !== testWord.id);
-          const pool = candidates.length > 0 ? candidates : acq;
-          const next = pool[Math.floor(Math.random() * pool.length)];
+          const currentPool = testPool ?? getAcqForLevel(selectedLevel);
+          const candidates = currentPool.filter(w => w.id !== testWord.id);
+          const nextPool = candidates.length > 0 ? candidates : currentPool;
+          const next = nextPool[Math.floor(Math.random() * nextPool.length)];
           setTestWord(next);
           setTestBuilt([]);
           setTestCorrect(false);
@@ -253,6 +282,12 @@ export default function VocabularyPage() {
       const newLives = lives - 1;
       setLives(newLives);
       if (newLives <= 0) {
+        // 間違えた単語を localStorage に保存（最大10件）
+        setWrongWordList(prev => {
+          const updated = [testWord.word, ...prev.filter(w => w !== testWord.word)].slice(0, 10);
+          localStorage.setItem("vocabTestWrong", JSON.stringify(updated));
+          return updated;
+        });
         setTestShowAnswer(true);
         return;
       }
@@ -560,16 +595,8 @@ export default function VocabularyPage() {
           <span className={`text-xs ${t.subText} flex-shrink-0`}>全 {totalCount} 語</span>
         </div>
 
-        {/* テスト行（2行目） */}
+        {/* ストリーク行（2行目） */}
         <div className="flex items-center gap-2 px-4 pb-2 max-w-lg mx-auto">
-          <button
-            onClick={openTest}
-            disabled={!testAvail}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-sm flex-shrink-0
-              ${t.bar} text-white active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed`}
-          >
-            🎯 {isKid ? "テスト" : "テスト"}
-          </button>
           <div className={`flex items-center gap-3 rounded-lg px-3 py-1 flex-1 min-w-0 ${t.innerCard}`}>
             <div className="flex items-center gap-1 text-xs font-bold flex-shrink-0">
               <span>🔥</span>
@@ -728,7 +755,35 @@ export default function VocabularyPage() {
             </div>
           </div>
         )}
+        {/* フッター分の余白 */}
+        <div style={{ height: "calc(4rem + env(safe-area-inset-bottom))" }} />
       </main>
+
+      {/* フッター：テスト・ふくしゅうボタン */}
+      <div
+        className={`fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-lg border-t flex gap-2 px-4 pt-2 ${t.nav} ${t.navBorder}`}
+        style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))" }}
+      >
+        <button
+          onClick={openTest}
+          disabled={!testAvail}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-bold text-sm ${t.bar} text-white active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow`}
+        >
+          🎯 {isKid ? "テスト" : "テスト"}
+        </button>
+        <button
+          onClick={openReview}
+          disabled={wrongWordList.length === 0}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl font-bold text-sm border-2 ${t.border} ${t.bodyText} ${t.card} active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed`}
+        >
+          📖 {isKid ? "ふくしゅう" : "復習"}
+          {wrongWordList.length > 0 && (
+            <span className={`text-xs font-black px-1.5 py-0.5 rounded-full ${t.bar} text-white`}>
+              {Math.min(wrongWordList.length, 10)}
+            </span>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
