@@ -624,12 +624,12 @@ function DebugPanel() {
           <div>
             <p className="text-gray-400 font-bold text-xs mb-2">🎫 チケット枚数</p>
             <div className="flex items-center gap-2">
-              <button onClick={() => saveTickets(dbTickets - 1)} className={btnSm}>−</button>
+              <button onClick={() => setDbTickets(v => Math.max(0, v - 1))} className={btnSm}>−</button>
               <input type="number" value={dbTickets} min={0}
                 onChange={e => setDbTickets(Number(e.target.value))}
                 className={numCls}
               />
-              <button onClick={() => saveTickets(dbTickets + 1)} className={btnSm}>＋</button>
+              <button onClick={() => setDbTickets(v => v + 1)} className={btnSm}>＋</button>
               <button onClick={() => saveTickets(dbTickets)} className={btnApl}>適用</button>
               <button onClick={() => saveTickets(0)} className={btnDng}>リセット</button>
             </div>
