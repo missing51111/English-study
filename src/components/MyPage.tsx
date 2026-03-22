@@ -218,11 +218,12 @@ export default function MyPage() {
           </div>
         </Section>
 
-        {/* ── DEBUGパネル ── */}
-        <DebugPanel />
       </>}
 
       {tab === "about" && <AboutSection />}
+
+      {/* ── DEBUGパネル（タブ共通・最下部） ── */}
+      <DebugPanel />
 
       </div>
 
