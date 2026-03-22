@@ -555,7 +555,7 @@ export default function HomePage() {
           <p className={`text-xs font-bold mb-1.5 ${t.subText}`}>
             {isKid ? "🔡 さいきんゲットしたことば" : "🔡 最近取得した単語"}
           </p>
-          <div className="overflow-y-auto space-y-1.5" style={{ maxHeight: "9.5rem" }}>
+          <div className="space-y-1.5">
             {recentWords.map(w => (
               <div key={w.word} className={`rounded-xl border ${t.border} flex items-stretch overflow-hidden ${t.card} shadow-sm`}>
                 <div className={`flex-shrink-0 flex items-center justify-center ${t.innerCard}`} style={{ width: "3rem" }}>
