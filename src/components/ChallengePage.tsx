@@ -298,10 +298,24 @@ export default function ChallengePage() {
   const speakSentence = useCallback((sentence: string) => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
     window.speechSynthesis.cancel();
-    const utt = new SpeechSynthesisUtterance(sentence);
-    utt.lang = "en-US";
-    utt.rate = 0.85;
-    window.speechSynthesis.speak(utt);
+    const doSpeak = () => {
+      const utt = new SpeechSynthesisUtterance(sentence);
+      utt.lang = "en-US";
+      utt.rate = 0.85;
+      // iPad対策: ボイス未指定だと単語ごとに読む場合があるため明示的に指定
+      const voices = window.speechSynthesis.getVoices();
+      const enVoice =
+        voices.find(v => v.lang === "en-US" && v.localService) ??
+        voices.find(v => v.lang.startsWith("en-") && v.localService) ??
+        voices.find(v => v.lang.startsWith("en-"));
+      if (enVoice) utt.voice = enVoice;
+      window.speechSynthesis.speak(utt);
+    };
+    if (window.speechSynthesis.getVoices().length > 0) {
+      doSpeak();
+    } else {
+      window.speechSynthesis.addEventListener("voiceschanged", doSpeak, { once: true });
+    }
   }, []);
 
   // ============================================================
