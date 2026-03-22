@@ -294,7 +294,14 @@ function AboutSection() {
     { icon: "🔡", title: "単語つくり機能（チケット消費）", tags: ["letter game", "localStorage", "Supabase"] },
   ];
 
-  const planned: { icon: string; title: string; prio: number; desc: string; api?: boolean }[] = [];
+  const planned: { icon: string; title: string; prio: number; desc: string; api?: boolean }[] = [
+    {
+      icon: "🖼️",
+      title: "問題出題文章への挿絵表示",
+      prio: 4,
+      desc: "並び替え問題・チャレンジ問題の出題時に、文章の内容に合った挿絵（イラスト画像）を表示する。視覚的なヒントで意味理解を促進し、特に低年齢層の学習効果を高める。",
+    },
+  ];
 
   const skills = [
     { cat: "フロント",  items: ["Next.js 15", "React 19", "TypeScript", "Tailwind CSS"] },
