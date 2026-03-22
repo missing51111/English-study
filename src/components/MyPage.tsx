@@ -2,6 +2,7 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { THEMES } from "@/lib/themes";
+import { supabase } from "@/lib/supabase";
 
 // 難易度ラベル
 const LEVEL_LABEL: Record<string, { name: string; emoji: string; kid: boolean }> = {
@@ -450,6 +451,7 @@ function DebugPanel() {
   const [dbBest,     setDbBest]     = useState<Record<string, number>>({});
   const [dbWrong,    setDbWrong]    = useState(0);
   const [dbPro,      setDbPro]      = useState(false);
+  const [dbLevelData, setDbLevelData] = useState<Record<string, { total: number; acquired: number; loading: boolean }>>({});
 
   // パネルを開くたびに最新値を読み込む
   useEffect(() => {
@@ -483,6 +485,20 @@ function DebugPanel() {
     setDbWrong(wrong ? JSON.parse(wrong).length : 0);
 
     setDbPro(localStorage.getItem("proUnlocked") === "true");
+
+    // レベル別単語カウントを非同期取得
+    const acqSet = new Set(JSON.parse(localStorage.getItem("acquiredWords") ?? "[]") as string[]);
+    setDbLevelData(Object.fromEntries(DBG_LEVELS.map(lv => [lv, { total: 0, acquired: 0, loading: true }])));
+    Promise.all(
+      DBG_LEVELS.map(async lv => {
+        const { data } = await supabase.from("words").select("word").eq("level", lv);
+        return [lv, {
+          total: data?.length ?? 0,
+          acquired: data?.filter(w => acqSet.has(w.word)).length ?? 0,
+          loading: false,
+        }] as const;
+      })
+    ).then(entries => setDbLevelData(Object.fromEntries(entries)));
   }, [open]);
 
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(""), 2000); };
@@ -508,6 +524,34 @@ function DebugPanel() {
     setDbCorrect(s.correct); setDbTotal(s.total);
     flash("📊 スコア更新");
   };
+  const acquireAllForLevel = async (lv: string) => {
+    setDbLevelData(prev => ({ ...prev, [lv]: { ...prev[lv], loading: true } }));
+    const { data } = await supabase.from("words").select("word").eq("level", lv);
+    if (!data) { setDbLevelData(prev => ({ ...prev, [lv]: { ...prev[lv], loading: false } })); return; }
+    const acqList = JSON.parse(localStorage.getItem("acquiredWords") ?? "[]") as string[];
+    const next = [...new Set([...acqList, ...data.map(w => w.word)])];
+    localStorage.setItem("acquiredWords", JSON.stringify(next));
+    setDbAcqCount(next.length);
+    setDbLevelData(prev => ({ ...prev, [lv]: { total: data.length, acquired: data.length, loading: false } }));
+    flash(`✅ ${DBG_LEVEL_NAME[lv]} 全取得（${data.length}語）`);
+  };
+
+  const resetLevelWords = async (lv: string) => {
+    setDbLevelData(prev => ({ ...prev, [lv]: { ...prev[lv], loading: true } }));
+    const { data } = await supabase.from("words").select("word").eq("level", lv);
+    if (!data) { setDbLevelData(prev => ({ ...prev, [lv]: { ...prev[lv], loading: false } })); return; }
+    const levelSet = new Set(data.map(w => w.word));
+    const autoAcq = new Set(JSON.parse(localStorage.getItem("autoAcquiredWords") ?? "[]") as string[]);
+    const acqList = JSON.parse(localStorage.getItem("acquiredWords") ?? "[]") as string[];
+    // このレベルの単語のうち autoAcquiredWords 以外を削除
+    const next = acqList.filter(w => !levelSet.has(w) || autoAcq.has(w));
+    localStorage.setItem("acquiredWords", JSON.stringify(next));
+    setDbAcqCount(next.length);
+    const keptInLevel = next.filter(w => levelSet.has(w)).length;
+    setDbLevelData(prev => ({ ...prev, [lv]: { total: data.length, acquired: keptInLevel, loading: false } }));
+    flash(`🗑 ${DBG_LEVEL_NAME[lv]} リセット（自動取得 ${keptInLevel}語を保持）`);
+  };
+
   const clearAcquired = () => {
     if (!confirm("ガチャで取得した単語をクリアします。\n排出対象外（名詞・前置詞・接続詞など）は保持されます。")) return;
     const autoAcq = JSON.parse(localStorage.getItem("autoAcquiredWords") ?? "[]") as string[];
@@ -643,6 +687,51 @@ function DebugPanel() {
                 </p>
               </div>
               <button onClick={clearAcquired} className={btnDng}>ガチャ分クリア</button>
+            </div>
+          </div>
+
+          {/* ── 難易度別 全単語取得/リセット ── */}
+          <div>
+            <p className="text-gray-400 font-bold text-xs mb-2">🎓 難易度別 全単語取得 / リセット</p>
+            <div className="space-y-1.5">
+              {DBG_LEVELS.map(lv => {
+                const ld = dbLevelData[lv];
+                const pct = ld && ld.total > 0 ? Math.round((ld.acquired / ld.total) * 100) : 0;
+                return (
+                  <div key={lv} className="bg-gray-800 rounded-lg px-3 py-2 flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-gray-300 text-xs font-bold">{DBG_LEVEL_NAME[lv]}</span>
+                        {ld ? (
+                          ld.loading
+                            ? <span className="text-gray-600 text-[10px]">読込中…</span>
+                            : <span className="text-gray-500 text-[10px]">{ld.acquired}/{ld.total}語 ({pct}%)</span>
+                        ) : <span className="text-gray-600 text-[10px]">—</span>}
+                      </div>
+                      <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-blue-600 rounded-full transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                    <button
+                      disabled={ld?.loading}
+                      onClick={() => acquireAllForLevel(lv)}
+                      className="px-2 py-1 rounded-lg bg-blue-900 text-blue-300 font-bold text-[11px] flex-shrink-0 disabled:opacity-40"
+                    >
+                      全取得
+                    </button>
+                    <button
+                      disabled={ld?.loading}
+                      onClick={() => resetLevelWords(lv)}
+                      className="px-2 py-1 rounded-lg bg-red-950 text-red-400 font-bold text-[11px] flex-shrink-0 disabled:opacity-40"
+                    >
+                      リセット
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
