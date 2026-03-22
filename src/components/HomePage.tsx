@@ -150,8 +150,6 @@ function ParentPanel({ lu, t, levelId }: { lu: LevelUI; t: Theme; levelId: strin
   const todayStr = getTodayStr();
 
   const [stats, setStats] = useState({ accuracyToday: 0, correct: 0, total: 0, acquiredCount: 0, quizCount: 0 });
-  interface RecentWord { word: string; meaning: string; part_of_speech: string | null; }
-  const [recentWords, setRecentWords] = useState<RecentWord[]>([]);
 
   useEffect(() => {
     const score = localStorage.getItem("dailyScore");
@@ -166,44 +164,6 @@ function ParentPanel({ lu, t, levelId }: { lu: LevelUI; t: Theme; levelId: strin
     const accuracyToday = total > 0 ? Math.round((correct / total) * 100) : 0;
     setStats({ accuracyToday, correct, total, acquiredCount, quizCount });
   }, [open]); // パネルを開くたびに最新値を取得
-
-  // 最近取得した単語5件をSupabaseから取得（初回マウント時）
-  useEffect(() => {
-    const acqList = JSON.parse(localStorage.getItem("acquiredWords") ?? "[]") as string[];
-    const last5 = acqList.slice(-5).reverse();
-    if (last5.length === 0) return;
-    supabase
-      .from("words")
-      .select("word,meaning,part_of_speech")
-      .in("word", last5)
-      .then(({ data }) => {
-        if (data) {
-          const sorted = last5
-            .map(w => data.find(d => d.word === w))
-            .filter((d): d is RecentWord => !!d);
-          setRecentWords(sorted);
-        }
-      });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const speakWord = useCallback((word: string) => {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const doSpeak = () => {
-      const utt = new SpeechSynthesisUtterance(word);
-      utt.lang = "en-US";
-      utt.rate = 0.85;
-      const voices = window.speechSynthesis.getVoices();
-      const enVoice =
-        voices.find(v => v.lang === "en-US" && v.localService) ??
-        voices.find(v => v.lang.startsWith("en-") && v.localService) ??
-        voices.find(v => v.lang.startsWith("en-"));
-      if (enVoice) utt.voice = enVoice;
-      window.speechSynthesis.speak(utt);
-    };
-    if (window.speechSynthesis.getVoices().length > 0) doSpeak();
-    else window.speechSynthesis.addEventListener("voiceschanged", doSpeak, { once: true });
-  }, []);
 
   // ── ダミーコメント（統計をもとにテンプレート生成） ────────
   const dummyComment = (() => {
@@ -249,34 +209,6 @@ function ParentPanel({ lu, t, levelId }: { lu: LevelUI; t: Theme; levelId: strin
                 </div>
               ))}
             </div>
-            {recentWords.length > 0 && (
-              <div>
-                <p className={`text-xs font-bold mb-1 ${t.subText}`}>
-                  {isBaby ? "🔡 さいきんゲットしたことば" : "🔡 最近取得した単語"}
-                </p>
-                <div className="overflow-y-auto space-y-1.5" style={{ maxHeight: "9.5rem" }}>
-                  {recentWords.map(w => (
-                    <div key={w.word} className={`rounded-xl border ${t.border} flex items-stretch overflow-hidden ${t.card} shadow-sm`}>
-                      <div className={`flex-shrink-0 flex items-center justify-center ${t.innerCard}`} style={{ width: "3rem" }}>
-                        <span style={{ fontSize: "1.5rem", lineHeight: 1 }}>{EMOJI_MAP[w.word.toLowerCase()] ?? "📝"}</span>
-                      </div>
-                      <div className="flex-1 min-w-0 flex flex-col justify-center px-3 py-2">
-                        <p className={`text-xs leading-none ${t.subText}`}>{w.meaning}</p>
-                        <p className={`font-bold text-base leading-tight ${t.bodyText}`}>{w.word}</p>
-                      </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); speakWord(w.word); }}
-                        className="flex items-center justify-center flex-shrink-0 px-3 opacity-40 hover:opacity-100 active:scale-90 transition-all"
-                        style={{ fontSize: "1.2rem" }}
-                        aria-label={`${w.word}の発音`}
-                      >
-                        🔊
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         ) : (
           <div className="px-4 py-3 flex items-center justify-between">
@@ -379,6 +311,8 @@ export default function HomePage() {
   const [missionReview, setMissionReview] = useState(0);
   const [tickets, setTickets] = useState(0);
   const [ticketAwarded, setTicketAwarded] = useState(false);
+  interface RecentWord { word: string; meaning: string; part_of_speech: string | null; }
+  const [recentWords, setRecentWords] = useState<RecentWord[]>([]);
 
   // 今日の日付を YYYY-MM-DD 形式（ローカル時間）で返す
   const getTodayStr = () => {
@@ -431,6 +365,44 @@ export default function HomePage() {
       }
     }
   }, [missionQuiz, missionReview, ticketAwarded, tickets, selectedLevel]);
+  // 最近取得した単語5件をSupabaseから取得（初回マウント時）
+  useEffect(() => {
+    const acqList = JSON.parse(localStorage.getItem("acquiredWords") ?? "[]") as string[];
+    const last5 = acqList.slice(-5).reverse();
+    if (last5.length === 0) return;
+    supabase
+      .from("words")
+      .select("word,meaning,part_of_speech")
+      .in("word", last5)
+      .then(({ data }) => {
+        if (data) {
+          const sorted = last5
+            .map(w => data.find(d => d.word === w))
+            .filter((d): d is RecentWord => !!d);
+          setRecentWords(sorted);
+        }
+      });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const speakWord = useCallback((word: string) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const doSpeak = () => {
+      const utt = new SpeechSynthesisUtterance(word);
+      utt.lang = "en-US";
+      utt.rate = 0.85;
+      const voices = window.speechSynthesis.getVoices();
+      const enVoice =
+        voices.find(v => v.lang === "en-US" && v.localService) ??
+        voices.find(v => v.lang.startsWith("en-") && v.localService) ??
+        voices.find(v => v.lang.startsWith("en-"));
+      if (enVoice) utt.voice = enVoice;
+      window.speechSynthesis.speak(utt);
+    };
+    if (window.speechSynthesis.getVoices().length > 0) doSpeak();
+    else window.speechSynthesis.addEventListener("voiceschanged", doSpeak, { once: true });
+  }, []);
+
   const currentLevel = LEVELS.find(l => l.id === selectedLevel) ?? LEVELS[0];
   const lu = (LEVEL_UI as Record<string, typeof LEVEL_UI.baby>)[selectedLevel] ?? LEVEL_UI.high;
   const t = THEMES.find(th => th.id === themeId) ?? THEMES[0];
@@ -576,6 +548,36 @@ export default function HomePage() {
           {lu.reviewLabel}
         </button>
       </div>
+
+      {/* さいきんゲットしたことば */}
+      {recentWords.length > 0 && (
+        <div>
+          <p className={`text-xs font-bold mb-1.5 ${t.subText}`}>
+            {isKid ? "🔡 さいきんゲットしたことば" : "🔡 最近取得した単語"}
+          </p>
+          <div className="overflow-y-auto space-y-1.5" style={{ maxHeight: "9.5rem" }}>
+            {recentWords.map(w => (
+              <div key={w.word} className={`rounded-xl border ${t.border} flex items-stretch overflow-hidden ${t.card} shadow-sm`}>
+                <div className={`flex-shrink-0 flex items-center justify-center ${t.innerCard}`} style={{ width: "3rem" }}>
+                  <span style={{ fontSize: "1.5rem", lineHeight: 1 }}>{EMOJI_MAP[w.word.toLowerCase()] ?? "📝"}</span>
+                </div>
+                <div className="flex-1 min-w-0 flex flex-col justify-center px-3 py-2">
+                  <p className={`text-xs leading-none ${t.subText}`}>{w.meaning}</p>
+                  <p className={`font-bold text-base leading-tight ${t.bodyText}`}>{w.word}</p>
+                </div>
+                <button
+                  onClick={() => speakWord(w.word)}
+                  className="flex items-center justify-center flex-shrink-0 px-3 opacity-40 hover:opacity-100 active:scale-90 transition-all"
+                  style={{ fontSize: "1.2rem" }}
+                  aria-label={`${w.word}の発音`}
+                >
+                  🔊
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div style={{ height: "calc(3.5rem + env(safe-area-inset-bottom))" }} />
 
