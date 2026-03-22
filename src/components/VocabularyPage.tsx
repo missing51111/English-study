@@ -166,12 +166,17 @@ export default function VocabularyPage() {
         const wordData = total === 0 ? groupByLevel(MOCK_WORDS) : results;
         setWordsByLevel(wordData);
 
-        // 名詞は全て取得済みにする（初回 + 新規追加時も対応）
+        // 排出対象外の品詞（ガチャで取得不可・自動取得）
+        const GACHA_EXCLUDED_POS = ["noun", "preposition", "conjunction", "article", "pronoun"];
         const allWords = Object.values(wordData).flat();
-        const nounWords = allWords.filter(w => w.part_of_speech === "noun").map(w => w.word);
+        const excludedWords = allWords
+          .filter(w => w.part_of_speech && GACHA_EXCLUDED_POS.includes(w.part_of_speech))
+          .map(w => w.word);
+        // デバッグクリア時の復元用に保存
+        localStorage.setItem("autoAcquiredWords", JSON.stringify(excludedWords));
         setAcquiredWords(prev => {
           const next = new Set(prev);
-          nounWords.forEach(w => next.add(w));
+          excludedWords.forEach(w => next.add(w));
           localStorage.setItem("acquiredWords", JSON.stringify([...next]));
           return next;
         });

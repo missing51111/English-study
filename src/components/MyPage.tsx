@@ -220,10 +220,11 @@ export default function MyPage() {
 
       </>}
 
-      {tab === "about" && <AboutSection />}
-
-      {/* ── DEBUGパネル（タブ共通・最下部） ── */}
-      <DebugPanel />
+      {tab === "about" && <>
+        <AboutSection />
+        {/* ── DEBUGパネル（このアプリタブ最下部） ── */}
+        <DebugPanel />
+      </>}
 
       </div>
 
@@ -445,6 +446,7 @@ function DebugPanel() {
   const [dbCorrect,  setDbCorrect]  = useState(0);
   const [dbTotal,    setDbTotal]    = useState(0);
   const [dbAcqCount, setDbAcqCount] = useState(0);
+  const [dbAutoAcqCount, setDbAutoAcqCount] = useState(0);
   const [dbBest,     setDbBest]     = useState<Record<string, number>>({});
   const [dbWrong,    setDbWrong]    = useState(0);
   const [dbPro,      setDbPro]      = useState(false);
@@ -471,6 +473,8 @@ function DebugPanel() {
 
     const acq = localStorage.getItem("acquiredWords");
     setDbAcqCount(acq ? JSON.parse(acq).length : 0);
+    const autoAcq = localStorage.getItem("autoAcquiredWords");
+    setDbAutoAcqCount(autoAcq ? JSON.parse(autoAcq).length : 0);
 
     const best = localStorage.getItem("vocabBestStreak");
     setDbBest(best ? JSON.parse(best) : {});
@@ -505,9 +509,11 @@ function DebugPanel() {
     flash("📊 スコア更新");
   };
   const clearAcquired = () => {
-    if (!confirm("取得済み単語をすべて削除しますか？")) return;
-    localStorage.removeItem("acquiredWords");
-    setDbAcqCount(0); flash("📚 取得単語クリア");
+    if (!confirm("ガチャで取得した単語をクリアします。\n排出対象外（名詞・前置詞・接続詞など）は保持されます。")) return;
+    const autoAcq = JSON.parse(localStorage.getItem("autoAcquiredWords") ?? "[]") as string[];
+    localStorage.setItem("acquiredWords", JSON.stringify(autoAcq));
+    setDbAcqCount(autoAcq.length);
+    flash(`📚 取得単語クリア（自動取得 ${autoAcq.length} 語を保持）`);
   };
   const resetBest = () => {
     localStorage.removeItem("vocabBestStreak");
@@ -524,11 +530,16 @@ function DebugPanel() {
     flash("⚠️ 今日のデータリセット");
   };
   const clearAll = () => {
-    if (!confirm("全データをクリアします。よろしいですか？")) return;
+    if (!confirm("全データをクリアします。\n排出対象外単語（名詞・前置詞・接続詞など）は保持されます。")) return;
+    const autoAcq = JSON.parse(localStorage.getItem("autoAcquiredWords") ?? "[]") as string[];
     localStorage.clear();
+    if (autoAcq.length > 0) {
+      localStorage.setItem("acquiredWords", JSON.stringify(autoAcq));
+      localStorage.setItem("autoAcquiredWords", JSON.stringify(autoAcq));
+    }
     setDbTickets(0); setDbQuiz(0); setDbReview(0); setDbCorrect(0);
-    setDbTotal(0); setDbAcqCount(0); setDbBest({}); setDbWrong(0); setDbPro(false);
-    flash("🗑 全データクリア");
+    setDbTotal(0); setDbAcqCount(autoAcq.length); setDbBest({}); setDbWrong(0); setDbPro(false);
+    flash(`🗑 全データクリア（自動取得 ${autoAcq.length} 語を保持）`);
   };
 
   const numCls = "w-14 text-center bg-gray-800 rounded-lg px-2 py-1.5 font-bold text-white border border-gray-600 text-sm";
@@ -625,8 +636,13 @@ function DebugPanel() {
           <div>
             <p className="text-gray-400 font-bold text-xs mb-2">📚 取得済み単語</p>
             <div className="flex items-center justify-between bg-gray-800 rounded-lg px-3 py-2">
-              <span className="font-black text-white">{dbAcqCount} <span className="text-gray-400 font-normal text-xs">語</span></span>
-              <button onClick={clearAcquired} className={btnDng}>全クリア</button>
+              <div>
+                <span className="font-black text-white">{dbAcqCount} <span className="text-gray-400 font-normal text-xs">語</span></span>
+                <p className="text-gray-600 text-[10px] mt-0.5">
+                  排出対象外（自動）{dbAutoAcqCount}語 ／ ガチャ取得 {Math.max(0, dbAcqCount - dbAutoAcqCount)}語
+                </p>
+              </div>
+              <button onClick={clearAcquired} className={btnDng}>ガチャ分クリア</button>
             </div>
           </div>
 
