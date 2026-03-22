@@ -535,20 +535,6 @@ export default function HomePage() {
       {/* 保護者パネル（無料のみ） */}
       {isFree && <ParentPanel lu={lu} t={t} levelId={selectedLevel} />}
 
-      {/* スタートボタン */}
-      <div className="flex flex-col gap-2">
-        <button
-          onClick={() => router.push(`/quiz?level=${selectedLevel}`)}
-          className={`w-full ${t.startBtn} ${t.startText} font-bold shadow-lg active:scale-95 transition-all ${lu.startRound} ${lu.startSize}`}>
-          {lu.startLabel}
-        </button>
-        <button
-          onClick={() => router.push(`/challenge?level=${selectedLevel}`)}
-          className={`w-full border font-bold active:scale-95 transition-all ${lu.reviewRound} ${lu.reviewSize} ${t.reviewBtn} ${t.reviewText} ${t.border}`}>
-          {lu.reviewLabel}
-        </button>
-      </div>
-
       {/* さいきんゲットしたことば */}
       {recentWords.length > 0 && (
         <div>
@@ -578,6 +564,20 @@ export default function HomePage() {
           </div>
         </div>
       )}
+
+      {/* スタートボタン */}
+      <div className="flex flex-col gap-2">
+        <button
+          onClick={() => router.push(`/quiz?level=${selectedLevel}`)}
+          className={`w-full ${t.startBtn} ${t.startText} font-bold shadow-lg active:scale-95 transition-all ${lu.startRound} ${lu.startSize}`}>
+          {lu.startLabel}
+        </button>
+        <button
+          onClick={() => router.push(`/challenge?level=${selectedLevel}`)}
+          className={`w-full border font-bold active:scale-95 transition-all ${lu.reviewRound} ${lu.reviewSize} ${t.reviewBtn} ${t.reviewText} ${t.border}`}>
+          {lu.reviewLabel}
+        </button>
+      </div>
 
       <div style={{ height: "calc(3.5rem + env(safe-area-inset-bottom))" }} />
 
