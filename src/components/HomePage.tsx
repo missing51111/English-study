@@ -305,6 +305,7 @@ export default function HomePage() {
   const [selectedLevel, setSelectedLevel] = useState("baby");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [lockedTarget, setLockedTarget] = useState<{ id: string; label: string } | null>(null);
+  const [proUnlocked, setProUnlocked] = useState(false);
   const [themeId, setThemeId] = useState("pink");
   const [themeOpen, setThemeOpen] = useState(false);
   const [missionQuiz, setMissionQuiz] = useState(0);
@@ -333,6 +334,7 @@ export default function HomePage() {
     }
     const savedT = localStorage.getItem("tickets");
     if (savedT) setTickets(parseInt(savedT));
+    if (localStorage.getItem("proUnlocked") === "true") setProUnlocked(true);
     const savedM = localStorage.getItem("dailyMissions");
     if (savedM) {
       const parsed = JSON.parse(savedM);
@@ -411,7 +413,7 @@ export default function HomePage() {
   const isKid = selectedLevel === "baby" || selectedLevel === "elementary";
 
   const handleLevelSelect = (lv: typeof LEVELS[number]) => {
-    if (!lv.free) setLockedTarget(lv);
+    if (!lv.free && !proUnlocked) setLockedTarget(lv);
     else {
       setSelectedLevel(lv.id);
       localStorage.setItem("level", lv.id);
@@ -434,7 +436,7 @@ export default function HomePage() {
           onClick={() => setDropdownOpen(v => !v)}
           className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r ${t.levelBtn} text-white shadow relative`}
         >
-          <span>{currentLevel.free ? currentLevel.emoji : "🔒"}</span>
+          <span>{currentLevel.free || proUnlocked ? currentLevel.emoji : "🔒"}</span>
           <span className="whitespace-nowrap">{currentLevel.label}</span>
           <span className="text-white/70">{dropdownOpen ? "▲" : "▼"}</span>
           {dropdownOpen && (
@@ -443,10 +445,11 @@ export default function HomePage() {
               {LEVELS.map(lv => (
                 <button key={lv.id} onClick={() => handleLevelSelect(lv)}
                   className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm ${t.itemHover} transition-all ${selectedLevel === lv.id ? t.innerCard : ""}`}>
-                  <span className="text-lg">{lv.free ? lv.emoji : "🔒"}</span>
-                  <span className={`font-bold ${lv.free ? t.bodyText : t.subText}`}>{lv.label}</span>
+                  <span className="text-lg">{lv.free || proUnlocked ? lv.emoji : "🔒"}</span>
+                  <span className={`font-bold ${lv.free || proUnlocked ? t.bodyText : t.subText}`}>{lv.label}</span>
                   <span className={`text-xs ml-auto pl-4 ${t.subText}`}>{lv.sub}</span>
-                  {!lv.free && <span className="text-yellow-500 text-xs font-bold ml-1">PRO</span>}
+                  {!lv.free && !proUnlocked && <span className="text-yellow-500 text-xs font-bold ml-1">PRO</span>}
+                  {!lv.free && proUnlocked && <span className="text-green-400 text-xs font-bold ml-1">🔓DEV</span>}
                   {selectedLevel === lv.id && <span className={`ml-1 ${t.accent}`}>✓</span>}
                 </button>
               ))}

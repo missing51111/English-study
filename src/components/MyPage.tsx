@@ -446,6 +446,7 @@ function DebugPanel() {
   const [dbAcqCount, setDbAcqCount] = useState(0);
   const [dbBest,     setDbBest]     = useState<Record<string, number>>({});
   const [dbWrong,    setDbWrong]    = useState(0);
+  const [dbPro,      setDbPro]      = useState(false);
 
   // パネルを開くたびに最新値を読み込む
   useEffect(() => {
@@ -475,6 +476,8 @@ function DebugPanel() {
 
     const wrong = localStorage.getItem("vocabTestWrong");
     setDbWrong(wrong ? JSON.parse(wrong).length : 0);
+
+    setDbPro(localStorage.getItem("proUnlocked") === "true");
   }, [open]);
 
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(""), 2000); };
@@ -523,7 +526,7 @@ function DebugPanel() {
     if (!confirm("全データをクリアします。よろしいですか？")) return;
     localStorage.clear();
     setDbTickets(0); setDbQuiz(0); setDbReview(0); setDbCorrect(0);
-    setDbTotal(0); setDbAcqCount(0); setDbBest({}); setDbWrong(0);
+    setDbTotal(0); setDbAcqCount(0); setDbBest({}); setDbWrong(0); setDbPro(false);
     flash("🗑 全データクリア");
   };
 
@@ -648,6 +651,34 @@ function DebugPanel() {
             <div className="flex items-center justify-between bg-gray-800 rounded-lg px-3 py-2">
               <span className="font-black text-white">{dbWrong} <span className="text-gray-400 font-normal text-xs">件</span></span>
               <button onClick={clearWrong} className={btnDng}>クリア</button>
+            </div>
+          </div>
+
+          {/* ── PRO解禁 ── */}
+          <div>
+            <p className="text-gray-400 font-bold text-xs mb-2">🔓 課金コース解禁（中学生・高校生・TOEIC）</p>
+            <div className="flex items-center justify-between bg-gray-800 rounded-lg px-3 py-2">
+              <div>
+                <span className={`font-black text-sm ${dbPro ? "text-green-400" : "text-gray-500"}`}>
+                  {dbPro ? "🔓 解禁中（DEV）" : "🔒 ロック中"}
+                </span>
+                <p className="text-gray-600 text-[10px] mt-0.5">ホームで難易度ドロップダウンを再度開いて反映</p>
+              </div>
+              <button
+                onClick={() => {
+                  const next = !dbPro;
+                  localStorage.setItem("proUnlocked", next ? "true" : "false");
+                  setDbPro(next);
+                  flash(next ? "🔓 PRO解禁 ON" : "🔒 PRO解禁 OFF");
+                }}
+                className={`px-4 py-2 rounded-lg font-bold text-sm flex-shrink-0 transition-colors ${
+                  dbPro
+                    ? "bg-green-900 text-green-300 border border-green-700"
+                    : "bg-gray-700 text-gray-300 border border-gray-600"
+                }`}
+              >
+                {dbPro ? "ON ✓" : "OFF"}
+              </button>
             </div>
           </div>
 
