@@ -1,5 +1,5 @@
 "use client";
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { THEMES } from "@/lib/themes";
 
@@ -217,6 +217,9 @@ export default function MyPage() {
             </div>
           </div>
         </Section>
+
+        {/* ── DEBUGパネル ── */}
+        <DebugPanel />
       </>}
 
       {tab === "about" && <AboutSection />}
@@ -418,6 +421,251 @@ function AboutSec({ title, dark, children }: { title: string; dark: { text: stri
         <div style={{ flex: 1, height: 1, background: dark.border }} />
       </div>
       {children}
+    </div>
+  );
+}
+
+// ============================================================
+// DEBUGパネル
+// ============================================================
+const DBG_LEVELS = ["baby", "elementary", "junior", "high", "toeic"] as const;
+const DBG_LEVEL_NAME: Record<string, string> = {
+  baby: "ベビー", elementary: "小学生", junior: "中学生", high: "高校生", toeic: "TOEIC",
+};
+
+function DebugPanel() {
+  const [open, setOpen] = useState(false);
+  const [msg, setMsg]   = useState("");
+
+  // ── 編集中の値 ────────────────────────────────────────────
+  const [dbTickets,  setDbTickets]  = useState(0);
+  const [dbQuiz,     setDbQuiz]     = useState(0);
+  const [dbReview,   setDbReview]   = useState(0);
+  const [dbCorrect,  setDbCorrect]  = useState(0);
+  const [dbTotal,    setDbTotal]    = useState(0);
+  const [dbAcqCount, setDbAcqCount] = useState(0);
+  const [dbBest,     setDbBest]     = useState<Record<string, number>>({});
+  const [dbWrong,    setDbWrong]    = useState(0);
+
+  // パネルを開くたびに最新値を読み込む
+  useEffect(() => {
+    if (!open) return;
+    const today = getTodayStr();
+    setDbTickets(Number(localStorage.getItem("tickets") ?? 0));
+
+    const m = localStorage.getItem("dailyMissions");
+    if (m) {
+      const p = JSON.parse(m);
+      if (p.date === today) { setDbQuiz(p.quizCount ?? 0); setDbReview(p.reviewCount ?? 0); }
+      else { setDbQuiz(0); setDbReview(0); }
+    } else { setDbQuiz(0); setDbReview(0); }
+
+    const s = localStorage.getItem("dailyScore");
+    if (s) {
+      const p = JSON.parse(s);
+      if (p.date === today) { setDbCorrect(p.correct ?? 0); setDbTotal(p.total ?? 0); }
+      else { setDbCorrect(0); setDbTotal(0); }
+    } else { setDbCorrect(0); setDbTotal(0); }
+
+    const acq = localStorage.getItem("acquiredWords");
+    setDbAcqCount(acq ? JSON.parse(acq).length : 0);
+
+    const best = localStorage.getItem("vocabBestStreak");
+    setDbBest(best ? JSON.parse(best) : {});
+
+    const wrong = localStorage.getItem("vocabTestWrong");
+    setDbWrong(wrong ? JSON.parse(wrong).length : 0);
+  }, [open]);
+
+  const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(""), 2000); };
+
+  // ── 保存ヘルパー ──────────────────────────────────────────
+  const saveTickets = (v: number) => {
+    const n = Math.max(0, v);
+    localStorage.setItem("tickets", String(n));
+    setDbTickets(n);
+    flash("🎫 チケット更新");
+  };
+  const saveMissions = (quiz: number, review: number) => {
+    const today = getTodayStr();
+    const prev = JSON.parse(localStorage.getItem("dailyMissions") ?? "{}");
+    const next = { ...prev, date: today, quizCount: Math.max(0, quiz), reviewCount: Math.max(0, review) };
+    localStorage.setItem("dailyMissions", JSON.stringify(next));
+    setDbQuiz(next.quizCount); setDbReview(next.reviewCount);
+    flash("🎯 ミッション更新");
+  };
+  const saveScore = (correct: number, total: number) => {
+    const s = { date: getTodayStr(), correct: Math.max(0, correct), total: Math.max(0, total) };
+    localStorage.setItem("dailyScore", JSON.stringify(s));
+    setDbCorrect(s.correct); setDbTotal(s.total);
+    flash("📊 スコア更新");
+  };
+  const clearAcquired = () => {
+    if (!confirm("取得済み単語をすべて削除しますか？")) return;
+    localStorage.removeItem("acquiredWords");
+    setDbAcqCount(0); flash("📚 取得単語クリア");
+  };
+  const resetBest = () => {
+    localStorage.removeItem("vocabBestStreak");
+    setDbBest({}); flash("👑 最高連続数リセット");
+  };
+  const clearWrong = () => {
+    localStorage.removeItem("vocabTestWrong");
+    setDbWrong(0); flash("📖 ふくしゅうリストクリア");
+  };
+  const resetDaily = () => {
+    localStorage.removeItem("dailyScore");
+    localStorage.removeItem("dailyMissions");
+    setDbQuiz(0); setDbReview(0); setDbCorrect(0); setDbTotal(0);
+    flash("⚠️ 今日のデータリセット");
+  };
+  const clearAll = () => {
+    if (!confirm("全データをクリアします。よろしいですか？")) return;
+    localStorage.clear();
+    setDbTickets(0); setDbQuiz(0); setDbReview(0); setDbCorrect(0);
+    setDbTotal(0); setDbAcqCount(0); setDbBest({}); setDbWrong(0);
+    flash("🗑 全データクリア");
+  };
+
+  const numCls = "w-14 text-center bg-gray-800 rounded-lg px-2 py-1.5 font-bold text-white border border-gray-600 text-sm";
+  const btnSm  = "w-8 h-8 rounded-lg bg-gray-700 text-white font-black text-lg leading-none flex items-center justify-center flex-shrink-0";
+  const btnApl = "px-3 py-1.5 rounded-lg bg-blue-800 text-blue-200 font-bold text-xs flex-shrink-0";
+  const btnMax = "px-2 py-1.5 rounded-lg bg-green-900 text-green-300 font-bold text-xs flex-shrink-0";
+  const btnDng = "px-3 py-1.5 rounded-lg bg-red-950 text-red-400 font-bold text-xs flex-shrink-0";
+
+  return (
+    <div className="mt-1 mb-4">
+      {/* トグルボタン */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-bold bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
+      >
+        <span className="flex items-center gap-2">🛠 DEBUGパネル</span>
+        <span>{open ? "▲ 閉じる" : "▼ 開く"}</span>
+      </button>
+
+      {open && (
+        <div className="mt-2 rounded-2xl border-2 border-dashed border-gray-600 bg-gray-900 text-gray-200 p-4 space-y-5 text-sm">
+
+          {/* フラッシュメッセージ */}
+          {msg && (
+            <div className="bg-green-900 text-green-300 rounded-lg px-3 py-2 text-center font-bold text-xs">
+              {msg}
+            </div>
+          )}
+
+          {/* ── チケット ── */}
+          <div>
+            <p className="text-gray-400 font-bold text-xs mb-2">🎫 チケット枚数</p>
+            <div className="flex items-center gap-2">
+              <button onClick={() => saveTickets(dbTickets - 1)} className={btnSm}>−</button>
+              <input type="number" value={dbTickets} min={0}
+                onChange={e => setDbTickets(Number(e.target.value))}
+                className={numCls}
+              />
+              <button onClick={() => saveTickets(dbTickets + 1)} className={btnSm}>＋</button>
+              <button onClick={() => saveTickets(dbTickets)} className={btnApl}>適用</button>
+              <button onClick={() => saveTickets(0)} className={btnDng}>リセット</button>
+            </div>
+          </div>
+
+          {/* ── ミッション ── */}
+          <div>
+            <p className="text-gray-400 font-bold text-xs mb-2">🎯 今日のミッション</p>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500 text-xs w-16 flex-shrink-0">問題数 /5</span>
+                <button onClick={() => saveMissions(dbQuiz - 1, dbReview)} className={btnSm}>−</button>
+                <input type="number" value={dbQuiz} min={0}
+                  onChange={e => setDbQuiz(Number(e.target.value))}
+                  className={numCls}
+                />
+                <button onClick={() => saveMissions(dbQuiz + 1, dbReview)} className={btnSm}>＋</button>
+                <button onClick={() => saveMissions(5, dbReview)} className={btnMax}>MAX</button>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-500 text-xs w-16 flex-shrink-0">チャレンジ /3</span>
+                <button onClick={() => saveMissions(dbQuiz, dbReview - 1)} className={btnSm}>−</button>
+                <input type="number" value={dbReview} min={0}
+                  onChange={e => setDbReview(Number(e.target.value))}
+                  className={numCls}
+                />
+                <button onClick={() => saveMissions(dbQuiz, dbReview + 1)} className={btnSm}>＋</button>
+                <button onClick={() => saveMissions(dbQuiz, 3)} className={btnMax}>MAX</button>
+              </div>
+              <button onClick={() => saveMissions(5, 3)} className="w-full py-1.5 rounded-lg bg-green-900 text-green-300 font-bold text-xs">
+                ✅ 両方MAX（チケット付与条件）
+              </button>
+            </div>
+          </div>
+
+          {/* ── スコア ── */}
+          <div>
+            <p className="text-gray-400 font-bold text-xs mb-2">📊 今日のスコア</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-gray-500 text-xs">正解</span>
+              <input type="number" value={dbCorrect} min={0}
+                onChange={e => setDbCorrect(Number(e.target.value))}
+                className={numCls}
+              />
+              <span className="text-gray-500 text-xs">/ 総問題</span>
+              <input type="number" value={dbTotal} min={0}
+                onChange={e => setDbTotal(Number(e.target.value))}
+                className={numCls}
+              />
+              <button onClick={() => saveScore(dbCorrect, dbTotal)} className={btnApl}>適用</button>
+            </div>
+          </div>
+
+          {/* ── 取得単語 ── */}
+          <div>
+            <p className="text-gray-400 font-bold text-xs mb-2">📚 取得済み単語</p>
+            <div className="flex items-center justify-between bg-gray-800 rounded-lg px-3 py-2">
+              <span className="font-black text-white">{dbAcqCount} <span className="text-gray-400 font-normal text-xs">語</span></span>
+              <button onClick={clearAcquired} className={btnDng}>全クリア</button>
+            </div>
+          </div>
+
+          {/* ── 最高連続数 ── */}
+          <div>
+            <p className="text-gray-400 font-bold text-xs mb-2">👑 単語テスト最高連続数</p>
+            <div className="grid grid-cols-5 gap-1.5 mb-2">
+              {DBG_LEVELS.map(lv => (
+                <div key={lv} className="bg-gray-800 rounded-lg px-1 py-2 text-center border border-gray-700">
+                  <div className="text-gray-500 text-[9px] mb-0.5">{DBG_LEVEL_NAME[lv]}</div>
+                  <div className="font-black text-yellow-400 text-base">{dbBest[lv] ?? 0}</div>
+                </div>
+              ))}
+            </div>
+            <button onClick={resetBest} className="w-full py-1.5 rounded-lg bg-red-950 text-red-400 font-bold text-xs">
+              全レベルリセット
+            </button>
+          </div>
+
+          {/* ── ふくしゅうリスト ── */}
+          <div>
+            <p className="text-gray-400 font-bold text-xs mb-2">📖 単語ふくしゅうリスト</p>
+            <div className="flex items-center justify-between bg-gray-800 rounded-lg px-3 py-2">
+              <span className="font-black text-white">{dbWrong} <span className="text-gray-400 font-normal text-xs">件</span></span>
+              <button onClick={clearWrong} className={btnDng}>クリア</button>
+            </div>
+          </div>
+
+          {/* ── 危険操作 ── */}
+          <div className="border-t border-gray-700 pt-3 space-y-2">
+            <p className="text-gray-500 text-xs font-bold">⚠️ 危険操作</p>
+            <button onClick={resetDaily}
+              className="w-full py-2 rounded-xl bg-orange-950 text-orange-400 font-bold text-sm border border-orange-900">
+              ⚠️ 今日のデータをリセット
+            </button>
+            <button onClick={clearAll}
+              className="w-full py-2 rounded-xl bg-red-950 text-red-400 font-bold text-sm border border-red-900">
+              🗑 全データをクリア（要確認）
+            </button>
+          </div>
+
+        </div>
+      )}
     </div>
   );
 }
