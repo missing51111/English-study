@@ -466,7 +466,9 @@ export default function HomePage() {
             </div>
           )}
         </div>
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${t.avatarBg} ${t.avatarText}`}>U</div>
+        <a href="/kotofuda.html" target="_blank" rel="noopener noreferrer"
+          className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${t.avatarBg} ${t.avatarText} hover:opacity-80 transition-opacity cursor-pointer`}
+          title="ことふだ">U</a>
       </div>
 
       {/* バナー（全難易度） */}

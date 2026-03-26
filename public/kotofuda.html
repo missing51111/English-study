@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ことふだ</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: radial-gradient(ellipse at center, #1a3a1a 0%, #060e06 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: sans-serif;
+    user-select: none;
+    overflow: hidden;
+    gap: 4px;
+  }
+  .enemy-hand {
+    display: flex; justify-content: center;
+    height: 52px; position: relative; z-index: 1;
+  }
+  .enemy-card {
+    width: 32px; height: 48px; border-radius: 5px; margin: 0 -5px;
+    background: linear-gradient(135deg, #2a1a4a, #1a0a2a);
+    border: 2px solid #8855cc;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+    transform-origin: bottom center; transition: transform 0.3s;
+  }
+  .scene {
+    perspective: 700px; perspective-origin: 50% 42%;
+    position: relative; z-index: 2; overflow: visible;
+  }
+  .fields-wrap {
+    transform: rotateX(28deg); transform-style: preserve-3d;
+    display: flex; flex-direction: column; gap: 48px; position: relative;
+  }
+  .field {
+    width: 380px; position: relative; border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
+    padding: 6px;
+  }
+  .field-enemy {
+    background: radial-gradient(ellipse at 50% 30%, rgba(120,40,40,0.7) 0%, rgba(40,15,15,0.9) 100%);
+    border: 2px solid rgba(220,100,100,0.3);
+  }
+  .field-player {
+    background: radial-gradient(ellipse at 50% 70%, rgba(60,120,40,0.7) 0%, rgba(20,50,15,0.9) 100%);
+    border: 2px solid rgba(100,220,100,0.3);
+  }
+  .card-grid {
+    display: grid; grid-template-columns: repeat(6, 1fr);
+    grid-template-rows: repeat(2, 1fr); gap: 3px; width: 100%;
+  }
+  .card-slot {
+    aspect-ratio: 2/3; border-radius: 5px;
+    border: 1px dashed rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.2); position: relative;
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 2px;
+    transition: opacity 0.4s, border-color 0.3s, background 0.3s;
+  }
+  .card-slot.row1 { opacity: 0.3; }
+  .card-slot.row1.unlocked { opacity: 1; }
+  .card-slot .slot-label { font-size: 7px; color: rgba(255,255,255,0.35); pointer-events: none; }
+  .card-slot.filled { border: none; }
+  .card-slot.filled .slot-label { display: none; }
+  .card-slot img { position:absolute;inset:0;width:100%;height:100%;border-radius:4px;display:block;box-shadow:0 2px 6px rgba(0,0,0,0.5); }
+  .deck-wrap {
+    position: absolute; left: 50%; top: 200px;
+    transform: translate(-50%, -50%); width: 80px; height: 56px; z-index: 10;
+  }
+  .deck-layer {
+    position: absolute; width: 64px; height: 44px; border-radius: 6px;
+    background: linear-gradient(135deg, #2a1a4a, #1a0a2a); border: 1px solid #7744bb;
+  }
+  .deck-top {
+    position: absolute; width: 64px; height: 44px; border-radius: 6px;
+    background: linear-gradient(135deg, #3a2a5a, #2a1a4a);
+    border: 1px solid #aa77ff; box-shadow: 0 8px 16px rgba(0,0,0,0.8); overflow: hidden;
+  }
+  .deck-top::after {
+    content:''; position:absolute; top:-60%; left:-60%;
+    width:35%; height:200%; background:rgba(255,255,255,0.2); transform:skewX(-20deg);
+    animation:deck-shine 3s ease-in-out infinite;
+  }
+  @keyframes deck-shine { 0%,100%{left:-60%;opacity:0;} 45%,55%{left:150%;opacity:1;} }
+  .deck-count {
+    position:absolute; bottom:-16px; left:50%; transform:translateX(-50%);
+    color:rgba(255,220,100,0.6); font-size:9px; white-space:nowrap;
+  }
+  .phase-label {
+    color:rgba(255,220,100,0.7); font-size:11px; letter-spacing:1px;
+    position:relative; z-index:1; text-align:center;
+  }
+  .hand-hint { color:rgba(255,220,100,0.3); font-size:10px; letter-spacing:1px; position:relative; z-index:1; }
+  .hand-outer {
+    position:relative; width:100vw; height:132px; overflow:visible; cursor:grab; z-index:10;
+  }
+  .hand-outer:active { cursor:grabbing; }
+  .hand-outer::before {
+    content:''; position:absolute; left:50%; top:0; transform:translateX(-50%);
+    width:76px; height:100%; background:rgba(255,220,100,0.03);
+    border-left:1px solid rgba(255,220,100,0.1); border-right:1px solid rgba(255,220,100,0.1);
+    border-radius:6px; pointer-events:none; z-index:1;
+  }
+  .hand-track {
+    position:absolute; top:0; left:0; height:100%;
+    display:flex; align-items:flex-end; padding-bottom:8px; will-change:transform;
+  }
+  .card {
+    flex-shrink:0; width:60px; height:90px; border-radius:9px; cursor:pointer; margin:0 -11px;
+    transform-origin:bottom center;
+    transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1), filter 0.25s, opacity 0.25s;
+    position:relative;
+  }
+  .card img { width:100%;height:100%;border-radius:9px;display:block;pointer-events:none; }
+  .card.center { filter:drop-shadow(0 0 10px rgba(255,220,100,0.9)) brightness(1.18); z-index:20; }
+  .card.near   { filter:drop-shadow(0 3px 8px rgba(255,220,100,0.2)) brightness(1.04); opacity:0.88; z-index:10; }
+  .card.far    { filter:brightness(0.6); opacity:0.6; z-index:1; }
+  .card.zoomed { filter:drop-shadow(0 0 20px rgba(255,220,100,1)) brightness(1.3) !important; z-index:200 !important; }
+  .hand-outer.locked { pointer-events:none; filter:brightness(0.5); transition:filter 0.3s; }
+  .btns { display:flex; flex-direction:column; align-items:center; gap:6px; position:relative; z-index:1; margin-top:2px; }
+  .game-btns { display:flex; gap:8px; }
+  .koikoi-btn {
+    padding:10px 22px;
+    background:linear-gradient(180deg,#ff88cc 0%,#cc3388 50%,#881155 100%);
+    color:#fff; border:none; border-radius:22px; font-size:14px; font-weight:bold; cursor:pointer;
+    box-shadow:0 4px 0 #550022, 0 5px 10px rgba(200,50,120,0.3);
+    transition:transform 0.1s, box-shadow 0.1s; letter-spacing:1px;
+  }
+  .koikoi-btn:active { transform:translateY(3px); box-shadow:0 1px 0 #550022; }
+  @keyframes pulse-btn {
+    0%,100% { box-shadow:0 4px 0 #550022, 0 0 6px rgba(255,100,200,0.3); }
+    50%      { box-shadow:0 4px 0 #550022, 0 0 22px rgba(255,100,200,1); transform:scale(1.06); }
+  }
+  .koikoi-btn.pulse { animation:pulse-btn 0.9s ease-in-out infinite; }
+  .shobu-btn {
+    padding:10px 22px;
+    background:linear-gradient(180deg,#ff8844 0%,#cc4400 50%,#882200 100%);
+    color:#fff; border:none; border-radius:22px; font-size:14px; font-weight:bold; cursor:pointer;
+    box-shadow:0 4px 0 #441100, 0 5px 10px rgba(200,80,0,0.3);
+    transition:transform 0.1s, box-shadow 0.1s; letter-spacing:1px;
+  }
+  .shobu-btn:active { transform:translateY(3px); box-shadow:0 1px 0 #441100; }
+  .turn-btn {
+    padding:10px 22px;
+    background:linear-gradient(180deg,#66aaff 0%,#2266cc 50%,#113388 100%);
+    color:#fff; border:none; border-radius:22px; font-size:14px; font-weight:bold; cursor:pointer;
+    box-shadow:0 4px 0 #0a1a55, 0 5px 10px rgba(30,80,255,0.3);
+    transition:transform 0.1s, box-shadow 0.1s; letter-spacing:1px;
+  }
+  .turn-btn:active { transform:translateY(3px); box-shadow:0 1px 0 #0a1a55; }
+  .card-flying { position:fixed; border-radius:9px; pointer-events:none; z-index:300; }
+  .card-flying img { width:100%;height:100%;border-radius:9px;display:block; }
+  .land-flash {
+    position:fixed; width:70px; height:70px; border-radius:50%;
+    background:radial-gradient(circle,rgba(255,230,80,0.9) 0%,transparent 70%);
+    pointer-events:none; z-index:299;
+    transform:translate(-50%,-50%) scale(0);
+    animation:flash-pop 0.4s ease-out forwards;
+  }
+  @keyframes flash-pop {
+    0%  {transform:translate(-50%,-50%) scale(0);opacity:1;}
+    50% {transform:translate(-50%,-50%) scale(1.3);opacity:0.8;}
+    100%{transform:translate(-50%,-50%) scale(2);opacity:0;}
+  }
+  .card-shadow {
+    position:fixed; width:36px; height:9px;
+    background:radial-gradient(ellipse,rgba(0,0,0,0.5) 0%,transparent 70%);
+    border-radius:50%; pointer-events:none; z-index:298; transform:translate(-50%,-50%);
+  }
+</style>
+</head>
+<body>
+
+<div class="enemy-hand" id="enemyHand"></div>
+<div class="scene">
+  <div class="fields-wrap">
+    <div class="field field-enemy" id="fieldEnemy">
+      <div class="card-grid" id="gridEnemy"></div>
+    </div>
+    <div class="deck-wrap" id="deckMain"></div>
+    <div class="field field-player" id="fieldPlayer">
+      <div class="card-grid" id="gridPlayer"></div>
+    </div>
+  </div>
+</div>
+
+<div class="phase-label" id="phaseLabel">手札を配っています…</div>
+<div class="hand-hint">← スライドして選ぶ →</div>
+<div class="hand-outer" id="handOuter">
+  <div class="hand-track" id="handTrack"></div>
+</div>
+<div class="btns">
+  <div class="game-btns">
+    <button class="koikoi-btn" id="koikoiBtn">こいこい 🌸</button>
+  </div>
+  <div class="game-btns">
+    <button class="shobu-btn" id="shobuBtn">勝負！⚔️</button>
+    <button class="turn-btn" id="turnBtn">ターン終了 ▶</button>
+  </div>
+</div>
+
+<script>
+const TYPES = [
+  {key:'S',   label:'S',   color:'#ff6680', bg:'#2a0a12'},
+  {key:'V',   label:'V',   color:'#66aaff', bg:'#0a1222'},
+  {key:'O',   label:'O',   color:'#ffcc44', bg:'#221a00'},
+  {key:'Adj', label:'Adj', color:'#88ff88', bg:'#0a1a0a'},
+  {key:'Adv', label:'Adv', color:'#cc88ff', bg:'#160a22'},
+  {key:'?',   label:'?',   color:'#ff9966', bg:'#221008'},
+];
+const TEMPLATES = [
+  {type:'S',   word:'Dragon',  icon:'🐉'},
+  {type:'S',   word:'Knight',  icon:'⚔️'},
+  {type:'S',   word:'Witch',   icon:'🧙'},
+  {type:'V',   word:'Strikes', icon:'💥'},
+  {type:'V',   word:'Casts',   icon:'✨'},
+  {type:'V',   word:'Runs',    icon:'💨'},
+  {type:'O',   word:'Spell',   icon:'📜'},
+  {type:'O',   word:'Shield',  icon:'🛡️'},
+  {type:'O',   word:'Crown',   icon:'👑'},
+  {type:'Adj', word:'Ancient', icon:'🏛️'},
+  {type:'Adj', word:'Fierce',  icon:'🔥'},
+  {type:'Adv', word:'Swiftly', icon:'⚡'},
+  {type:'Adv', word:'Boldly',  icon:'🦁'},
+  {type:'?',   word:'Chaos',   icon:'🌀'},
+  {type:'?',   word:'Fate',    icon:'🎴'},
+];
+
+const track       = document.getElementById('handTrack');
+const outer       = document.getElementById('handOuter');
+const enemyHandEl = document.getElementById('enemyHand');
+const deckEl      = document.getElementById('deckMain');
+const phaseLabel  = document.getElementById('phaseLabel');
+const koikoiBtn   = document.getElementById('koikoiBtn');
+const shobuBtn    = document.getElementById('shobuBtn');
+const turnBtn     = document.getElementById('turnBtn');
+
+let cards=[], centerIdx=0;
+let offsetX=0, dragging=false, dragMoved=false, dragStartX=0, dragStartOffset=0;
+let deckCount=48, pSlots=[], eSlots=[];
+let phase='init', enemyCardData=[], placedThisTurn=0, lowerUnlocked=false;
+const CARD_W=38, FAN_DEG=3;
+
+function shade(hex,amt){
+  const n=parseInt(hex.replace('#',''),16);
+  const cl=v=>Math.max(0,Math.min(255,v));
+  return '#'+[((n>>16)&0xff),((n>>8)&0xff),(n&0xff)].map(v=>cl(v+amt).toString(16).padStart(2,'0')).join('');
+}
+function rr(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);
+  ctx.closePath();
+}
+function makeCardImg(tmpl,w=60,h=90){
+  const t=TYPES.find(x=>x.key===tmpl.type)||TYPES[0];
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const ctx=c.getContext('2d');
+  const g=ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,t.bg); g.addColorStop(1,shade(t.bg,-20));
+  ctx.fillStyle=g; rr(ctx,0,0,w,h,8); ctx.fill();
+  ctx.strokeStyle=t.color+'aa'; ctx.lineWidth=2; rr(ctx,1,1,w-2,h-2,7); ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=1; rr(ctx,4,4,w-8,h-8,5); ctx.stroke();
+  ctx.fillStyle=t.color+'33'; rr(ctx,4,4,w-8,13,3); ctx.fill();
+  ctx.font=`bold ${w*0.14}px sans-serif`; ctx.textAlign='center'; ctx.fillStyle=t.color;
+  ctx.fillText(t.label,w/2,14);
+  ctx.font=`${w*0.3}px serif`; ctx.fillText(tmpl.icon,w/2,h*0.55);
+  ctx.font=`bold ${w*0.11}px sans-serif`; ctx.fillStyle='rgba(255,255,255,0.85)';
+  ctx.fillText(tmpl.word,w/2,h*0.8);
+  const shine=ctx.createLinearGradient(0,0,0,h*0.38);
+  shine.addColorStop(0,'rgba(255,255,255,0.12)'); shine.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=shine; rr(ctx,2,2,w-4,h*0.36,6); ctx.fill();
+  return c.toDataURL();
+}
+function makeBackImg(w=32,h=48){
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const ctx=c.getContext('2d');
+  const g=ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,'#2a1a4a'); g.addColorStop(1,'#1a0a2a');
+  ctx.fillStyle=g; rr(ctx,0,0,w,h,6); ctx.fill();
+  ctx.strokeStyle='#8855cc'; ctx.lineWidth=1.5; rr(ctx,1,1,w-2,h-2,5); ctx.stroke();
+  ctx.font=`${w*0.38}px serif`; ctx.textAlign='center'; ctx.fillStyle='#8855cc55';
+  ctx.fillText('🎴',w/2,h*0.62);
+  return c.toDataURL();
+}
+function buildDeck(){
+  deckEl.innerHTML='';
+  const n=Math.min(Math.max(deckCount,0),10);
+  for(let i=0;i<n;i++){
+    const d=document.createElement('div'); d.className='deck-layer';
+    d.style.cssText=`top:${(n-i)*0.8}px;left:0;position:absolute;`; deckEl.appendChild(d);
+  }
+  const top=document.createElement('div'); top.className='deck-top';
+  top.style.cssText='top:0;left:0;position:absolute;'; deckEl.appendChild(top);
+  const lbl=document.createElement('div'); lbl.className='deck-count';
+  lbl.textContent=`🂠 ${deckCount}`; deckEl.appendChild(lbl);
+}
+function buildGrids(){
+  pSlots=[]; eSlots=[];
+  const ge=document.getElementById('gridEnemy'); ge.innerHTML='';
+  for(let row=0;row<2;row++) TYPES.forEach((t,col)=>{
+    const s=document.createElement('div');
+    s.className='card-slot'+(row===1?' row1':'');
+    s.style.borderColor=t.color+'33';
+    const lbl=document.createElement('div'); lbl.className='slot-label';
+    lbl.textContent=t.label; lbl.style.color=t.color+'77';
+    s.appendChild(lbl); ge.appendChild(s);
+    eSlots.push({el:s,type:t.key,col,row,filled:false});
+  });
+  const gp=document.getElementById('gridPlayer'); gp.innerHTML='';
+  for(let row=0;row<2;row++) TYPES.forEach((t,col)=>{
+    const s=document.createElement('div');
+    s.className='card-slot'+(row===1?' row1':'');
+    s.style.borderColor=t.color+'33';
+    const lbl=document.createElement('div'); lbl.className='slot-label';
+    lbl.textContent=t.label; lbl.style.color=t.color+'77';
+    s.appendChild(lbl); gp.appendChild(s);
+    pSlots.push({el:s,type:t.key,col,row,filled:false});
+  });
+}
+function flyAnim(fromX,fromY,toX,toY,imgSrc,w,h,arcH,onDone){
+  const clone=document.createElement('div'); clone.className='card-flying';
+  clone.style.cssText=`left:${fromX}px;top:${fromY}px;width:${w}px;height:${h}px;`;
+  const ci=document.createElement('img'); ci.src=imgSrc; clone.appendChild(ci);
+  document.body.appendChild(clone);
+  const shd=document.createElement('div'); shd.className='card-shadow'; document.body.appendChild(shd);
+  const dur=380, st=performance.now();
+  function tick(now){
+    const t=Math.min((now-st)/dur,1);
+    const e=t<0.5?2*t*t:-1+(4-2*t)*t;
+    const cx=fromX+(toX-fromX)*e, by=fromY+(toY-fromY)*e;
+    const arc=Math.sin(t*Math.PI)*arcH, cy=by-arc;
+    clone.style.transform=`translate(${cx-fromX}px,${cy-fromY}px) rotateX(${t<0.5?-10*Math.sin(t*Math.PI):0}deg) rotateZ(${Math.sin(t*Math.PI)*10}deg)`;
+    clone.style.filter=arc>40?`drop-shadow(0 ${arc*0.08}px ${arc*0.12}px rgba(0,0,0,0.5))`:'';
+    const ss=1-arc/160;
+    shd.style.cssText=`left:${cx+w/2}px;top:${toY+h+3}px;transform:translate(-50%,-50%) scale(${Math.max(0.1,ss)});opacity:${Math.max(0,ss*0.4)};`;
+    if(t<1){requestAnimationFrame(tick);return;}
+    clone.remove(); shd.remove();
+    const fl=document.createElement('div'); fl.className='land-flash';
+    fl.style.left=(toX+w/2)+'px'; fl.style.top=(toY+h/2)+'px';
+    document.body.appendChild(fl); fl.addEventListener('animationend',()=>fl.remove());
+    onDone();
+  }
+  requestAnimationFrame(tick);
+}
+function drawToPlayer(onDone){
+  const tmpl=TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
+  const imgSrc=makeCardImg(tmpl);
+  const dr=deckEl.getBoundingClientRect();
+  const aliveCount=cards.filter(c=>!c.played).length;
+  const vw=outer.offsetWidth;
+  const toX=vw/2-CARD_W/2+(aliveCount-centerIdx)*CARD_W+offsetX-CARD_W;
+  const outerRect=outer.getBoundingClientRect();
+  const toY=outerRect.bottom-90-8;
+  deckCount--; buildDeck();
+  flyAnim(dr.left+dr.width/2-30,dr.top+dr.height/2-45,toX,toY,imgSrc,60,90,100,()=>{ addHandCard(tmpl,imgSrc); onDone(); });
+}
+function drawToEnemy(onDone){
+  const tmpl=TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
+  const imgSrc=makeBackImg();
+  const dr=deckEl.getBoundingClientRect();
+  const eh=enemyHandEl.getBoundingClientRect();
+  const n=enemyHandEl.children.length;
+  deckCount--; buildDeck();
+  flyAnim(dr.left+dr.width/2-16,dr.top+dr.height/2-24,eh.left+eh.width/2+(n-n/2)*22,eh.top,imgSrc,32,48,80,()=>{
+    const w=document.createElement('div'); w.className='enemy-card';
+    enemyHandEl.appendChild(w); enemyCardData.push(tmpl); layoutEnemyHand(); onDone();
+  });
+}
+function addHandCard(tmpl,imgSrc){
+  const wrap=document.createElement('div'); wrap.className='card far';
+  const img=document.createElement('img'); img.src=imgSrc;
+  wrap.appendChild(img); track.appendChild(wrap);
+  const card={wrap,tmpl,imgSrc,zoomed:false,played:false};
+  const idx=cards.length; cards.push(card);
+  function onTap(){
+    if(phase!=='player'||card.played) return;
+    if(idx!==centerIdx){ snapTo(idx); return; }
+    if(!card.zoomed){ card.zoomed=true; wrap.classList.add('zoomed'); updateFan(); }
+    else {
+      if(placedThisTurn>=1){
+        phaseLabel.textContent='このターンはすでにカードを置きました';
+        card.zoomed=false; wrap.classList.remove('zoomed'); updateFan(); return;
+      }
+      const target=pSlots.find(s=>s.type===card.tmpl.type&&s.row===0&&!s.filled)
+        ||(lowerUnlocked?pSlots.find(s=>s.type===card.tmpl.type&&s.row===1&&!s.filled):null);
+      card.zoomed=false; wrap.classList.remove('zoomed'); updateFan();
+      if(!target){
+        phaseLabel.textContent=lowerUnlocked?'そのスロットは埋まっています':'上段は埋まっています';
+        setTimeout(()=>{ phaseLabel.textContent='あなたのターン：カードを置いてください'; },1200);
+        return;
+      }
+      placeCard(card,target);
+    }
+  }
+  wrap.addEventListener('touchend',e=>{ e.preventDefault(); e.stopPropagation(); if(!dragMoved) onTap(); },{passive:false});
+  wrap.addEventListener('click',e=>{ e.stopPropagation(); if(!('ontouchstart' in window)) onTap(); });
+  snapTo(idx);
+}
+function layoutEnemyHand(){
+  const ch=[...enemyHandEl.children]; const n=ch.length;
+  ch.forEach((c,i)=>{ c.style.transform=`rotate(${(i-(n-1)/2)*6}deg) translateY(${Math.abs(i-(n-1)/2)*4}px)`; c.style.zIndex=i; });
+}
+function getSlotRect(slotEl){
+  const fw=document.querySelector('.fields-wrap'), prev=fw.style.transform;
+  fw.style.transform='none'; const r=slotEl.getBoundingClientRect(); fw.style.transform=prev; return r;
+}
+function placeCard(card,slot){
+  card.played=true; card.wrap.style.pointerEvents='none'; slot.filled=true;
+  const fr=card.wrap.getBoundingClientRect();
+  const probe=document.createElement('div');
+  probe.style.cssText='position:absolute;width:1px;height:1px;top:0;left:0;pointer-events:none;';
+  slot.el.appendChild(probe); const pr=probe.getBoundingClientRect(); probe.remove();
+  const slotW=slot.el.offsetWidth, slotH=slot.el.offsetHeight;
+  card.wrap.style.opacity='0';
+  flyAnim(fr.left,fr.top,pr.left,pr.top,card.imgSrc,slotW,slotH,90,()=>{
+    const img=document.createElement('img'); img.src=card.imgSrc;
+    slot.el.appendChild(img); slot.el.classList.add('filled');
+    placedThisTurn++; checkUpperComplete();
+  });
+  const alive=cards.filter(c=>!c.played);
+  if(alive.length){
+    const next=alive.reduce((b,c)=>Math.abs(cards.indexOf(c)-centerIdx)<Math.abs(cards.indexOf(b)-centerIdx)?c:b);
+    snapTo(cards.indexOf(next));
+  }
+}
+function checkUpperComplete(){
+  const filled=pSlots.filter(s=>s.row===0&&s.filled).length;
+  if(filled===6&&!lowerUnlocked){ phaseLabel.textContent='文章完成！こいこいで2段目を開放 🌸'; koikoiBtn.classList.add('pulse'); }
+}
+function unlockLower(){
+  lowerUnlocked=true; koikoiBtn.classList.remove('pulse');
+  pSlots.filter(s=>s.row===1).forEach(s=>{
+    s.el.classList.add('unlocked'); s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'55';
+  });
+  phaseLabel.textContent='2段目が開放されました！';
+}
+function enemyTurn(){
+  phase='enemy'; outer.classList.add('locked'); phaseLabel.textContent='相手スタンバイ：ドロー中…';
+  drawToEnemy(()=>{ setTimeout(()=>{
+    drawToEnemy(()=>{ setTimeout(()=>{
+      phaseLabel.textContent='相手のターン…';
+      setTimeout(()=>enemyPlay(()=>{ setTimeout(()=>enemyPlay(()=>{ setTimeout(()=>startPlayerTurn(),500); }),400); }),500);
+    },180); }); },180); });
+}
+function enemyPlay(onDone){
+  const ch=[...enemyHandEl.children]; if(!ch.length){onDone();return;}
+  const wrap=ch[0]; const fr=wrap.getBoundingClientRect();
+  const tmpl=enemyCardData.shift()||TEMPLATES[0]; const imgSrc=makeCardImg(tmpl);
+  const slot=eSlots.find(s=>s.type===tmpl.type&&s.row===0&&!s.filled)||eSlots.find(s=>!s.filled);
+  if(!slot){wrap.remove();layoutEnemyHand();onDone();return;}
+  slot.filled=true;
+  const tr=getSlotRect(slot.el); const slotW=slot.el.offsetWidth, slotH=slot.el.offsetHeight;
+  wrap.style.opacity='0';
+  flyAnim(fr.left,fr.top,tr.left,tr.top,imgSrc,slotW,slotH,80,()=>{
+    const img=document.createElement('img'); img.src=imgSrc;
+    slot.el.appendChild(img); slot.el.classList.add('filled');
+    wrap.remove(); layoutEnemyHand(); onDone();
+  });
+}
+function startPlayerTurn(){
+  phase='standby'; outer.classList.remove('locked'); phaseLabel.textContent='スタンバイ：2枚ドロー中…';
+  drawToPlayer(()=>{ setTimeout(()=>{
+    drawToPlayer(()=>{ phase='player'; placedThisTurn=0; phaseLabel.textContent='あなたのターン：カードを置いてください'; });
+  },180); });
+}
+function updateFan(){
+  cards.forEach((c,i)=>{
+    if(c.played) return;
+    const d=i-centerIdx;
+    c.wrap.style.transform=`rotate(${d*FAN_DEG}deg) translateY(${Math.abs(d)*9}px) scale(${d===0?(c.zoomed?1.42:1.16):1-Math.abs(d)*0.08})`;
+  });
+}
+function updateClasses(){
+  cards.forEach((c,i)=>{
+    if(c.played) return;
+    const d=Math.abs(i-centerIdx);
+    c.wrap.classList.remove('center','near','far');
+    c.wrap.classList.add(d===0?'center':d===1?'near':'far');
+  });
+}
+function snapTo(idx,anim=true){
+  const alive=cards.filter(c=>!c.played); if(!alive.length) return;
+  idx=Math.max(0,Math.min(cards.length-1,idx));
+  if(cards[idx]&&cards[idx].played) idx=cards.indexOf(alive.reduce((b,c)=>Math.abs(cards.indexOf(c)-idx)<Math.abs(cards.indexOf(b)-idx)?c:b));
+  if(cards[centerIdx]){cards[centerIdx].zoomed=false;cards[centerIdx].wrap.classList.remove('zoomed');}
+  centerIdx=idx; offsetX=outer.offsetWidth/2-CARD_W/2-idx*CARD_W;
+  track.style.transition=anim?'transform 0.3s cubic-bezier(0.25,1,0.5,1)':'none';
+  track.style.transform=`translateX(${offsetX}px)`;
+  updateClasses(); updateFan();
+}
+function getX(e){return e.touches?e.touches[0].clientX:e.clientX;}
+outer.addEventListener('mousedown',e=>{dragging=true;dragMoved=false;dragStartX=getX(e);dragStartOffset=offsetX;track.style.transition='none';});
+outer.addEventListener('touchstart',e=>{dragging=true;dragMoved=false;dragStartX=getX(e);dragStartOffset=offsetX;track.style.transition='none';},{passive:true});
+function onMove(e){
+  if(!dragging) return;
+  const dx=getX(e)-dragStartX;
+  if(Math.abs(dx)>6){dragMoved=true;cards.forEach(c=>{c.zoomed=false;c.wrap.classList.remove('zoomed');});}
+  offsetX=dragStartOffset+dx; track.style.transform=`translateX(${offsetX}px)`;
+  const ni=Math.round((outer.offsetWidth/2-CARD_W/2-offsetX)/CARD_W);
+  if(ni!==centerIdx){centerIdx=ni;updateClasses();updateFan();}
+}
+window.addEventListener('mousemove',onMove);
+window.addEventListener('touchmove',e=>onMove(e),{passive:true});
+function endDrag(){if(!dragging)return;dragging=false;snapTo(Math.round((outer.offsetWidth/2-CARD_W/2-offsetX)/CARD_W));}
+window.addEventListener('mouseup',endDrag);
+window.addEventListener('touchend',endDrag,{passive:true});
+function onBtn(btn,fn){
+  btn.addEventListener('click',fn);
+  btn.addEventListener('touchend',e=>{e.preventDefault();fn();},{passive:false});
+}
+onBtn(turnBtn,()=>{ if(phase==='player'||phase==='standby') enemyTurn(); });
+onBtn(koikoiBtn,()=>{
+  const filled=pSlots.filter(s=>s.row===0&&s.filled).length;
+  if(filled===6&&!lowerUnlocked) unlockLower();
+  else phaseLabel.textContent='こいこい！続けます 🌸';
+});
+onBtn(shobuBtn,()=>{ phaseLabel.textContent='勝負！⚔️ 結果を確認'; });
+
+buildGrids(); buildDeck();
+let dealCount=0;
+function dealInit(){
+  if(dealCount>=5){ startPlayerTurn(); return; }
+  drawToPlayer(()=>{ dealCount++; setTimeout(dealInit,150); });
+}
+dealInit();
+</script>
+</body>
+</html>
