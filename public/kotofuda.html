@@ -214,21 +214,108 @@ const TYPES = [
   {key:'?',   label:'?',   color:'#ff9966', bg:'#221008'},
 ];
 const TEMPLATES = [
-  {type:'S',   word:'Dragon',  icon:'🐉'},
-  {type:'S',   word:'Knight',  icon:'⚔️'},
-  {type:'S',   word:'Witch',   icon:'🧙'},
-  {type:'V',   word:'Strikes', icon:'💥'},
-  {type:'V',   word:'Casts',   icon:'✨'},
-  {type:'V',   word:'Runs',    icon:'💨'},
-  {type:'O',   word:'Spell',   icon:'📜'},
-  {type:'O',   word:'Shield',  icon:'🛡️'},
-  {type:'O',   word:'Crown',   icon:'👑'},
-  {type:'Adj', word:'Ancient', icon:'🏛️'},
-  {type:'Adj', word:'Fierce',  icon:'🔥'},
-  {type:'Adv', word:'Swiftly', icon:'⚡'},
-  {type:'Adv', word:'Boldly',  icon:'🦁'},
-  {type:'?',   word:'Chaos',   icon:'🌀'},
-  {type:'?',   word:'Fate',    icon:'🎴'},
+  // S — 主語（代名詞・人・動物）
+  {type:'S', word:'I',         meaning:'私',       icon:'👤'},
+  {type:'S', word:'you',       meaning:'あなた',   icon:'👆'},
+  {type:'S', word:'he',        meaning:'彼',       icon:'👦'},
+  {type:'S', word:'she',       meaning:'彼女',     icon:'👧'},
+  {type:'S', word:'we',        meaning:'私たち',   icon:'👥'},
+  {type:'S', word:'they',      meaning:'彼ら',     icon:'👫'},
+  {type:'S', word:'boy',       meaning:'男の子',   icon:'🧒'},
+  {type:'S', word:'girl',      meaning:'女の子',   icon:'👧'},
+  {type:'S', word:'teacher',   meaning:'先生',     icon:'👩‍🏫'},
+  {type:'S', word:'student',   meaning:'生徒',     icon:'🎒'},
+  {type:'S', word:'friend',    meaning:'友達',     icon:'🤝'},
+  {type:'S', word:'family',    meaning:'家族',     icon:'👨‍👩‍👧'},
+  {type:'S', word:'dog',       meaning:'犬',       icon:'🐕'},
+  {type:'S', word:'cat',       meaning:'猫',       icon:'🐈'},
+  {type:'S', word:'people',    meaning:'人々',     icon:'👫'},
+  // V — 動詞
+  {type:'V', word:'eat',       meaning:'食べる',   icon:'🍽️'},
+  {type:'V', word:'drink',     meaning:'飲む',     icon:'🥤'},
+  {type:'V', word:'play',      meaning:'遊ぶ',     icon:'🎮'},
+  {type:'V', word:'go',        meaning:'行く',     icon:'🚶'},
+  {type:'V', word:'come',      meaning:'来る',     icon:'🏃'},
+  {type:'V', word:'run',       meaning:'走る',     icon:'💨'},
+  {type:'V', word:'walk',      meaning:'歩く',     icon:'👟'},
+  {type:'V', word:'study',     meaning:'勉強する', icon:'📚'},
+  {type:'V', word:'read',      meaning:'読む',     icon:'📖'},
+  {type:'V', word:'write',     meaning:'書く',     icon:'✏️'},
+  {type:'V', word:'make',      meaning:'作る',     icon:'🔨'},
+  {type:'V', word:'see',       meaning:'見る',     icon:'👁️'},
+  {type:'V', word:'watch',     meaning:'見る',     icon:'📺'},
+  {type:'V', word:'like',      meaning:'好き',     icon:'❤️'},
+  {type:'V', word:'love',      meaning:'愛する',   icon:'💕'},
+  {type:'V', word:'have',      meaning:'持つ',     icon:'🤲'},
+  {type:'V', word:'use',       meaning:'使う',     icon:'🔧'},
+  {type:'V', word:'buy',       meaning:'買う',     icon:'🛒'},
+  {type:'V', word:'take',      meaning:'取る',     icon:'🖐️'},
+  {type:'V', word:'help',      meaning:'助ける',   icon:'🙌'},
+  // O — 目的語（名詞）
+  {type:'O', word:'food',      meaning:'食べ物',   icon:'🍱'},
+  {type:'O', word:'drink',     meaning:'飲み物',   icon:'🧃'},
+  {type:'O', word:'fruit',     meaning:'果物',     icon:'🍎'},
+  {type:'O', word:'meal',      meaning:'食事',     icon:'🍽️'},
+  {type:'O', word:'school',    meaning:'学校',     icon:'🏫'},
+  {type:'O', word:'class',     meaning:'授業',     icon:'📝'},
+  {type:'O', word:'homework',  meaning:'宿題',     icon:'📋'},
+  {type:'O', word:'book',      meaning:'本',       icon:'📚'},
+  {type:'O', word:'English',   meaning:'英語',     icon:'🇬🇧'},
+  {type:'O', word:'math',      meaning:'数学',     icon:'🔢'},
+  {type:'O', word:'game',      meaning:'ゲーム',   icon:'🎮'},
+  {type:'O', word:'music',     meaning:'音楽',     icon:'🎵'},
+  {type:'O', word:'movie',     meaning:'映画',     icon:'🎬'},
+  {type:'O', word:'time',      meaning:'時間',     icon:'⏰'},
+  {type:'O', word:'day',       meaning:'日',       icon:'☀️'},
+  {type:'O', word:'home',      meaning:'家',       icon:'🏠'},
+  {type:'O', word:'park',      meaning:'公園',     icon:'🌳'},
+  {type:'O', word:'city',      meaning:'町',       icon:'🏙️'},
+  {type:'O', word:'shop',      meaning:'店',       icon:'🏪'},
+  {type:'O', word:'station',   meaning:'駅',       icon:'🚉'},
+  {type:'O', word:'animal',    meaning:'動物',     icon:'🦁'},
+  {type:'O', word:'pet',       meaning:'ペット',   icon:'🐾'},
+  {type:'O', word:'idea',      meaning:'考え',     icon:'💡'},
+  {type:'O', word:'thing',     meaning:'物',       icon:'📦'},
+  {type:'O', word:'work',      meaning:'仕事',     icon:'💼'},
+  {type:'O', word:'story',     meaning:'物語',     icon:'📖'},
+  // Adj — 形容詞
+  {type:'Adj',word:'big',      meaning:'大きい',   icon:'🐘'},
+  {type:'Adj',word:'small',    meaning:'小さい',   icon:'🐭'},
+  {type:'Adj',word:'good',     meaning:'良い',     icon:'✅'},
+  {type:'Adj',word:'bad',      meaning:'悪い',     icon:'❌'},
+  {type:'Adj',word:'happy',    meaning:'幸せな',   icon:'😊'},
+  {type:'Adj',word:'sad',      meaning:'悲しい',   icon:'😢'},
+  {type:'Adj',word:'hot',      meaning:'暑い',     icon:'🔥'},
+  {type:'Adj',word:'cold',     meaning:'寒い',     icon:'❄️'},
+  {type:'Adj',word:'fast',     meaning:'速い',     icon:'⚡'},
+  {type:'Adj',word:'slow',     meaning:'遅い',     icon:'🐢'},
+  {type:'Adj',word:'new',      meaning:'新しい',   icon:'✨'},
+  {type:'Adj',word:'old',      meaning:'古い',     icon:'🏛️'},
+  {type:'Adj',word:'fun',      meaning:'楽しい',   icon:'🎉'},
+  {type:'Adj',word:'easy',     meaning:'簡単な',   icon:'😄'},
+  {type:'Adj',word:'difficult',meaning:'難しい',   icon:'🧩'},
+  // Adv — 副詞
+  {type:'Adv',word:'always',   meaning:'いつも',   icon:'♾️'},
+  {type:'Adv',word:'often',    meaning:'よく',     icon:'🔄'},
+  {type:'Adv',word:'sometimes',meaning:'時々',     icon:'🌤️'},
+  {type:'Adv',word:'today',    meaning:'今日',     icon:'📅'},
+  {type:'Adv',word:'now',      meaning:'今',       icon:'⏱️'},
+  {type:'Adv',word:'quickly',  meaning:'速く',     icon:'🏃'},
+  {type:'Adv',word:'slowly',   meaning:'ゆっくり', icon:'🐌'},
+  {type:'Adv',word:'here',     meaning:'ここで',   icon:'📍'},
+  {type:'Adv',word:'there',    meaning:'そこで',   icon:'👉'},
+  {type:'Adv',word:'together', meaning:'一緒に',   icon:'🤝'},
+  // ? — 接続詞（ワイルドカード）
+  {type:'?',  word:'and',      meaning:'そして',   icon:'➕'},
+  {type:'?',  word:'but',      meaning:'しかし',   icon:'↔️'},
+  {type:'?',  word:'because',  meaning:'なぜなら', icon:'💬'},
+  {type:'?',  word:'when',     meaning:'〜するとき',icon:'⏰'},
+  {type:'?',  word:'if',       meaning:'もし',     icon:'❓'},
+  {type:'?',  word:'so',       meaning:'だから',   icon:'➡️'},
+  {type:'?',  word:'then',     meaning:'それから', icon:'⏩'},
+  {type:'?',  word:'after',    meaning:'〜の後',   icon:'⏭️'},
+  {type:'?',  word:'before',   meaning:'〜の前',   icon:'⏮️'},
+  {type:'?',  word:'while',    meaning:'〜の間',   icon:'⏳'},
 ];
 
 const track       = document.getElementById('handTrack');
@@ -271,9 +358,11 @@ function makeCardImg(tmpl,w=60,h=90){
   ctx.fillStyle=t.color+'33'; rr(ctx,4,4,w-8,13,3); ctx.fill();
   ctx.font=`bold ${w*0.14}px sans-serif`; ctx.textAlign='center'; ctx.fillStyle=t.color;
   ctx.fillText(t.label,w/2,14);
-  ctx.font=`${w*0.3}px serif`; ctx.fillText(tmpl.icon,w/2,h*0.55);
-  ctx.font=`bold ${w*0.11}px sans-serif`; ctx.fillStyle='rgba(255,255,255,0.85)';
-  ctx.fillText(tmpl.word,w/2,h*0.8);
+  ctx.font=`${w*0.28}px serif`; ctx.fillText(tmpl.icon,w/2,h*0.50);
+  ctx.font=`bold ${w*0.13}px sans-serif`; ctx.fillStyle='rgba(255,255,255,0.92)';
+  ctx.fillText(tmpl.word,w/2,h*0.72);
+  ctx.font=`${w*0.10}px sans-serif`; ctx.fillStyle='rgba(255,255,255,0.58)';
+  ctx.fillText(tmpl.meaning||'',w/2,h*0.87);
   const shine=ctx.createLinearGradient(0,0,0,h*0.38);
   shine.addColorStop(0,'rgba(255,255,255,0.12)'); shine.addColorStop(1,'rgba(255,255,255,0)');
   ctx.fillStyle=shine; rr(ctx,2,2,w-4,h*0.36,6); ctx.fill();
