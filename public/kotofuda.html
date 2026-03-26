@@ -8,97 +8,58 @@
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
     background: radial-gradient(ellipse at center, #1a3a1a 0%, #060e06 100%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    font-family: sans-serif;
-    user-select: none;
-    overflow: hidden;
-    gap: 4px;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; min-height: 100vh;
+    font-family: sans-serif; user-select: none; overflow: hidden; gap: 4px;
   }
-  .enemy-hand {
-    display: flex; justify-content: center;
-    height: 52px; position: relative; z-index: 1;
-  }
+  .enemy-hand { display:flex; justify-content:center; height:52px; position:relative; z-index:1; }
   .enemy-card {
-    width: 32px; height: 48px; border-radius: 5px; margin: 0 -5px;
-    background: linear-gradient(135deg, #2a1a4a, #1a0a2a);
-    border: 2px solid #8855cc;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.5);
-    transform-origin: bottom center; transition: transform 0.3s;
+    width:32px; height:48px; border-radius:5px; margin:0 -5px;
+    background:linear-gradient(135deg,#2a1a4a,#1a0a2a); border:2px solid #8855cc;
+    box-shadow:0 3px 8px rgba(0,0,0,0.5); transform-origin:bottom center; transition:transform 0.3s;
   }
-  .scene {
-    perspective: 700px; perspective-origin: 50% 42%;
-    position: relative; z-index: 2; overflow: visible;
-  }
+  .scene { perspective:700px; perspective-origin:50% 42%; position:relative; z-index:2; overflow:visible; }
   .fields-wrap {
-    transform: rotateX(28deg); transform-style: preserve-3d;
-    display: flex; flex-direction: column; gap: 48px; position: relative;
+    transform:rotateX(28deg); transform-style:preserve-3d;
+    display:flex; flex-direction:column; gap:48px; position:relative;
   }
   .field {
-    width: 380px; position: relative; border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
-    padding: 6px;
+    width:380px; position:relative; border-radius:12px;
+    box-shadow:0 4px 20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08); padding:6px;
   }
   .field-enemy {
-    background: radial-gradient(ellipse at 50% 30%, rgba(120,40,40,0.7) 0%, rgba(40,15,15,0.9) 100%);
-    border: 2px solid rgba(220,100,100,0.3);
+    background:radial-gradient(ellipse at 50% 30%,rgba(120,40,40,0.7) 0%,rgba(40,15,15,0.9) 100%);
+    border:2px solid rgba(220,100,100,0.3);
   }
   .field-player {
-    background: radial-gradient(ellipse at 50% 70%, rgba(60,120,40,0.7) 0%, rgba(20,50,15,0.9) 100%);
-    border: 2px solid rgba(100,220,100,0.3);
+    background:radial-gradient(ellipse at 50% 70%,rgba(60,120,40,0.7) 0%,rgba(20,50,15,0.9) 100%);
+    border:2px solid rgba(100,220,100,0.3);
   }
   .card-grid {
-    display: grid; grid-template-columns: repeat(6, 1fr);
-    grid-template-rows: repeat(2, 1fr); gap: 3px; width: 100%;
+    display:grid; grid-template-columns:repeat(5,1fr);
+    grid-template-rows:repeat(2,1fr); gap:3px; width:100%;
   }
   .card-slot {
-    aspect-ratio: 2/3; border-radius: 5px;
-    border: 1px dashed rgba(255,255,255,0.15);
-    background: rgba(0,0,0,0.2); position: relative;
-    display: flex; align-items: flex-end; justify-content: center;
-    padding-bottom: 2px;
-    transition: opacity 0.4s, border-color 0.3s, background 0.3s;
+    aspect-ratio:2/3; border-radius:5px;
+    border:1px dashed rgba(255,255,255,0.15); background:rgba(0,0,0,0.2);
+    position:relative; display:flex; align-items:flex-end; justify-content:center;
+    padding-bottom:2px; transition:opacity 0.4s, border-color 0.3s, background 0.3s;
   }
-  .card-slot.row1 { opacity: 0.3; }
-  .card-slot.row1.unlocked { opacity: 1; }
-  .card-slot .slot-label { font-size: 7px; color: rgba(255,255,255,0.35); pointer-events: none; }
-  .card-slot.filled { border: none; }
-  .card-slot.filled .slot-label { display: none; }
+  .card-slot.row1 { opacity:0.3; }
+  .card-slot.row1.unlocked { opacity:1; }
+  .card-slot .slot-label { font-size:7px; color:rgba(255,255,255,0.35); pointer-events:none; }
+  .card-slot.filled { border:none; }
+  .card-slot.filled .slot-label { display:none; }
   .card-slot img { position:absolute;inset:0;width:100%;height:100%;border-radius:4px;display:block;box-shadow:0 2px 6px rgba(0,0,0,0.5); }
-  .deck-wrap {
-    position: absolute; left: 50%; top: 200px;
-    transform: translate(-50%, -50%); width: 80px; height: 56px; z-index: 10;
-  }
-  .deck-layer {
-    position: absolute; width: 64px; height: 44px; border-radius: 6px;
-    background: linear-gradient(135deg, #2a1a4a, #1a0a2a); border: 1px solid #7744bb;
-  }
-  .deck-top {
-    position: absolute; width: 64px; height: 44px; border-radius: 6px;
-    background: linear-gradient(135deg, #3a2a5a, #2a1a4a);
-    border: 1px solid #aa77ff; box-shadow: 0 8px 16px rgba(0,0,0,0.8); overflow: hidden;
-  }
-  .deck-top::after {
-    content:''; position:absolute; top:-60%; left:-60%;
-    width:35%; height:200%; background:rgba(255,255,255,0.2); transform:skewX(-20deg);
-    animation:deck-shine 3s ease-in-out infinite;
-  }
+  .deck-wrap { position:absolute; left:50%; top:200px; transform:translate(-50%,-50%); width:80px; height:56px; z-index:10; }
+  .deck-layer { position:absolute; width:64px; height:44px; border-radius:6px; background:linear-gradient(135deg,#2a1a4a,#1a0a2a); border:1px solid #7744bb; }
+  .deck-top { position:absolute; width:64px; height:44px; border-radius:6px; background:linear-gradient(135deg,#3a2a5a,#2a1a4a); border:1px solid #aa77ff; box-shadow:0 8px 16px rgba(0,0,0,0.8); overflow:hidden; }
+  .deck-top::after { content:''; position:absolute; top:-60%; left:-60%; width:35%; height:200%; background:rgba(255,255,255,0.2); transform:skewX(-20deg); animation:deck-shine 3s ease-in-out infinite; }
   @keyframes deck-shine { 0%,100%{left:-60%;opacity:0;} 45%,55%{left:150%;opacity:1;} }
-  .deck-count {
-    position:absolute; bottom:-16px; left:50%; transform:translateX(-50%);
-    color:rgba(255,220,100,0.6); font-size:9px; white-space:nowrap;
-  }
-  .phase-label {
-    color:rgba(255,220,100,0.7); font-size:11px; letter-spacing:1px;
-    position:relative; z-index:1; text-align:center;
-  }
+  .deck-count { position:absolute; bottom:-16px; left:50%; transform:translateX(-50%); color:rgba(255,220,100,0.6); font-size:9px; white-space:nowrap; }
+  .phase-label { color:rgba(255,220,100,0.7); font-size:11px; letter-spacing:1px; position:relative; z-index:1; text-align:center; }
   .hand-hint { color:rgba(255,220,100,0.3); font-size:10px; letter-spacing:1px; position:relative; z-index:1; }
-  .hand-outer {
-    position:relative; width:100vw; height:132px; overflow:visible; cursor:grab; z-index:10;
-  }
+  .hand-outer { position:relative; width:100vw; height:132px; overflow:visible; cursor:grab; z-index:10; }
   .hand-outer:active { cursor:grabbing; }
   .hand-outer::before {
     content:''; position:absolute; left:50%; top:0; transform:translateX(-50%);
@@ -106,16 +67,8 @@
     border-left:1px solid rgba(255,220,100,0.1); border-right:1px solid rgba(255,220,100,0.1);
     border-radius:6px; pointer-events:none; z-index:1;
   }
-  .hand-track {
-    position:absolute; top:0; left:0; height:100%;
-    display:flex; align-items:flex-end; padding-bottom:8px; will-change:transform;
-  }
-  .card {
-    flex-shrink:0; width:60px; height:90px; border-radius:9px; cursor:pointer; margin:0 -11px;
-    transform-origin:bottom center;
-    transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1), filter 0.25s, opacity 0.25s;
-    position:relative;
-  }
+  .hand-track { position:absolute; top:0; left:0; height:100%; display:flex; align-items:flex-end; padding-bottom:8px; will-change:transform; }
+  .card { flex-shrink:0; width:60px; height:90px; border-radius:9px; cursor:pointer; margin:0 -11px; transform-origin:bottom center; transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1), filter 0.25s, opacity 0.25s; position:relative; }
   .card img { width:100%;height:100%;border-radius:9px;display:block;pointer-events:none; }
   .card.center { filter:drop-shadow(0 0 10px rgba(255,220,100,0.9)) brightness(1.18); z-index:20; }
   .card.near   { filter:drop-shadow(0 3px 8px rgba(255,220,100,0.2)) brightness(1.04); opacity:0.88; z-index:10; }
@@ -125,8 +78,7 @@
   .btns { display:flex; flex-direction:column; align-items:center; gap:6px; position:relative; z-index:1; margin-top:2px; }
   .game-btns { display:flex; gap:8px; }
   .koikoi-btn {
-    padding:10px 22px;
-    background:linear-gradient(180deg,#ff88cc 0%,#cc3388 50%,#881155 100%);
+    padding:10px 22px; background:linear-gradient(180deg,#ff88cc 0%,#cc3388 50%,#881155 100%);
     color:#fff; border:none; border-radius:22px; font-size:14px; font-weight:bold; cursor:pointer;
     box-shadow:0 4px 0 #550022, 0 5px 10px rgba(200,50,120,0.3);
     transition:transform 0.1s, box-shadow 0.1s; letter-spacing:1px;
@@ -138,16 +90,14 @@
   }
   .koikoi-btn.pulse { animation:pulse-btn 0.9s ease-in-out infinite; }
   .shobu-btn {
-    padding:10px 22px;
-    background:linear-gradient(180deg,#ff8844 0%,#cc4400 50%,#882200 100%);
+    padding:10px 22px; background:linear-gradient(180deg,#ff8844 0%,#cc4400 50%,#882200 100%);
     color:#fff; border:none; border-radius:22px; font-size:14px; font-weight:bold; cursor:pointer;
     box-shadow:0 4px 0 #441100, 0 5px 10px rgba(200,80,0,0.3);
     transition:transform 0.1s, box-shadow 0.1s; letter-spacing:1px;
   }
   .shobu-btn:active { transform:translateY(3px); box-shadow:0 1px 0 #441100; }
   .turn-btn {
-    padding:10px 22px;
-    background:linear-gradient(180deg,#66aaff 0%,#2266cc 50%,#113388 100%);
+    padding:10px 22px; background:linear-gradient(180deg,#66aaff 0%,#2266cc 50%,#113388 100%);
     color:#fff; border:none; border-radius:22px; font-size:14px; font-weight:bold; cursor:pointer;
     box-shadow:0 4px 0 #0a1a55, 0 5px 10px rgba(30,80,255,0.3);
     transition:transform 0.1s, box-shadow 0.1s; letter-spacing:1px;
@@ -158,8 +108,7 @@
   .land-flash {
     position:fixed; width:70px; height:70px; border-radius:50%;
     background:radial-gradient(circle,rgba(255,230,80,0.9) 0%,transparent 70%);
-    pointer-events:none; z-index:299;
-    transform:translate(-50%,-50%) scale(0);
+    pointer-events:none; z-index:299; transform:translate(-50%,-50%) scale(0);
     animation:flash-pop 0.4s ease-out forwards;
   }
   @keyframes flash-pop {
@@ -167,63 +116,60 @@
     50% {transform:translate(-50%,-50%) scale(1.3);opacity:0.8;}
     100%{transform:translate(-50%,-50%) scale(2);opacity:0;}
   }
-  .card-shadow {
-    position:fixed; width:36px; height:9px;
-    background:radial-gradient(ellipse,rgba(0,0,0,0.5) 0%,transparent 70%);
-    border-radius:50%; pointer-events:none; z-index:298; transform:translate(-50%,-50%);
-  }
-  /* スコア表示 */
-  .score-display {
-    position:fixed; top:6px; right:8px; z-index:50;
-    background:rgba(0,0,0,0.72); border:1px solid rgba(255,200,80,0.4);
-    border-radius:10px; padding:3px 10px; color:#ffcc44;
-    font-size:13px; font-weight:bold; text-shadow:0 0 8px rgba(255,200,80,0.5);
-    pointer-events:none;
-  }
-  /* リアルタイムトースト */
-  .yaku-toast {
-    position:fixed; bottom:148px; left:50%; transform:translateX(-50%);
-    background:rgba(15,8,35,0.96); border:1px solid rgba(180,120,255,0.5);
-    border-radius:20px; padding:5px 18px; color:#ffcc44; font-size:13px; font-weight:bold;
-    pointer-events:none; z-index:400; opacity:0; transition:opacity 0.3s;
-    white-space:nowrap; text-shadow:0 0 6px rgba(255,200,80,0.4);
-  }
+  .card-shadow { position:fixed; width:36px; height:9px; background:radial-gradient(ellipse,rgba(0,0,0,0.5) 0%,transparent 70%); border-radius:50%; pointer-events:none; z-index:298; transform:translate(-50%,-50%); }
+  .score-display { position:fixed; top:6px; right:8px; z-index:50; background:rgba(0,0,0,0.72); border:1px solid rgba(255,200,80,0.4); border-radius:10px; padding:3px 10px; color:#ffcc44; font-size:13px; font-weight:bold; text-shadow:0 0 8px rgba(255,200,80,0.5); pointer-events:none; }
+  .yaku-toast { position:fixed; bottom:148px; left:50%; transform:translateX(-50%); background:rgba(15,8,35,0.96); border:1px solid rgba(180,120,255,0.5); border-radius:20px; padding:5px 18px; color:#ffcc44; font-size:13px; font-weight:bold; pointer-events:none; z-index:400; opacity:0; transition:opacity 0.3s; white-space:nowrap; text-shadow:0 0 6px rgba(255,200,80,0.4); }
   .yaku-toast.show { opacity:1; }
-  /* 役パネルオーバーレイ */
-  .yaku-overlay {
-    display:none; position:fixed; inset:0; z-index:500;
-    background:rgba(0,0,0,0.78); backdrop-filter:blur(4px);
-    align-items:center; justify-content:center;
-  }
+  .yaku-overlay { display:none; position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.78); backdrop-filter:blur(4px); align-items:center; justify-content:center; }
   .yaku-overlay.show { display:flex; }
-  .yaku-panel {
-    background:linear-gradient(155deg,#1a0a2e,#0a1825);
-    border:2px solid rgba(180,120,255,0.5); border-radius:16px;
-    padding:18px 22px; min-width:258px; max-width:310px;
-    box-shadow:0 0 40px rgba(140,70,255,0.35);
-  }
+  .yaku-panel { background:linear-gradient(155deg,#1a0a2e,#0a1825); border:2px solid rgba(180,120,255,0.5); border-radius:16px; padding:18px 22px; min-width:258px; max-width:310px; box-shadow:0 0 40px rgba(140,70,255,0.35); }
   .yaku-panel h2 { color:#ffcc44; text-align:center; margin-bottom:12px; font-size:17px; letter-spacing:1px; }
-  .yaku-item {
-    display:flex; align-items:center; justify-content:space-between;
-    padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.07);
-    color:#fff; font-size:13px;
-  }
+  .yaku-item { display:flex; align-items:center; justify-content:space-between; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.07); color:#fff; font-size:13px; }
   .yaku-item .yn { font-weight:bold; color:#aaddff; min-width:80px; }
   .yaku-item .ynote { font-size:10px; color:rgba(255,255,255,0.45); flex:1; margin:0 6px; }
   .yaku-item .ypts { color:#ffcc44; font-weight:bold; font-size:14px; min-width:36px; text-align:right; }
-  .yaku-item.special .yn { color:#ffdd44; }
-  .yaku-item.special .ypts { color:#ff8844; font-size:16px; }
+  .yaku-item.bonus .yn { color:#ffdd44; }
+  .yaku-item.bonus .ypts { color:#ff8844; font-size:16px; }
   .yaku-item.invalid .yn { color:#ff7766; }
   .yaku-item.invalid .ynote { color:#ff7766; opacity:0.7; }
   .yaku-item.invalid .ypts { color:#ff7766; }
   .yaku-total { text-align:center; margin-top:12px; font-size:24px; color:#ffcc44; font-weight:bold; }
   .yaku-total small { font-size:12px; color:rgba(255,255,255,0.55); margin-right:4px; }
-  .yaku-close {
-    margin-top:14px; width:100%; padding:10px;
-    background:linear-gradient(180deg,#8855cc,#5533aa); border:none; border-radius:10px;
-    color:#fff; font-size:14px; font-weight:bold; cursor:pointer; letter-spacing:1px;
-  }
+  .yaku-close { margin-top:14px; width:100%; padding:10px; background:linear-gradient(180deg,#8855cc,#5533aa); border:none; border-radius:10px; color:#fff; font-size:14px; font-weight:bold; cursor:pointer; letter-spacing:1px; }
   .yaku-close:active { filter:brightness(0.85); }
+  /* ターンバナー */
+  #turnBanner {
+    display:none; position:fixed; inset:0; z-index:600;
+    align-items:center; justify-content:center;
+    background:rgba(0,0,0,0.5);
+    font-size:52px; font-weight:bold; color:#fff;
+    letter-spacing:4px; text-shadow:0 0 30px rgba(255,255,255,0.8), 0 0 60px rgba(100,200,255,0.4);
+    pointer-events:none;
+  }
+  #turnBanner.show { display:flex; animation:banner-fade 2.0s ease-in-out forwards; }
+  @keyframes banner-fade {
+    0%   { opacity:0; transform:scale(0.75); }
+    18%  { opacity:1; transform:scale(1.08); }
+    65%  { opacity:1; transform:scale(1); }
+    100% { opacity:0; transform:scale(1.05); }
+  }
+  /* 文章表示オーバーレイ */
+  #sentReveal {
+    display:none; position:fixed; inset:0; z-index:550;
+    align-items:center; justify-content:center;
+    background:rgba(0,0,0,0.72); backdrop-filter:blur(4px);
+  }
+  #sentReveal.show { display:flex; animation:sent-fade 3.0s ease-in-out forwards; }
+  @keyframes sent-fade {
+    0%   { opacity:0; }
+    12%  { opacity:1; }
+    78%  { opacity:1; }
+    100% { opacity:0; }
+  }
+  .sent-content { text-align:center; padding:28px 36px; background:linear-gradient(155deg,#1a0a2e,#0a1825); border:2px solid rgba(180,120,255,0.5); border-radius:16px; box-shadow:0 0 60px rgba(140,70,255,0.5); max-width:340px; }
+  .sent-title { font-size:15px; color:rgba(255,200,80,0.85); margin-bottom:14px; letter-spacing:2px; }
+  .sent-eng { font-size:22px; font-weight:bold; color:#ffffff; margin:6px 0 2px; text-shadow:0 0 14px rgba(100,200,255,0.7); }
+  .sent-jp { font-size:13px; color:rgba(180,220,255,0.85); margin:0 0 12px; }
 </style>
 </head>
 <body>
@@ -259,12 +205,14 @@
 <div class="yaku-toast" id="yakuToast"></div>
 <div class="yaku-overlay" id="yakuOverlay">
   <div class="yaku-panel">
-    <h2>📜 役の成立</h2>
+    <h2>📊 スコア結果</h2>
     <div id="yakuListEl"></div>
     <div class="yaku-total"><small>合計：</small><span id="yakuTotalEl">0</span>pt</div>
     <button class="yaku-close" id="yakuCloseBtn">つづける ▶</button>
   </div>
 </div>
+<div id="turnBanner"></div>
+<div id="sentReveal"><div class="sent-content"></div></div>
 
 <script>
 const TYPES = [
@@ -273,10 +221,9 @@ const TYPES = [
   {key:'O',   label:'O',   color:'#ffcc44', bg:'#221a00'},
   {key:'Adj', label:'Adj', color:'#88ff88', bg:'#0a1a0a'},
   {key:'Adv', label:'Adv', color:'#cc88ff', bg:'#160a22'},
-  {key:'?',   label:'?',   color:'#ff9966', bg:'#221008'},
 ];
 const TEMPLATES = [
-  // S — 主語（代名詞・人・動物）
+  // S
   {type:'S', word:'I',         meaning:'私',       icon:'👤'},
   {type:'S', word:'you',       meaning:'あなた',   icon:'👆'},
   {type:'S', word:'he',        meaning:'彼',       icon:'👦'},
@@ -292,7 +239,7 @@ const TEMPLATES = [
   {type:'S', word:'dog',       meaning:'犬',       icon:'🐕'},
   {type:'S', word:'cat',       meaning:'猫',       icon:'🐈'},
   {type:'S', word:'people',    meaning:'人々',     icon:'👫'},
-  // V — 動詞
+  // V
   {type:'V', word:'eat',       meaning:'食べる',   icon:'🍽️'},
   {type:'V', word:'drink',     meaning:'飲む',     icon:'🥤'},
   {type:'V', word:'play',      meaning:'遊ぶ',     icon:'🎮'},
@@ -313,7 +260,7 @@ const TEMPLATES = [
   {type:'V', word:'buy',       meaning:'買う',     icon:'🛒'},
   {type:'V', word:'take',      meaning:'取る',     icon:'🖐️'},
   {type:'V', word:'help',      meaning:'助ける',   icon:'🙌'},
-  // O — 目的語（名詞）
+  // O
   {type:'O', word:'food',      meaning:'食べ物',   icon:'🍱'},
   {type:'O', word:'drink',     meaning:'飲み物',   icon:'🧃'},
   {type:'O', word:'fruit',     meaning:'果物',     icon:'🍎'},
@@ -340,7 +287,7 @@ const TEMPLATES = [
   {type:'O', word:'thing',     meaning:'物',       icon:'📦'},
   {type:'O', word:'work',      meaning:'仕事',     icon:'💼'},
   {type:'O', word:'story',     meaning:'物語',     icon:'📖'},
-  // Adj — 形容詞
+  // Adj
   {type:'Adj',word:'big',      meaning:'大きい',   icon:'🐘'},
   {type:'Adj',word:'small',    meaning:'小さい',   icon:'🐭'},
   {type:'Adj',word:'good',     meaning:'良い',     icon:'✅'},
@@ -356,7 +303,7 @@ const TEMPLATES = [
   {type:'Adj',word:'fun',      meaning:'楽しい',   icon:'🎉'},
   {type:'Adj',word:'easy',     meaning:'簡単な',   icon:'😄'},
   {type:'Adj',word:'difficult',meaning:'難しい',   icon:'🧩'},
-  // Adv — 副詞
+  // Adv
   {type:'Adv',word:'always',   meaning:'いつも',   icon:'♾️'},
   {type:'Adv',word:'often',    meaning:'よく',     icon:'🔄'},
   {type:'Adv',word:'sometimes',meaning:'時々',     icon:'🌤️'},
@@ -367,20 +314,9 @@ const TEMPLATES = [
   {type:'Adv',word:'here',     meaning:'ここで',   icon:'📍'},
   {type:'Adv',word:'there',    meaning:'そこで',   icon:'👉'},
   {type:'Adv',word:'together', meaning:'一緒に',   icon:'🤝'},
-  // ? — 接続詞（ワイルドカード）
-  {type:'?',  word:'and',      meaning:'そして',   icon:'➕'},
-  {type:'?',  word:'but',      meaning:'しかし',   icon:'↔️'},
-  {type:'?',  word:'because',  meaning:'なぜなら', icon:'💬'},
-  {type:'?',  word:'when',     meaning:'〜するとき',icon:'⏰'},
-  {type:'?',  word:'if',       meaning:'もし',     icon:'❓'},
-  {type:'?',  word:'so',       meaning:'だから',   icon:'➡️'},
-  {type:'?',  word:'then',     meaning:'それから', icon:'⏩'},
-  {type:'?',  word:'after',    meaning:'〜の後',   icon:'⏭️'},
-  {type:'?',  word:'before',   meaning:'〜の前',   icon:'⏮️'},
-  {type:'?',  word:'while',    meaning:'〜の間',   icon:'⏳'},
 ];
 
-// ===== 単語互換性ルール（NGless = 自然な組み合わせのみ収録） =====
+// ===== 単語互換性ルール =====
 const SV_SET = new Set([
   ...['I','you','he','she','we','they','boy','girl','student','friend','people'].flatMap(s=>
     ['eat','drink','play','go','come','run','walk','study','read','write','make','see','watch','like','love','have','use','buy','take','help'].map(v=>`${s}|${v}`)
@@ -440,14 +376,9 @@ const ADVV_SET = new Set([
   ...['go','play','study','read'].map(v=>`there|${v}`),
   ...['eat','drink','play','go','come','walk','study','read','watch','help'].map(v=>`together|${v}`),
 ]);
-const CONJ_DESC = {
-  and:'同じ話題で', but:'対比・逆接で', because:'理由を示して',
-  when:'タイミングで', if:'条件で', so:'結果を示して',
-  then:'続けて', after:'その後を示して', before:'事前を示して', while:'同時進行で'
-};
 const FREQ_ADV = new Set(['always','often','sometimes','today','now']);
 
-// テーマ辞書（同色役用）
+// テーマ辞書
 const WORD_THEMES = {
   I:'common',you:'common',he:'common',she:'common',we:'common',they:'common',
   boy:'people',girl:'people',teacher:'school',student:'school',friend:'people',
@@ -466,8 +397,6 @@ const WORD_THEMES = {
   fun:'emotion',easy:'school',difficult:'school',
   always:'common',often:'common',sometimes:'common',today:'common',now:'common',
   quickly:'movement',slowly:'movement',here:'place',there:'place',together:'people',
-  and:'common',but:'common',because:'common',when:'common',if:'common',so:'common',
-  then:'common',after:'common',before:'common',while:'common'
 };
 
 const track       = document.getElementById('handTrack');
@@ -490,10 +419,10 @@ let offsetX=0, dragging=false, dragMoved=false, dragStartX=0, dragStartOffset=0;
 let deckCount=48, pSlots=[], eSlots=[];
 let phase='init', enemyCardData=[], placedThisTurn=0, lowerUnlocked=false;
 let playerScore=0, koikoiActive=false, koikoiCount=0, achievedYaku=new Set(), toastTimer=null;
+let upperLocked=false, enemyKoikoiDeclared=false, counterKoikoi=false;
 const CARD_W=38, FAN_DEG=3;
 
-// === 役システム ===
-function getTheme(tmpl){ return tmpl ? (WORD_THEMES[tmpl.word]||'common') : 'common'; }
+function getTheme(tmpl){ return tmpl?(WORD_THEMES[tmpl.word]||'common'):'common'; }
 
 function showToast(msg, color='#ffcc44'){
   yakuToast.textContent=msg; yakuToast.style.color=color;
@@ -502,84 +431,117 @@ function showToast(msg, color='#ffcc44'){
   toastTimer=setTimeout(()=>yakuToast.classList.remove('show'),2200);
 }
 
-function calcYaku(slots){
+function showTurnBanner(text, cb){
+  const banner=document.getElementById('turnBanner');
+  banner.textContent=text; banner.classList.add('show');
+  setTimeout(()=>{ banner.classList.remove('show'); if(cb) setTimeout(cb,300); },2000);
+}
+
+function showSentReveal(sentArr, jpArr, who, onDone){
+  if(!sentArr||!sentArr.some(s=>s)){ if(onDone) onDone(); return; }
+  const el=document.getElementById('sentReveal');
+  const content=el.querySelector('.sent-content');
+  content.innerHTML='';
+  const title=document.createElement('div'); title.className='sent-title';
+  title.textContent=who==='player'?'📜 あなたの文章':'📜 相手の文章';
+  content.appendChild(title);
+  [0,1].forEach(row=>{
+    if(!sentArr[row]) return;
+    const eng=document.createElement('div'); eng.className='sent-eng';
+    eng.textContent=sentArr[row]; content.appendChild(eng);
+    if(jpArr&&jpArr[row]){
+      const jp=document.createElement('div'); jp.className='sent-jp';
+      jp.textContent=jpArr[row]; content.appendChild(jp);
+    }
+  });
+  el.classList.add('show');
+  setTimeout(()=>{ el.classList.remove('show'); setTimeout(onDone,300); },2700);
+}
+
+// ===== スコアシステム =====
+function calcScore(slots){
   const res=[];
-  const gw=(row,type)=>slots.find(s=>s.row===row&&s.type===type&&s.filled)?.tmpl?.word||null;
-  const all=slots.filter(s=>s.filled);
-  let s0=0, s1=0;
+  const gw=(row,type)=>slots.find(s=>s.row===row&&s.type===type&&s.filled)?.tmpl||null;
+  let score=0;
   const sentArr=[];
+  const jpArr=[];
 
   function evalRow(row){
-    const S=gw(row,'S'),V=gw(row,'V'),O=gw(row,'O'),Adj=gw(row,'Adj'),Adv=gw(row,'Adv');
-    const svOk=!!(S&&V&&SV_SET.has(`${S}|${V}`));
-    const voOk=!!(V&&O&&VO_SET.has(`${V}|${O}`));
-    const adjOk=!!(Adj&&O&&ADJO_SET.has(`${Adj}|${O}`));
-    const advOk=!!(Adv&&V&&ADVV_SET.has(`${Adv}|${V}`));
+    const Stmpl=gw(row,'S'),Vtmpl=gw(row,'V'),Otmpl=gw(row,'O');
+    const AdjTmpl=gw(row,'Adj'),AdvTmpl=gw(row,'Adv');
+    if(!Stmpl||!Vtmpl||!Otmpl) return 0;
+    const S=Stmpl.word,V=Vtmpl.word,O=Otmpl.word;
+    const Adj=AdjTmpl?.word,Adv=AdvTmpl?.word;
+    const svOk=SV_SET.has(`${S}|${V}`);
+    const voOk=VO_SET.has(`${V}|${O}`);
+    const adjOk=!!(Adj&&ADJO_SET.has(`${Adj}|${O}`));
+    const advOk=!!(Adv&&ADVV_SET.has(`${Adv}|${V}`));
     const lb=row===0?'上段':'下段';
-    let sc=0;
-    if(svOk&&voOk){
-      sc=2;
-      if(adjOk&&advOk){ res.push({name:'二重かざり',note:`${lb} SVO+形+副`,pts:2,bonus:1}); sc+=2; }
-      else if(adjOk||advOk){ res.push({name:'かざり',note:`${lb} SVO+修飾`,pts:1,bonus:1}); sc+=1; }
-      else{ res.push({name:'たね',note:`${lb} S+V+O`,pts:2}); }
-      // 文章生成（語順: S [頻度副詞] V [形] O [その他副詞]）
-      const p=[S];
-      if(Adv&&advOk&&FREQ_ADV.has(Adv)) p.push(Adv);
-      p.push(V);
-      if(Adj&&adjOk) p.push(Adj);
-      p.push(O);
-      if(Adv&&advOk&&!FREQ_ADV.has(Adv)) p.push(Adv);
-      sentArr[row]=p.join(' ')+'.';
-    } else if(svOk){
-      sc=1; res.push({name:'みあい',note:`${lb} S+V`,pts:1});
-      sentArr[row]=`${S} ${V}.`;
-    } else if(S&&V){
-      // 両方揃っているが不自然な組み合わせ
-      res.push({name:'× 無効',note:`${lb}: ${S}+${V}は不自然`,pts:0,invalid:1});
+    if(!svOk){
+      res.push({name:'× 無効',note:`${lb}: ${S}+${V}は不自然`,pts:0,invalid:1}); return 0;
     }
-    return sc;
+    if(!voOk){
+      res.push({name:'× 無効',note:`${lb}: ${V}+${O}は不自然`,pts:0,invalid:1}); return 0;
+    }
+    let rowPts=2;
+    res.push({name:'SVO文',note:`${lb} +2pt`,pts:2});
+    // 英語文生成
+    const p=[S];
+    if(advOk&&FREQ_ADV.has(Adv)) p.push(Adv);
+    p.push(V);
+    if(adjOk) p.push(Adj);
+    p.push(O);
+    if(advOk&&!FREQ_ADV.has(Adv)) p.push(Adv);
+    sentArr[row]=p.join(' ')+'.';
+    // 日本語訳生成
+    const Sm=Stmpl.meaning,Vm=Vtmpl.meaning,Om=Otmpl.meaning;
+    const Adjm=AdjTmpl?.meaning,Advm=AdvTmpl?.meaning;
+    let jp=[Sm+'は'];
+    if(advOk&&Advm&&FREQ_ADV.has(Adv)) jp.push(Advm);
+    if(adjOk&&Adjm) jp.push(Adjm+Om+'を');
+    else jp.push(Om+'を');
+    if(advOk&&Advm&&!FREQ_ADV.has(Adv)) jp.push(Advm);
+    jp.push(Vm+'。');
+    jpArr[row]=jp.join('');
+    // 長単語ボーナス（5文字以上）
+    const used=[Stmpl,Vtmpl,Otmpl];
+    if(adjOk) used.push(AdjTmpl);
+    if(advOk) used.push(AdvTmpl);
+    used.forEach(t=>{
+      if(t.word.length>=5){
+        res.push({name:`長単語「${t.word}」`,note:`${t.word.length}文字`,pts:t.word.length});
+        rowPts+=t.word.length;
+      }
+    });
+    return rowPts;
   }
 
-  s0=evalRow(0);
-  if(lowerUnlocked) s1=evalRow(1);
-  let score=s0+s1;
+  const s0=evalRow(0);
+  const s1=lowerUnlocked?evalRow(1):0;
+  score=s0+s1;
 
-  // 同色（同テーマ3枚以上）
-  const thMap={};
-  all.forEach(s=>{ const th=getTheme(s.tmpl); thMap[th]=(thMap[th]||0)+1; });
-  let maxTh='',maxN=0;
-  Object.entries(thMap).forEach(([th,n])=>{ if(n>maxN){maxN=n;maxTh=th;} });
-  if(maxN>=3){ res.push({name:'同色',note:`「${maxTh}」${maxN}枚`,pts:2,bonus:1}); score+=2; }
-
-  // 二文成立以上（両段ともS+V+O有効である必要あり）
-  const r0svo=s0>=2, r1svo=lowerUnlocked&&s1>=2;
-  const bothSVO=r0svo&&r1svo;
-  if(bothSVO){
-    res.push({name:'二文成立',note:'上下段SVO',pts:0});
-    const hasMod=(s0>=3)||(s1>=3);
-    if(hasMod){ res.push({name:'強化二文',note:'修飾あり',pts:2,bonus:1}); score+=2; }
-    const qWord=gw(0,'?')||gw(1,'?');
-    if(qWord){
-      const cd=CONJ_DESC[qWord]||'';
-      const rb=s0+s1;
-      res.push({name:'連結',note:`「${qWord}」${cd}（×2）`,pts:rb,bonus:1}); score+=rb;
-      if(hasMod){ res.push({name:'強化連結',note:'連結+修飾',pts:2,bonus:1}); score+=2; }
-      if(maxN>=4){ res.push({name:'同色連結',note:`同テーマ${maxN}枚`,pts:3,bonus:1}); score+=3; }
+  // 連結ボーナス：両段SVO成立 + 共通テーマ
+  if(lowerUnlocked&&s0>0&&s1>0){
+    const th0=new Set(slots.filter(s=>s.row===0&&s.filled).map(s=>getTheme(s.tmpl)).filter(t=>t!=='common'));
+    const th1=new Set(slots.filter(s=>s.row===1&&s.filled).map(s=>getTheme(s.tmpl)).filter(t=>t!=='common'));
+    const shared=[...th0].find(t=>th1.has(t));
+    if(shared){
+      res.push({name:'連結ボーナス',note:`共通テーマ「${shared}」`,pts:10,bonus:1});
+      score+=10;
     }
   }
-
-  // 五光 / 完全連結
-  const allTypes=['S','V','O','Adj','Adv','?'];
-  const allUsed=allTypes.every(t=>all.some(s=>s.type===t));
-  if(allUsed){
-    const hasQ=all.some(s=>s.type==='?');
-    if(hasQ&&bothSVO){ res.length=0; res.push({name:'完全連結',note:'全品詞×接続成立！',pts:18,special:1}); score=18; }
-    else if(score<15){ res.push({name:'五光',note:'全品詞制覇！',pts:15,special:1}); score=15; }
+  // カウンターこいこいボーナス
+  if(counterKoikoi){
+    res.push({name:'カウンターこいこい',note:'+1pt',pts:1});
+    score+=1;
   }
-
-  if(koikoiActive&&score>0){ const b=2*koikoiCount; res.push({name:'こいこい成功',note:`続行×${koikoiCount}`,pts:b,bonus:1}); score+=b; }
-
-  return{res,score,sentArr};
+  // こいこい成功ボーナス
+  if(koikoiActive&&score>0){
+    const b=2*koikoiCount;
+    res.push({name:'こいこい成功',note:`続行×${koikoiCount}`,pts:b,bonus:1});
+    score+=b;
+  }
+  return{res,score,sentArr,jpArr};
 }
 
 function checkLiveYaku(){
@@ -592,28 +554,25 @@ function checkLiveYaku(){
     const advOk=!!(Adv&&V&&ADVV_SET.has(`${Adv}|${V}`));
     const lb=row===0?'上段':'下段';
     const k=r=>`r${row}_${r}`;
-    if(svOk&&voOk&&adjOk&&advOk&&!achievedYaku.has(k('dk'))){
-      achievedYaku.add(k('dk'));achievedYaku.add(k('k'));achievedYaku.add(k('svo'));achievedYaku.add(k('sv'));
-      showToast(`✨ 二重かざり！${lb}`,'#ffdd44');
-    }else if(svOk&&voOk&&(adjOk||advOk)&&!achievedYaku.has(k('k'))){
-      achievedYaku.add(k('k'));achievedYaku.add(k('svo'));achievedYaku.add(k('sv'));
-      showToast(`🌸 かざり！${lb} SVO+修飾`,'#ffbb88');
-    }else if(svOk&&voOk&&!achievedYaku.has(k('svo'))){
+    if(svOk&&voOk&&(adjOk||advOk)&&!achievedYaku.has(k('mod'))){
+      achievedYaku.add(k('mod'));achievedYaku.add(k('svo'));achievedYaku.add(k('sv'));
+      showToast(`✨ SVO+修飾！${lb}`,'#ffdd44');
+    } else if(svOk&&voOk&&!achievedYaku.has(k('svo'))){
       achievedYaku.add(k('svo'));achievedYaku.add(k('sv'));
-      showToast(`📜 たね！${lb}: ${S} ${V} ${O}`,'#88ffaa');
-    }else if(svOk&&!achievedYaku.has(k('sv'))){
+      showToast(`📜 SVO文成立！${lb}: ${S} ${V} ${O}`,'#88ffaa');
+    } else if(svOk&&!achievedYaku.has(k('sv'))){
       achievedYaku.add(k('sv'));
-      showToast(`🤝 みあい！${lb}: ${S} ${V}`,'#aaccff');
-    }else if(S&&V&&!svOk&&!achievedYaku.has(k('ng'))){
+      showToast(`🤝 S+V接続！${lb}: ${S} ${V}`,'#aaccff');
+    } else if(S&&V&&!svOk&&!achievedYaku.has(k('ng'))){
       achievedYaku.add(k('ng'));
-      showToast(`⚠️ ${lb}: ${S}+${V}は不自然な組み合わせ`,'#ff8888');
+      showToast(`⚠️ ${lb}: ${S}+${V}は不自然`,'#ff8888');
     }
   }
 }
 
 let yakuCloseCallback=null;
 function showYakuResult(closeBtnLabel, onClose){
-  const {res,score,sentArr}=calcYaku(pSlots);
+  const {res,score,sentArr,jpArr}=calcScore(pSlots);
   yakuListEl.innerHTML='';
   if(!res.length){
     const d=document.createElement('div'); d.className='yaku-item';
@@ -621,18 +580,25 @@ function showYakuResult(closeBtnLabel, onClose){
     yakuListEl.appendChild(d);
   }
   res.forEach(r=>{
-    const d=document.createElement('div'); d.className='yaku-item'+(r.special?' special':'')+(r.invalid?' invalid':'');
+    const d=document.createElement('div');
+    d.className='yaku-item'+(r.bonus?' bonus':'')+(r.invalid?' invalid':'');
     const sign=r.pts>0?'+':''; const pts=r.pts===0?'—':sign+r.pts+'pt';
     d.innerHTML=`<span class="yn">${r.name}</span><span class="ynote">${r.note}</span><span class="ypts">${pts}</span>`;
     yakuListEl.appendChild(d);
   });
-  // 完成した文章を表示
-  const s0=sentArr[0], s1=sentArr[1];
+  // 完成文章
+  const s0=sentArr[0],s1=sentArr[1];
   if(s0||s1){
     const sep=document.createElement('div');
     sep.style.cssText='margin-top:8px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.1);';
-    if(s0){const d=document.createElement('div');d.style.cssText='font-size:12px;color:#88ddff;margin:2px 0;';d.textContent='上段: '+s0;sep.appendChild(d);}
-    if(s1){const d=document.createElement('div');d.style.cssText='font-size:12px;color:#aaffcc;margin:2px 0;';d.textContent='下段: '+s1;sep.appendChild(d);}
+    if(s0){
+      const d=document.createElement('div');d.style.cssText='font-size:12px;color:#88ddff;margin:2px 0;font-weight:bold;';d.textContent='上段: '+s0;sep.appendChild(d);
+      if(jpArr[0]){const j=document.createElement('div');j.style.cssText='font-size:10px;color:#aaccee;margin:0 0 4px;';j.textContent=jpArr[0];sep.appendChild(j);}
+    }
+    if(s1){
+      const d=document.createElement('div');d.style.cssText='font-size:12px;color:#aaffcc;margin:2px 0;font-weight:bold;';d.textContent='下段: '+s1;sep.appendChild(d);
+      if(jpArr[1]){const j=document.createElement('div');j.style.cssText='font-size:10px;color:#88ddaa;margin:0 0 4px;';j.textContent=jpArr[1];sep.appendChild(j);}
+    }
     yakuListEl.appendChild(sep);
   }
   yakuTotalEl.textContent=score;
@@ -714,7 +680,7 @@ function buildGrids(){
     const lbl=document.createElement('div'); lbl.className='slot-label';
     lbl.textContent=t.label; lbl.style.color=t.color+'77';
     s.appendChild(lbl); ge.appendChild(s);
-    eSlots.push({el:s,type:t.key,col,row,filled:false});
+    eSlots.push({el:s,type:t.key,col,row,filled:false,tmpl:null});
   });
   const gp=document.getElementById('gridPlayer'); gp.innerHTML='';
   for(let row=0;row<2;row++) TYPES.forEach((t,col)=>{
@@ -724,7 +690,7 @@ function buildGrids(){
     const lbl=document.createElement('div'); lbl.className='slot-label';
     lbl.textContent=t.label; lbl.style.color=t.color+'77';
     s.appendChild(lbl); gp.appendChild(s);
-    pSlots.push({el:s,type:t.key,col,row,filled:false});
+    pSlots.push({el:s,type:t.key,col,row,filled:false,tmpl:null});
   });
 }
 function flyAnim(fromX,fromY,toX,toY,imgSrc,w,h,arcH,onDone){
@@ -787,15 +753,22 @@ function addHandCard(tmpl,imgSrc){
     if(idx!==centerIdx){ snapTo(idx); return; }
     if(!card.zoomed){ card.zoomed=true; wrap.classList.add('zoomed'); updateFan(); }
     else {
-      if(placedThisTurn>=1){
-        phaseLabel.textContent='このターンはすでにカードを置きました';
+      if(placedThisTurn>=2){
+        phaseLabel.textContent='このターンはすでに2枚カードを置きました';
         card.zoomed=false; wrap.classList.remove('zoomed'); updateFan(); return;
       }
-      const target=pSlots.find(s=>s.type===card.tmpl.type&&s.row===0&&!s.filled)
-        ||(lowerUnlocked?pSlots.find(s=>s.type===card.tmpl.type&&s.row===1&&!s.filled):null);
+      // 上書き判定：同タイプ + 同テーマ + 異なる語句
+      const canOverwrite=s=>
+        s.filled && s.type===card.tmpl.type && s.tmpl && s.tmpl.word!==card.tmpl.word
+        && (WORD_THEMES[s.tmpl.word]||'common')===(WORD_THEMES[card.tmpl.word]||'common');
+      let target=
+        (!upperLocked?pSlots.find(s=>s.type===card.tmpl.type&&s.row===0&&!s.filled):null)
+        ||(lowerUnlocked?pSlots.find(s=>s.type===card.tmpl.type&&s.row===1&&!s.filled):null)
+        ||(!upperLocked?pSlots.find(s=>s.row===0&&canOverwrite(s)):null)
+        ||(lowerUnlocked?pSlots.find(s=>s.row===1&&canOverwrite(s)):null);
       card.zoomed=false; wrap.classList.remove('zoomed'); updateFan();
       if(!target){
-        phaseLabel.textContent=lowerUnlocked?'そのスロットは埋まっています':'上段は埋まっています';
+        phaseLabel.textContent=upperLocked?'上段はロック中です':'置けるスロットがありません';
         setTimeout(()=>{ phaseLabel.textContent='あなたのターン：カードを置いてください'; },1200);
         return;
       }
@@ -815,6 +788,12 @@ function getSlotRect(slotEl){
   fw.style.transform='none'; const r=slotEl.getBoundingClientRect(); fw.style.transform=prev; return r;
 }
 function placeCard(card,slot){
+  // 上書きの場合は既存カードを除去
+  if(slot.filled){
+    const oldImg=slot.el.querySelector('img');
+    if(oldImg) oldImg.remove();
+    slot.el.classList.remove('filled');
+  }
   card.played=true; card.wrap.style.pointerEvents='none'; slot.filled=true; slot.tmpl=card.tmpl;
   const fr=card.wrap.getBoundingClientRect();
   const probe=document.createElement('div');
@@ -836,18 +815,23 @@ function placeCard(card,slot){
 function checkUpperComplete(){
   checkLiveYaku();
   const filled0=pSlots.filter(s=>s.row===0&&s.filled).length;
-  if(filled0===6&&!lowerUnlocked){
+  if(filled0===5&&!lowerUnlocked){
     phaseLabel.textContent='上段完成！こいこい→2段目 / 勝負→得点確定 🌸';
     koikoiBtn.classList.add('pulse');
   }
   if(lowerUnlocked){
     const filled1=pSlots.filter(s=>s.row===1&&s.filled).length;
-    if(filled1===6){
+    if(filled1===5){
       phaseLabel.textContent='下段完成！役を確定します…';
       setTimeout(()=>{
-        showYakuResult('つづける ▶',()=>{
-          achievedYaku.clear(); koikoiActive=false; koikoiCount=0;
-          phaseLabel.textContent=`スコア ${playerScore}pt — 次のターンへ`;
+        const {sentArr,jpArr}=calcScore(pSlots);
+        showSentReveal(sentArr,jpArr,'player',()=>{
+          showYakuResult('つづける ▶',()=>{
+            achievedYaku.clear(); koikoiActive=false; koikoiCount=0;
+            upperLocked=false; enemyKoikoiDeclared=false; counterKoikoi=false;
+            koikoiBtn.textContent='こいこい 🌸';
+            phaseLabel.textContent=`スコア ${playerScore}pt — 次のターンへ`;
+          });
         });
       },500);
     }
@@ -860,34 +844,56 @@ function unlockLower(){
   });
   phaseLabel.textContent='2段目が開放されました！';
 }
+function revealEnemyV(){
+  eSlots.filter(s=>s.type==='V'&&s.filled&&s.tmpl).forEach(s=>{
+    const img=s.el.querySelector('img');
+    if(img) img.src=makeCardImg(s.tmpl, s.el.offsetWidth||38, s.el.offsetHeight||57);
+  });
+}
 function enemyTurn(){
-  phase='enemy'; outer.classList.add('locked'); phaseLabel.textContent='相手スタンバイ：ドロー中…';
-  drawToEnemy(()=>{ setTimeout(()=>{
+  phase='enemy'; outer.classList.add('locked');
+  showTurnBanner('相手のターン',()=>{
+    phaseLabel.textContent='相手スタンバイ：ドロー中…';
     drawToEnemy(()=>{ setTimeout(()=>{
-      phaseLabel.textContent='相手のターン…';
-      setTimeout(()=>enemyPlay(()=>{ setTimeout(()=>enemyPlay(()=>{ setTimeout(()=>startPlayerTurn(),500); }),400); }),500);
-    },180); }); },180); });
+      drawToEnemy(()=>{ setTimeout(()=>{
+        phaseLabel.textContent='相手のターン…';
+        setTimeout(()=>enemyPlay(()=>{ setTimeout(()=>enemyPlay(()=>{ setTimeout(()=>startPlayerTurn(),500); }),400); }),500);
+      },180); }); },180); });
+  });
 }
 function enemyPlay(onDone){
   const ch=[...enemyHandEl.children]; if(!ch.length){onDone();return;}
   const wrap=ch[0]; const fr=wrap.getBoundingClientRect();
-  const tmpl=enemyCardData.shift()||TEMPLATES[0]; const imgSrc=makeCardImg(tmpl);
-  const slot=eSlots.find(s=>s.type===tmpl.type&&s.row===0&&!s.filled)||eSlots.find(s=>!s.filled);
-  if(!slot){wrap.remove();layoutEnemyHand();onDone();return;}
-  slot.filled=true; slot.tmpl=tmpl;
-  const tr=getSlotRect(slot.el); const slotW=slot.el.offsetWidth, slotH=slot.el.offsetHeight;
+  const tmpl=enemyCardData.shift()||TEMPLATES[0];
+  const isV=tmpl.type==='V';
+  const slotPref=eSlots.find(s=>s.type===tmpl.type&&s.row===0&&!s.filled)||eSlots.find(s=>!s.filled);
+  if(!slotPref){wrap.remove();layoutEnemyHand();onDone();return;}
+  slotPref.filled=true; slotPref.tmpl=tmpl;
+  const imgSrc=isV?makeBackImg(slotPref.el.offsetWidth||38,slotPref.el.offsetHeight||57):makeCardImg(tmpl,slotPref.el.offsetWidth||38,slotPref.el.offsetHeight||57);
+  const tr=getSlotRect(slotPref.el); const slotW=slotPref.el.offsetWidth||38, slotH=slotPref.el.offsetHeight||57;
   wrap.style.opacity='0';
   flyAnim(fr.left,fr.top,tr.left,tr.top,imgSrc,slotW,slotH,80,()=>{
     const img=document.createElement('img'); img.src=imgSrc;
-    slot.el.appendChild(img); slot.el.classList.add('filled');
-    wrap.remove(); layoutEnemyHand(); onDone();
+    slotPref.el.appendChild(img); slotPref.el.classList.add('filled');
+    wrap.remove(); layoutEnemyHand();
+    // 敵の上段完成でこいこい宣言
+    const eFilled=eSlots.filter(s=>s.row===0&&s.filled).length;
+    if(eFilled===5&&!enemyKoikoiDeclared){
+      enemyKoikoiDeclared=true;
+      setTimeout(()=>showToast('💫 相手がこいこいを宣言！','#ffaaff'),200);
+      koikoiBtn.textContent='カウンターこいこい 🌸';
+    }
+    onDone();
   });
 }
 function startPlayerTurn(){
-  phase='standby'; outer.classList.remove('locked'); phaseLabel.textContent='スタンバイ：2枚ドロー中…';
-  drawToPlayer(()=>{ setTimeout(()=>{
-    drawToPlayer(()=>{ phase='player'; placedThisTurn=0; phaseLabel.textContent='あなたのターン：カードを置いてください'; });
-  },180); });
+  phase='standby'; outer.classList.remove('locked');
+  showTurnBanner('自分のターン',()=>{
+    phaseLabel.textContent='スタンバイ：2枚ドロー中…';
+    drawToPlayer(()=>{ setTimeout(()=>{
+      drawToPlayer(()=>{ phase='player'; placedThisTurn=0; phaseLabel.textContent='あなたのターン：カードを置いてください'; });
+    },180); });
+  });
 }
 function updateFan(){
   cards.forEach((c,i)=>{
@@ -936,9 +942,16 @@ function onBtn(btn,fn){
 }
 onBtn(turnBtn,()=>{ if(phase==='player'||phase==='standby') enemyTurn(); });
 onBtn(koikoiBtn,()=>{
+  // カウンターこいこい
+  if(enemyKoikoiDeclared&&!counterKoikoi){
+    counterKoikoi=true;
+    showToast('💪 カウンターこいこい！+1pt','#ffaaff');
+    koikoiBtn.textContent='こいこい 🌸';
+    return;
+  }
   const filled0=pSlots.filter(s=>s.row===0&&s.filled).length;
-  if(filled0===6&&!lowerUnlocked){
-    koikoiActive=true; koikoiCount++;
+  if(filled0===5&&!lowerUnlocked){
+    koikoiActive=true; koikoiCount++; upperLocked=true;
     unlockLower();
     showToast(`🌸 こいこい！2段目を開放 (続行×${koikoiCount})`,'#ffaaff');
   } else if(!lowerUnlocked){
@@ -948,17 +961,22 @@ onBtn(koikoiBtn,()=>{
 onBtn(shobuBtn,()=>{
   const filled0=pSlots.filter(s=>s.row===0&&s.filled).length;
   if(filled0===0){ showToast('まだカードが置かれていません','#ff8888'); return; }
-  // こいこい中に役未成立で終了 → 失敗ペナルティ
-  let penaltyNote='';
+  let koikoiFail=false;
   if(koikoiActive){
-    const {score}=calcYaku(pSlots);
-    if(score===0){ penaltyNote=' (こいこい失敗 -50%)'; }
+    const {score}=calcScore(pSlots);
+    if(score===0) koikoiFail=true;
   }
-  showYakuResult('OK'+penaltyNote, ()=>{
-    // こいこい失敗の場合は追加後に半減（表示上はメッセージのみ）
-    if(penaltyNote){ playerScore=Math.floor(playerScore/2); scoreDisplay.textContent=`🏆 ${playerScore}pt`; }
-    achievedYaku.clear(); koikoiActive=false; koikoiCount=0;
-    phaseLabel.textContent=`スコア ${playerScore}pt`;
+  revealEnemyV();
+  const {sentArr,jpArr}=calcScore(pSlots);
+  const penaltyNote=koikoiFail?' (こいこい失敗 -50%)':'';
+  showSentReveal(sentArr,jpArr,'player',()=>{
+    showYakuResult('OK'+penaltyNote,()=>{
+      if(koikoiFail){ playerScore=Math.floor(playerScore/2); scoreDisplay.textContent=`🏆 ${playerScore}pt`; }
+      achievedYaku.clear(); koikoiActive=false; koikoiCount=0;
+      upperLocked=false; enemyKoikoiDeclared=false; counterKoikoi=false;
+      koikoiBtn.textContent='こいこい 🌸';
+      phaseLabel.textContent=`スコア ${playerScore}pt`;
+    });
   });
 });
 
