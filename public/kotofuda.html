@@ -172,6 +172,55 @@
     background:radial-gradient(ellipse,rgba(0,0,0,0.5) 0%,transparent 70%);
     border-radius:50%; pointer-events:none; z-index:298; transform:translate(-50%,-50%);
   }
+  /* スコア表示 */
+  .score-display {
+    position:fixed; top:6px; right:8px; z-index:50;
+    background:rgba(0,0,0,0.72); border:1px solid rgba(255,200,80,0.4);
+    border-radius:10px; padding:3px 10px; color:#ffcc44;
+    font-size:13px; font-weight:bold; text-shadow:0 0 8px rgba(255,200,80,0.5);
+    pointer-events:none;
+  }
+  /* リアルタイムトースト */
+  .yaku-toast {
+    position:fixed; bottom:148px; left:50%; transform:translateX(-50%);
+    background:rgba(15,8,35,0.96); border:1px solid rgba(180,120,255,0.5);
+    border-radius:20px; padding:5px 18px; color:#ffcc44; font-size:13px; font-weight:bold;
+    pointer-events:none; z-index:400; opacity:0; transition:opacity 0.3s;
+    white-space:nowrap; text-shadow:0 0 6px rgba(255,200,80,0.4);
+  }
+  .yaku-toast.show { opacity:1; }
+  /* 役パネルオーバーレイ */
+  .yaku-overlay {
+    display:none; position:fixed; inset:0; z-index:500;
+    background:rgba(0,0,0,0.78); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center;
+  }
+  .yaku-overlay.show { display:flex; }
+  .yaku-panel {
+    background:linear-gradient(155deg,#1a0a2e,#0a1825);
+    border:2px solid rgba(180,120,255,0.5); border-radius:16px;
+    padding:18px 22px; min-width:258px; max-width:310px;
+    box-shadow:0 0 40px rgba(140,70,255,0.35);
+  }
+  .yaku-panel h2 { color:#ffcc44; text-align:center; margin-bottom:12px; font-size:17px; letter-spacing:1px; }
+  .yaku-item {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.07);
+    color:#fff; font-size:13px;
+  }
+  .yaku-item .yn { font-weight:bold; color:#aaddff; min-width:80px; }
+  .yaku-item .ynote { font-size:10px; color:rgba(255,255,255,0.45); flex:1; margin:0 6px; }
+  .yaku-item .ypts { color:#ffcc44; font-weight:bold; font-size:14px; min-width:36px; text-align:right; }
+  .yaku-item.special .yn { color:#ffdd44; }
+  .yaku-item.special .ypts { color:#ff8844; font-size:16px; }
+  .yaku-total { text-align:center; margin-top:12px; font-size:24px; color:#ffcc44; font-weight:bold; }
+  .yaku-total small { font-size:12px; color:rgba(255,255,255,0.55); margin-right:4px; }
+  .yaku-close {
+    margin-top:14px; width:100%; padding:10px;
+    background:linear-gradient(180deg,#8855cc,#5533aa); border:none; border-radius:10px;
+    color:#fff; font-size:14px; font-weight:bold; cursor:pointer; letter-spacing:1px;
+  }
+  .yaku-close:active { filter:brightness(0.85); }
 </style>
 </head>
 <body>
@@ -201,6 +250,16 @@
   <div class="game-btns">
     <button class="shobu-btn" id="shobuBtn">勝負！⚔️</button>
     <button class="turn-btn" id="turnBtn">ターン終了 ▶</button>
+  </div>
+</div>
+<div class="score-display" id="scoreDisplay">🏆 0pt</div>
+<div class="yaku-toast" id="yakuToast"></div>
+<div class="yaku-overlay" id="yakuOverlay">
+  <div class="yaku-panel">
+    <h2>📜 役の成立</h2>
+    <div id="yakuListEl"></div>
+    <div class="yaku-total"><small>合計：</small><span id="yakuTotalEl">0</span>pt</div>
+    <button class="yaku-close" id="yakuCloseBtn">つづける ▶</button>
   </div>
 </div>
 
@@ -318,6 +377,29 @@ const TEMPLATES = [
   {type:'?',  word:'while',    meaning:'〜の間',   icon:'⏳'},
 ];
 
+// テーマ辞書（同色役用）
+const WORD_THEMES = {
+  I:'common',you:'common',he:'common',she:'common',we:'common',they:'common',
+  boy:'people',girl:'people',teacher:'school',student:'school',friend:'people',
+  family:'people',dog:'animal',cat:'animal',people:'common',
+  eat:'food',drink:'food',play:'daily',go:'movement',come:'movement',run:'movement',
+  walk:'movement',study:'school',read:'school',write:'school',make:'daily',see:'daily',
+  watch:'daily',like:'emotion',love:'emotion',have:'common',use:'daily',buy:'daily',
+  take:'common',help:'common',
+  food:'food',fruit:'food',meal:'food',school:'school',class:'school',homework:'school',
+  book:'school',English:'school',math:'school',game:'daily',music:'daily',movie:'daily',
+  time:'daily',day:'daily',home:'place',park:'place',city:'place',shop:'place',
+  station:'place',animal:'animal',pet:'animal',idea:'abstract',thing:'abstract',
+  work:'abstract',story:'abstract',
+  big:'common',small:'common',good:'common',bad:'common',happy:'emotion',sad:'emotion',
+  hot:'common',cold:'common',fast:'movement',slow:'movement',new:'common',old:'common',
+  fun:'emotion',easy:'school',difficult:'school',
+  always:'common',often:'common',sometimes:'common',today:'common',now:'common',
+  quickly:'movement',slowly:'movement',here:'place',there:'place',together:'people',
+  and:'common',but:'common',because:'common',when:'common',if:'common',so:'common',
+  then:'common',after:'common',before:'common',while:'common'
+};
+
 const track       = document.getElementById('handTrack');
 const outer       = document.getElementById('handOuter');
 const enemyHandEl = document.getElementById('enemyHand');
@@ -326,12 +408,134 @@ const phaseLabel  = document.getElementById('phaseLabel');
 const koikoiBtn   = document.getElementById('koikoiBtn');
 const shobuBtn    = document.getElementById('shobuBtn');
 const turnBtn     = document.getElementById('turnBtn');
+const scoreDisplay= document.getElementById('scoreDisplay');
+const yakuOverlay = document.getElementById('yakuOverlay');
+const yakuListEl  = document.getElementById('yakuListEl');
+const yakuTotalEl = document.getElementById('yakuTotalEl');
+const yakuCloseBtn= document.getElementById('yakuCloseBtn');
+const yakuToast   = document.getElementById('yakuToast');
 
 let cards=[], centerIdx=0;
 let offsetX=0, dragging=false, dragMoved=false, dragStartX=0, dragStartOffset=0;
 let deckCount=48, pSlots=[], eSlots=[];
 let phase='init', enemyCardData=[], placedThisTurn=0, lowerUnlocked=false;
+let playerScore=0, koikoiActive=false, koikoiCount=0, achievedYaku=new Set(), toastTimer=null;
 const CARD_W=38, FAN_DEG=3;
+
+// === 役システム ===
+function getTheme(tmpl){ return tmpl ? (WORD_THEMES[tmpl.word]||'common') : 'common'; }
+
+function showToast(msg, color='#ffcc44'){
+  yakuToast.textContent=msg; yakuToast.style.color=color;
+  yakuToast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>yakuToast.classList.remove('show'),2200);
+}
+
+function calcYaku(slots){
+  const res=[];
+  const fld=(row,type)=>slots.some(s=>s.row===row&&s.type===type&&s.filled);
+  const all=slots.filter(s=>s.filled);
+  let s0=0, s1=0;
+
+  // 上段
+  const r0={S:fld(0,'S'),V:fld(0,'V'),O:fld(0,'O'),Adj:fld(0,'Adj'),Adv:fld(0,'Adv'),Q:fld(0,'?')};
+  if(r0.S&&r0.V&&r0.O){
+    s0=2;
+    if(r0.Adj&&r0.Adv){ res.push({name:'二重かざり',note:'上段 SVO+形+副',pts:2,bonus:1}); s0+=2; }
+    else if(r0.Adj||r0.Adv){ res.push({name:'かざり',note:'上段 SVO+修飾',pts:1,bonus:1}); s0+=1; }
+    else{ res.push({name:'たね',note:'上段 S+V+O完成',pts:2}); }
+  } else if(r0.S&&r0.V){ s0=1; res.push({name:'みあい',note:'上段 S+V',pts:1}); }
+
+  // 下段（こいこい後のみ）
+  let r1={S:false,V:false,O:false,Adj:false,Adv:false,Q:false};
+  if(lowerUnlocked){
+    r1={S:fld(1,'S'),V:fld(1,'V'),O:fld(1,'O'),Adj:fld(1,'Adj'),Adv:fld(1,'Adv'),Q:fld(1,'?')};
+    if(r1.S&&r1.V&&r1.O){
+      s1=2;
+      if(r1.Adj&&r1.Adv){ res.push({name:'二重かざり',note:'下段 SVO+形+副',pts:2,bonus:1}); s1+=2; }
+      else if(r1.Adj||r1.Adv){ res.push({name:'かざり',note:'下段 SVO+修飾',pts:1,bonus:1}); s1+=1; }
+      else{ res.push({name:'たね',note:'下段 S+V+O完成',pts:2}); }
+    } else if(r1.S&&r1.V){ s1=1; res.push({name:'みあい',note:'下段 S+V',pts:1}); }
+  }
+
+  let score=s0+s1;
+
+  // 同色（同テーマ3枚以上）
+  const themeMap={};
+  all.forEach(s=>{ const th=getTheme(s.tmpl); themeMap[th]=(themeMap[th]||0)+1; });
+  let maxTh='',maxN=0;
+  Object.entries(themeMap).forEach(([th,n])=>{ if(n>maxN){maxN=n;maxTh=th;} });
+  if(maxN>=3){ res.push({name:'同色',note:`「${maxTh}」${maxN}枚`,pts:2,bonus:1}); score+=2; }
+
+  // 二文成立以上
+  const bothSVO=(r0.S&&r0.V&&r0.O)&&lowerUnlocked&&(r1.S&&r1.V&&r1.O);
+  if(bothSVO){
+    res.push({name:'二文成立',note:'上下段SVO',pts:0});
+    const hasMod=r0.Adj||r0.Adv||r1.Adj||r1.Adv;
+    if(hasMod){ res.push({name:'強化二文',note:'修飾あり',pts:2,bonus:1}); score+=2; }
+    const hasQ=r0.Q||r1.Q;
+    if(hasQ){
+      const rowBase=s0+s1;
+      res.push({name:'連結',note:`上下合計×2 (+${rowBase}pt)`,pts:rowBase,bonus:1}); score+=rowBase;
+      if(hasMod){ res.push({name:'強化連結',note:'連結+修飾',pts:2,bonus:1}); score+=2; }
+      if(maxN>=4){ res.push({name:'同色連結',note:`同テーマ${maxN}枚`,pts:3,bonus:1}); score+=3; }
+    }
+  }
+
+  // 五光 / 完全連結
+  const allTypes=['S','V','O','Adj','Adv','?'];
+  const allUsed=allTypes.every(t=>all.some(s=>s.type===t));
+  if(allUsed){
+    const hasQ=all.some(s=>s.type==='?');
+    if(hasQ&&bothSVO){ res.length=0; res.push({name:'完全連結',note:'全品詞×接続成立！',pts:18,special:1}); score=18; }
+    else if(score<15){ res.push({name:'五光',note:'全品詞制覇！',pts:15,special:1}); score=15; }
+  }
+
+  // こいこい成功ボーナス
+  if(koikoiActive&&score>0){ const b=2*koikoiCount; res.push({name:'こいこい成功',note:`続行×${koikoiCount}`,pts:b,bonus:1}); score+=b; }
+
+  return {res,score};
+}
+
+function checkLiveYaku(){
+  const fld=(row,type)=>pSlots.some(s=>s.row===row&&s.type===type&&s.filled);
+  for(let row=0;row<=(lowerUnlocked?1:0);row++){
+    const S=fld(row,'S'),V=fld(row,'V'),O=fld(row,'O'),Adj=fld(row,'Adj'),Adv=fld(row,'Adv');
+    const lb=row===0?'上段':'下段';
+    const k=r=>`r${row}_${r}`;
+    if(S&&V&&O&&Adj&&Adv&&!achievedYaku.has(k('dk'))){ achievedYaku.add(k('dk'));achievedYaku.add(k('k'));achievedYaku.add(k('svo'));achievedYaku.add(k('sv')); showToast(`✨ 二重かざり！${lb} SVO+形容詞+副詞`,'#ffdd44'); }
+    else if(S&&V&&O&&(Adj||Adv)&&!achievedYaku.has(k('k'))){ achievedYaku.add(k('k'));achievedYaku.add(k('svo'));achievedYaku.add(k('sv')); showToast(`🌸 かざり！${lb} SVO+修飾語`,'#ffbb88'); }
+    else if(S&&V&&O&&!achievedYaku.has(k('svo'))){ achievedYaku.add(k('svo'));achievedYaku.add(k('sv')); showToast(`📜 たね！${lb} S+V+O完成`,'#88ffaa'); }
+    else if(S&&V&&!achievedYaku.has(k('sv'))){ achievedYaku.add(k('sv')); showToast(`🤝 みあい！${lb} S+V`,'#aaccff'); }
+  }
+}
+
+let yakuCloseCallback=null;
+function showYakuResult(closeBtnLabel, onClose){
+  const {res,score}=calcYaku(pSlots);
+  yakuListEl.innerHTML='';
+  if(!res.length){
+    const d=document.createElement('div'); d.className='yaku-item';
+    d.innerHTML='<span class="yn">役なし</span><span class="ypts">0pt</span>';
+    yakuListEl.appendChild(d);
+  }
+  res.forEach(r=>{
+    const d=document.createElement('div'); d.className='yaku-item'+(r.special?' special':'');
+    const sign=r.pts>0?'+':''; const pts=r.pts===0?'—':sign+r.pts+'pt';
+    d.innerHTML=`<span class="yn">${r.name}</span><span class="ynote">${r.note}</span><span class="ypts">${pts}</span>`;
+    yakuListEl.appendChild(d);
+  });
+  yakuTotalEl.textContent=score;
+  playerScore+=score;
+  scoreDisplay.textContent=`🏆 ${playerScore}pt`;
+  yakuCloseBtn.textContent=closeBtnLabel||'つづける ▶';
+  yakuOverlay.classList.add('show');
+  yakuCloseCallback=onClose;
+}
+function closeYaku(){ yakuOverlay.classList.remove('show'); if(yakuCloseCallback) yakuCloseCallback(); yakuCloseCallback=null; }
+yakuCloseBtn.addEventListener('click',closeYaku);
+yakuCloseBtn.addEventListener('touchend',e=>{e.preventDefault();closeYaku();},{passive:false});
 
 function shade(hex,amt){
   const n=parseInt(hex.replace('#',''),16);
@@ -502,7 +706,7 @@ function getSlotRect(slotEl){
   fw.style.transform='none'; const r=slotEl.getBoundingClientRect(); fw.style.transform=prev; return r;
 }
 function placeCard(card,slot){
-  card.played=true; card.wrap.style.pointerEvents='none'; slot.filled=true;
+  card.played=true; card.wrap.style.pointerEvents='none'; slot.filled=true; slot.tmpl=card.tmpl;
   const fr=card.wrap.getBoundingClientRect();
   const probe=document.createElement('div');
   probe.style.cssText='position:absolute;width:1px;height:1px;top:0;left:0;pointer-events:none;';
@@ -521,8 +725,24 @@ function placeCard(card,slot){
   }
 }
 function checkUpperComplete(){
-  const filled=pSlots.filter(s=>s.row===0&&s.filled).length;
-  if(filled===6&&!lowerUnlocked){ phaseLabel.textContent='文章完成！こいこいで2段目を開放 🌸'; koikoiBtn.classList.add('pulse'); }
+  checkLiveYaku();
+  const filled0=pSlots.filter(s=>s.row===0&&s.filled).length;
+  if(filled0===6&&!lowerUnlocked){
+    phaseLabel.textContent='上段完成！こいこい→2段目 / 勝負→得点確定 🌸';
+    koikoiBtn.classList.add('pulse');
+  }
+  if(lowerUnlocked){
+    const filled1=pSlots.filter(s=>s.row===1&&s.filled).length;
+    if(filled1===6){
+      phaseLabel.textContent='下段完成！役を確定します…';
+      setTimeout(()=>{
+        showYakuResult('つづける ▶',()=>{
+          achievedYaku.clear(); koikoiActive=false; koikoiCount=0;
+          phaseLabel.textContent=`スコア ${playerScore}pt — 次のターンへ`;
+        });
+      },500);
+    }
+  }
 }
 function unlockLower(){
   lowerUnlocked=true; koikoiBtn.classList.remove('pulse');
@@ -545,7 +765,7 @@ function enemyPlay(onDone){
   const tmpl=enemyCardData.shift()||TEMPLATES[0]; const imgSrc=makeCardImg(tmpl);
   const slot=eSlots.find(s=>s.type===tmpl.type&&s.row===0&&!s.filled)||eSlots.find(s=>!s.filled);
   if(!slot){wrap.remove();layoutEnemyHand();onDone();return;}
-  slot.filled=true;
+  slot.filled=true; slot.tmpl=tmpl;
   const tr=getSlotRect(slot.el); const slotW=slot.el.offsetWidth, slotH=slot.el.offsetHeight;
   wrap.style.opacity='0';
   flyAnim(fr.left,fr.top,tr.left,tr.top,imgSrc,slotW,slotH,80,()=>{
@@ -607,11 +827,31 @@ function onBtn(btn,fn){
 }
 onBtn(turnBtn,()=>{ if(phase==='player'||phase==='standby') enemyTurn(); });
 onBtn(koikoiBtn,()=>{
-  const filled=pSlots.filter(s=>s.row===0&&s.filled).length;
-  if(filled===6&&!lowerUnlocked) unlockLower();
-  else phaseLabel.textContent='こいこい！続けます 🌸';
+  const filled0=pSlots.filter(s=>s.row===0&&s.filled).length;
+  if(filled0===6&&!lowerUnlocked){
+    koikoiActive=true; koikoiCount++;
+    unlockLower();
+    showToast(`🌸 こいこい！2段目を開放 (続行×${koikoiCount})`,'#ffaaff');
+  } else if(!lowerUnlocked){
+    showToast('まだ上段が完成していません','#ff8888');
+  }
 });
-onBtn(shobuBtn,()=>{ phaseLabel.textContent='勝負！⚔️ 結果を確認'; });
+onBtn(shobuBtn,()=>{
+  const filled0=pSlots.filter(s=>s.row===0&&s.filled).length;
+  if(filled0===0){ showToast('まだカードが置かれていません','#ff8888'); return; }
+  // こいこい中に役未成立で終了 → 失敗ペナルティ
+  let penaltyNote='';
+  if(koikoiActive){
+    const {score}=calcYaku(pSlots);
+    if(score===0){ penaltyNote=' (こいこい失敗 -50%)'; }
+  }
+  showYakuResult('OK'+penaltyNote, ()=>{
+    // こいこい失敗の場合は追加後に半減（表示上はメッセージのみ）
+    if(penaltyNote){ playerScore=Math.floor(playerScore/2); scoreDisplay.textContent=`🏆 ${playerScore}pt`; }
+    achievedYaku.clear(); koikoiActive=false; koikoiCount=0;
+    phaseLabel.textContent=`スコア ${playerScore}pt`;
+  });
+});
 
 buildGrids(); buildDeck();
 let dealCount=0;
