@@ -462,6 +462,7 @@ let deckCount=48, pSlots=[], eSlots=[];
 let phase='init', enemyCardData=[], placedThisTurn=0, lowerUnlocked=false;
 let playerScore=0, koikoiActive=false, koikoiCount=0, achievedYaku=new Set(), toastTimer=null;
 let upperLocked=false, enemyKoikoiDeclared=false, counterKoikoi=false;
+let standbyDrawing=false;
 const CARD_W=38, CARD_HALF=19, FAN_DEG=3;
 let currentScale=1;
 
@@ -747,6 +748,7 @@ function buildGrids(){
   });
 }
 function flyAnim(fromX,fromY,toX,toY,imgSrc,w,h,arcH,onDone){
+  if(document.hidden){ onDone(); return; }
   const clone=document.createElement('div'); clone.className='card-flying';
   clone.style.cssText=`left:${fromX}px;top:${fromY}px;width:${w}px;height:${h}px;`;
   const ci=document.createElement('img'); ci.src=imgSrc; clone.appendChild(ci);
@@ -762,14 +764,14 @@ function flyAnim(fromX,fromY,toX,toY,imgSrc,w,h,arcH,onDone){
     clone.style.filter=arc>40?`drop-shadow(0 ${arc*0.08}px ${arc*0.12}px rgba(0,0,0,0.5))`:'';
     const ss=1-arc/160;
     shd.style.cssText=`left:${cx+w/2}px;top:${toY+h+3}px;transform:translate(-50%,-50%) scale(${Math.max(0.1,ss)});opacity:${Math.max(0,ss*0.4)};`;
-    if(t<1){requestAnimationFrame(tick);return;}
+    if(t<1){setTimeout(()=>tick(performance.now()),0);return;}
     clone.remove(); shd.remove();
     const fl=document.createElement('div'); fl.className='land-flash';
     fl.style.left=(toX+w/2)+'px'; fl.style.top=(toY+h/2)+'px';
     document.body.appendChild(fl); fl.addEventListener('animationend',()=>fl.remove());
     onDone();
   }
-  requestAnimationFrame(tick);
+  setTimeout(()=>tick(performance.now()),0);
 }
 function positionDeck(){
   const ef=document.getElementById('fieldEnemy').getBoundingClientRect();
@@ -838,7 +840,16 @@ function addHandCard(tmpl,imgSrc){
   }
   wrap.addEventListener('touchend',e=>{ e.preventDefault(); e.stopPropagation(); if(!dragMoved) onTap(); },{passive:false});
   wrap.addEventListener('click',e=>{ e.stopPropagation(); if(!('ontouchstart' in window)) onTap(); });
-  snapTo(idx);
+  if(standbyDrawing){
+    // ドロー中は全カードを中央に重ねたまま維持
+    const alive=cards.filter(c=>!c.played);
+    const ai=alive.indexOf(card);
+    const midAi=alive.indexOf(cards[centerIdx]);
+    wrap.style.transform=`translateX(${(midAi-ai)*CARD_W}px) scale(1.0)`;
+    updateClasses();
+  } else {
+    snapTo(idx);
+  }
 }
 function layoutEnemyHand(){
   const ch=[...enemyHandEl.children]; const n=ch.length;
@@ -972,24 +983,24 @@ function enemyPlay(onDone){
 function gatherHand(cb){
   const alive=cards.filter(c=>!c.played);
   if(!alive.length){ if(cb)cb(); return; }
-  // 中央カードのインデックスへスナップ
   const midAi=Math.floor(alive.length/2);
   const midIdx=cards.indexOf(alive[midAi]);
   if(cards[centerIdx]){ cards[centerIdx].zoomed=false; cards[centerIdx].wrap.classList.remove('zoomed'); }
   centerIdx=midIdx;
+  // トラックを中央カード基準に位置合わせ
   offsetX=outer.offsetWidth/2-CARD_HALF-midAi*CARD_W;
-  track.style.transition='transform 0.22s ease-in-out';
+  track.style.transition='transform 0.28s ease-in-out';
   track.style.transform=`translateX(${offsetX}px)`;
-  // 全カードをフラットに束ねる
-  alive.forEach(c=>{
-    c.wrap.style.transition='transform 0.22s ease-in-out';
-    c.wrap.style.transform='rotate(0deg) translateY(0px) scale(1.0)';
+  // 全カードをtranslateXで中央1点に重ねる（扇を閉じる→1枚に集約）
+  alive.forEach((c,ai)=>{
+    c.wrap.style.transition='transform 0.28s ease-in-out';
+    c.wrap.style.transform=`translateX(${(midAi-ai)*CARD_W}px) scale(1.0)`;
   });
   setTimeout(()=>{
     alive.forEach(c=>{ c.wrap.style.transition=''; });
     track.style.transition='';
     if(cb)cb();
-  },260);
+  },320);
 }
 function fanOpen(cb){
   const alive=cards.filter(c=>!c.played);
@@ -1010,15 +1021,25 @@ function startPlayerTurn(){
   phase='standby'; outer.classList.remove('locked');
   showTurnBanner('自分のターン',()=>{
     gatherHand(()=>{
+      standbyDrawing=true;
       phaseLabel.textContent='スタンバイ：2枚ドロー中…';
       drawToPlayer(()=>{ setTimeout(()=>{
         drawToPlayer(()=>{
-          // ドロー後、手札の真ん中に合わせてからファンオープン
+          standbyDrawing=false;
+          // 全7枚を改めて中央1点に集約してからファンオープン
           const alive=cards.filter(c=>!c.played);
-          const midCard=alive[Math.floor(alive.length/2)];
+          const midAi=Math.floor(alive.length/2);
+          const midCard=alive[midAi];
           centerIdx=cards.indexOf(midCard);
+          offsetX=outer.offsetWidth/2-CARD_HALF-midAi*CARD_W;
+          track.style.transition='none';
+          track.style.transform=`translateX(${offsetX}px)`;
+          alive.forEach((c,ai)=>{
+            c.wrap.style.transition='none';
+            c.wrap.style.transform=`translateX(${(midAi-ai)*CARD_W}px) scale(1.0)`;
+          });
+          updateClasses();
           fanOpen(()=>{
-            snapTo(centerIdx,false);
             phase='player'; placedThisTurn=0;
             phaseLabel.textContent='あなたのターン：カードを置いてください';
           });
