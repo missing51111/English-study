@@ -969,6 +969,28 @@ function enemyPlay(onDone){
     onDone();
   });
 }
+function gatherHand(cb){
+  const alive=cards.filter(c=>!c.played);
+  if(!alive.length){ if(cb)cb(); return; }
+  // 中央カードのインデックスへスナップ
+  const midAi=Math.floor(alive.length/2);
+  const midIdx=cards.indexOf(alive[midAi]);
+  if(cards[centerIdx]){ cards[centerIdx].zoomed=false; cards[centerIdx].wrap.classList.remove('zoomed'); }
+  centerIdx=midIdx;
+  offsetX=outer.offsetWidth/2-CARD_HALF-midAi*CARD_W;
+  track.style.transition='transform 0.22s ease-in-out';
+  track.style.transform=`translateX(${offsetX}px)`;
+  // 全カードをフラットに束ねる
+  alive.forEach(c=>{
+    c.wrap.style.transition='transform 0.22s ease-in-out';
+    c.wrap.style.transform='rotate(0deg) translateY(0px) scale(1.0)';
+  });
+  setTimeout(()=>{
+    alive.forEach(c=>{ c.wrap.style.transition=''; });
+    track.style.transition='';
+    if(cb)cb();
+  },260);
+}
 function fanOpen(cb){
   const alive=cards.filter(c=>!c.played);
   if(!alive.length){ if(cb)cb(); return; }
@@ -987,10 +1009,20 @@ function fanOpen(cb){
 function startPlayerTurn(){
   phase='standby'; outer.classList.remove('locked');
   showTurnBanner('自分のターン',()=>{
-    fanOpen(()=>{
+    gatherHand(()=>{
       phaseLabel.textContent='スタンバイ：2枚ドロー中…';
       drawToPlayer(()=>{ setTimeout(()=>{
-        drawToPlayer(()=>{ phase='player'; placedThisTurn=0; phaseLabel.textContent='あなたのターン：カードを置いてください'; });
+        drawToPlayer(()=>{
+          // ドロー後、手札の真ん中に合わせてからファンオープン
+          const alive=cards.filter(c=>!c.played);
+          const midCard=alive[Math.floor(alive.length/2)];
+          centerIdx=cards.indexOf(midCard);
+          fanOpen(()=>{
+            snapTo(centerIdx,false);
+            phase='player'; placedThisTurn=0;
+            phaseLabel.textContent='あなたのターン：カードを置いてください';
+          });
+        });
       },180); });
     });
   });
