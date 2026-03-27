@@ -53,34 +53,33 @@
     padding:0 4px; background:rgba(0,0,0,0.3); border-radius:6px 6px 0 0;
   }
   .row-sent-bar.show { display:flex; }
-  /* クリップラッパー：overflow:hidden で下段を 8px だけ見せる */
-  .lower-row-clip {
-    overflow:hidden;
-    height:8px;
-    transition:height 0.4s cubic-bezier(0.25,1,0.5,1);
-  }
-  .lower-row-clip.show { height:140px; pointer-events:auto; }
-  /* 下段パネル：ラッパー内で上にずらし、下端8pxだけがクリップ領域に残る */
+  /* 下段ラッパー：常時表示、こいこいで解放アニメ */
+  .lower-row-clip { pointer-events:none; }
+  .lower-row-clip.show { pointer-events:auto; }
+  /* 下段パネル：ロック状態（暗め）→ こいこいで明るくなる */
   .lower-row-panel {
     padding:4px;
-    background:radial-gradient(ellipse at 50% 70%,rgba(55,115,38,0.98) 0%,rgba(18,46,13,0.99) 100%);
-    border:1.5px solid rgba(100,220,100,0.5);
+    background:radial-gradient(ellipse at 50% 70%,rgba(20,50,14,0.95) 0%,rgba(8,22,6,0.97) 100%);
+    border:1.5px solid rgba(100,220,100,0.2);
     border-top:none;
     border-radius:0 0 8px 8px;
-    box-shadow:0 10px 28px rgba(0,0,0,0.85);
-    pointer-events:none;
-    transform:translateY(calc(-100% + 8px));
-    transition:transform 0.4s cubic-bezier(0.25,1,0.5,1);
+    box-shadow:0 4px 12px rgba(0,0,0,0.6);
+    transition:background 0.45s, border-color 0.45s, box-shadow 0.45s;
   }
   .lower-row-clip.show .lower-row-panel {
-    transform:translateY(0);
-    pointer-events:auto;
+    background:radial-gradient(ellipse at 50% 70%,rgba(55,115,38,0.98) 0%,rgba(18,46,13,0.99) 100%);
+    border-color:rgba(100,220,100,0.5);
+    box-shadow:0 10px 28px rgba(0,0,0,0.85);
   }
   /* Enemy lower panel — 赤系 */
   .lower-row-panel.enemy-lower-panel {
-    background:radial-gradient(ellipse at 50% 30%,rgba(115,38,38,0.98) 0%,rgba(46,13,13,0.99) 100%);
-    border:1.5px solid rgba(220,100,100,0.5);
+    background:radial-gradient(ellipse at 50% 30%,rgba(50,14,14,0.95) 0%,rgba(22,6,6,0.97) 100%);
+    border-color:rgba(220,100,100,0.2);
     border-top:none;
+  }
+  .lower-row-clip.show .lower-row-panel.enemy-lower-panel {
+    background:radial-gradient(ellipse at 50% 30%,rgba(115,38,38,0.98) 0%,rgba(46,13,13,0.99) 100%);
+    border-color:rgba(220,100,100,0.5);
   }
   /* Enemy sent bar — 赤系テキスト */
   .row-sent-bar.enemy-sent-bar { color:rgba(255,160,160,0.92); }
@@ -90,7 +89,9 @@
     position:relative; display:flex; align-items:flex-end; justify-content:center;
     padding-bottom:2px; transition:opacity 0.4s, border-color 0.3s, background 0.3s;
   }
-  .card-slot.row1 { opacity:1; }
+  /* row1スロット：ロック中は暗め、unlockedで通常表示 */
+  .card-slot.row1 { border-color:rgba(255,255,255,0.06); background:rgba(0,0,0,0.35); }
+  .card-slot.row1.unlocked { border-color:rgba(255,255,255,0.15); background:rgba(0,0,0,0.2); }
   .card-slot .slot-label { font-size:7px; color:rgba(255,255,255,0.35); pointer-events:none; }
   .card-slot.filled { border:none; }
   .card-slot.filled .slot-label { display:none; }
