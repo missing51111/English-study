@@ -53,7 +53,10 @@
     padding:0 4px; background:rgba(0,0,0,0.3); border-radius:6px 6px 0 0;
   }
   .row-sent-bar.show { display:flex; }
+  /* 上段グリッドを前面に */
+  #gridPlayerUpper, #gridEnemyUpper { position:relative; z-index:2; }
   .lower-row-panel {
+    position:absolute; left:0; right:0; top:0; z-index:1;
     padding:4px;
     background:radial-gradient(ellipse at 50% 70%,rgba(55,115,38,0.98) 0%,rgba(18,46,13,0.99) 100%);
     border:1.5px solid rgba(100,220,100,0.5);
@@ -61,11 +64,13 @@
     border-radius:0 0 8px 8px;
     box-shadow:0 10px 28px rgba(0,0,0,0.85);
     pointer-events:none;
-    clip-path:inset(0 0 calc(100% - 8px) 0);
-    transition:clip-path 0.4s cubic-bezier(0.25,1,0.5,1);
+    /* 上段の裏に重なり、枠下部だけ8px覗かせる */
+    transform:translateY(8px);
+    transition:transform 0.4s cubic-bezier(0.25,1,0.5,1);
   }
+  /* こいこい後：上段の真下へスライドアウト（sent-bar 22px分を加算） */
   .lower-row-panel.show {
-    clip-path:inset(0 0 0 0);
+    transform:translateY(calc(100% + 22px));
     pointer-events:auto;
   }
   /* Enemy lower panel — 赤系 */
