@@ -10,7 +10,8 @@
     background: radial-gradient(ellipse at center, #1a3a1a 0%, #060e06 100%);
     display: flex; flex-direction: column; align-items: center;
     justify-content: center; min-height: 100vh;
-    font-family: sans-serif; user-select: none; overflow: hidden; gap: 4px;
+    font-family: sans-serif; user-select: none; overflow: hidden; gap: 2px;
+    padding-bottom: 62px;
   }
   .enemy-hand { display:flex; justify-content:center; height:52px; position:relative; z-index:1; }
   .enemy-card {
@@ -51,13 +52,19 @@
   .card-slot.filled { border:none; }
   .card-slot.filled .slot-label { display:none; }
   .card-slot img { position:absolute;inset:0;width:100%;height:100%;border-radius:4px;display:block;box-shadow:0 2px 6px rgba(0,0,0,0.5); }
-  .deck-wrap { position:absolute; left:50%; top:200px; transform:translate(-50%,-50%); width:80px; height:56px; z-index:10; }
+  .deck-wrap { position:fixed; left:50%; transform:translateX(-50%); width:80px; height:56px; z-index:10; }
   .deck-layer { position:absolute; width:64px; height:44px; border-radius:6px; background:linear-gradient(135deg,#2a1a4a,#1a0a2a); border:1px solid #7744bb; }
   .deck-top { position:absolute; width:64px; height:44px; border-radius:6px; background:linear-gradient(135deg,#3a2a5a,#2a1a4a); border:1px solid #aa77ff; box-shadow:0 8px 16px rgba(0,0,0,0.8); overflow:hidden; }
   .deck-top::after { content:''; position:absolute; top:-60%; left:-60%; width:35%; height:200%; background:rgba(255,255,255,0.2); transform:skewX(-20deg); animation:deck-shine 3s ease-in-out infinite; }
   @keyframes deck-shine { 0%,100%{left:-60%;opacity:0;} 45%,55%{left:150%;opacity:1;} }
   .deck-count { position:absolute; bottom:-16px; left:50%; transform:translateX(-50%); color:rgba(255,220,100,0.6); font-size:9px; white-space:nowrap; }
-  .phase-label { color:rgba(255,220,100,0.7); font-size:11px; letter-spacing:1px; position:relative; z-index:1; text-align:center; }
+  .phase-label {
+    position:fixed; bottom:0; left:0; right:0; z-index:51;
+    padding:14px 16px 10px; text-align:center; pointer-events:none;
+    color:#fff; font-size:19px; font-weight:bold; letter-spacing:0.5px;
+    text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000,
+                 0 0 10px rgba(0,0,0,0.95);
+  }
   .hand-hint { color:rgba(255,220,100,0.3); font-size:10px; letter-spacing:1px; position:relative; z-index:1; }
   .hand-outer { position:relative; width:100vw; height:132px; overflow:visible; cursor:grab; z-index:10; }
   .hand-outer:active { cursor:grabbing; }
@@ -75,7 +82,7 @@
   .card.far    { filter:brightness(0.6); opacity:0.6; z-index:1; }
   .card.zoomed { filter:drop-shadow(0 0 20px rgba(255,220,100,1)) brightness(1.3) !important; z-index:200 !important; }
   .hand-outer.locked { pointer-events:none; filter:brightness(0.5); transition:filter 0.3s; }
-  .btns { display:flex; flex-direction:column; align-items:center; gap:6px; position:relative; z-index:1; margin-top:2px; }
+  .btns { display:flex; flex-direction:column; align-items:center; gap:6px; position:relative; z-index:1; margin-top:0; }
   .game-btns { display:flex; gap:8px; }
   .koikoi-btn {
     padding:10px 22px; background:linear-gradient(180deg,#ff88cc 0%,#cc3388 50%,#881155 100%);
@@ -118,7 +125,7 @@
   }
   .card-shadow { position:fixed; width:36px; height:9px; background:radial-gradient(ellipse,rgba(0,0,0,0.5) 0%,transparent 70%); border-radius:50%; pointer-events:none; z-index:298; transform:translate(-50%,-50%); }
   .score-display { position:fixed; top:6px; right:8px; z-index:50; background:rgba(0,0,0,0.72); border:1px solid rgba(255,200,80,0.4); border-radius:10px; padding:3px 10px; color:#ffcc44; font-size:13px; font-weight:bold; text-shadow:0 0 8px rgba(255,200,80,0.5); pointer-events:none; }
-  .yaku-toast { position:fixed; bottom:148px; left:50%; transform:translateX(-50%); background:rgba(15,8,35,0.96); border:1px solid rgba(180,120,255,0.5); border-radius:20px; padding:5px 18px; color:#ffcc44; font-size:13px; font-weight:bold; pointer-events:none; z-index:400; opacity:0; transition:opacity 0.3s; white-space:nowrap; text-shadow:0 0 6px rgba(255,200,80,0.4); }
+  .yaku-toast { position:fixed; bottom:72px; left:50%; transform:translateX(-50%); background:rgba(15,8,35,0.96); border:1px solid rgba(180,120,255,0.5); border-radius:20px; padding:5px 18px; color:#ffcc44; font-size:13px; font-weight:bold; pointer-events:none; z-index:400; opacity:0; transition:opacity 0.3s; white-space:nowrap; text-shadow:0 0 6px rgba(255,200,80,0.4); }
   .yaku-toast.show { opacity:1; }
   .yaku-overlay { display:none; position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.78); backdrop-filter:blur(4px); align-items:center; justify-content:center; }
   .yaku-overlay.show { display:flex; }
@@ -180,12 +187,12 @@
     <div class="field field-enemy" id="fieldEnemy">
       <div class="card-grid" id="gridEnemy"></div>
     </div>
-    <div class="deck-wrap" id="deckMain"></div>
     <div class="field field-player" id="fieldPlayer">
       <div class="card-grid" id="gridPlayer"></div>
     </div>
   </div>
 </div>
+<div class="deck-wrap" id="deckMain"></div>
 
 <div class="phase-label" id="phaseLabel">手札を配っています…</div>
 <div class="hand-hint">← スライドして選ぶ →</div>
@@ -420,7 +427,7 @@ let deckCount=48, pSlots=[], eSlots=[];
 let phase='init', enemyCardData=[], placedThisTurn=0, lowerUnlocked=false;
 let playerScore=0, koikoiActive=false, koikoiCount=0, achievedYaku=new Set(), toastTimer=null;
 let upperLocked=false, enemyKoikoiDeclared=false, counterKoikoi=false;
-const CARD_W=38, FAN_DEG=3;
+const CARD_W=38, CARD_HALF=30, FAN_DEG=3;
 
 function getTheme(tmpl){ return tmpl?(WORD_THEMES[tmpl.word]||'common'):'common'; }
 
@@ -718,17 +725,20 @@ function flyAnim(fromX,fromY,toX,toY,imgSrc,w,h,arcH,onDone){
   }
   requestAnimationFrame(tick);
 }
+function positionDeck(){
+  const ef=document.getElementById('fieldEnemy').getBoundingClientRect();
+  const pf=document.getElementById('fieldPlayer').getBoundingClientRect();
+  deckEl.style.top=((ef.bottom+pf.top)/2-28)+'px';
+}
 function drawToPlayer(onDone){
   const tmpl=TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
   const imgSrc=makeCardImg(tmpl);
   const dr=deckEl.getBoundingClientRect();
-  const aliveCount=cards.filter(c=>!c.played).length;
-  const vw=outer.offsetWidth;
-  const toX=vw/2-CARD_W/2+(aliveCount-centerIdx)*CARD_W+offsetX-CARD_W;
   const outerRect=outer.getBoundingClientRect();
+  const toX=outerRect.left+outerRect.width/2-CARD_HALF;
   const toY=outerRect.bottom-90-8;
   deckCount--; buildDeck();
-  flyAnim(dr.left+dr.width/2-30,dr.top+dr.height/2-45,toX,toY,imgSrc,60,90,100,()=>{ addHandCard(tmpl,imgSrc); onDone(); });
+  flyAnim(dr.left+dr.width/2-CARD_HALF,dr.top+dr.height/2-45,toX,toY,imgSrc,60,90,100,()=>{ addHandCard(tmpl,imgSrc); onDone(); });
 }
 function drawToEnemy(onDone){
   const tmpl=TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
@@ -787,8 +797,11 @@ function getSlotRect(slotEl){
   const fw=document.querySelector('.fields-wrap'), prev=fw.style.transform;
   fw.style.transform='none'; const r=slotEl.getBoundingClientRect(); fw.style.transform=prev; return r;
 }
+function rebuildTrack(){
+  track.innerHTML='';
+  cards.filter(c=>!c.played).forEach(c=>track.appendChild(c.wrap));
+}
 function placeCard(card,slot){
-  // 上書きの場合は既存カードを除去
   if(slot.filled){
     const oldImg=slot.el.querySelector('img');
     if(oldImg) oldImg.remove();
@@ -800,17 +813,18 @@ function placeCard(card,slot){
   probe.style.cssText='position:absolute;width:1px;height:1px;top:0;left:0;pointer-events:none;';
   slot.el.appendChild(probe); const pr=probe.getBoundingClientRect(); probe.remove();
   const slotW=slot.el.offsetWidth, slotH=slot.el.offsetHeight;
-  card.wrap.style.opacity='0';
+  // played card をトラックから即除去して詰める
+  rebuildTrack();
+  const aliveNow=cards.filter(c=>!c.played);
+  if(aliveNow.length){
+    const next=aliveNow.reduce((b,c)=>Math.abs(cards.indexOf(c)-centerIdx)<Math.abs(cards.indexOf(b)-centerIdx)?c:b);
+    snapTo(cards.indexOf(next),false);
+  }
   flyAnim(fr.left,fr.top,pr.left,pr.top,card.imgSrc,slotW,slotH,90,()=>{
     const img=document.createElement('img'); img.src=card.imgSrc;
     slot.el.appendChild(img); slot.el.classList.add('filled');
     placedThisTurn++; checkUpperComplete();
   });
-  const alive=cards.filter(c=>!c.played);
-  if(alive.length){
-    const next=alive.reduce((b,c)=>Math.abs(cards.indexOf(c)-centerIdx)<Math.abs(cards.indexOf(b)-centerIdx)?c:b);
-    snapTo(cards.indexOf(next));
-  }
 }
 function checkUpperComplete(){
   checkLiveYaku();
@@ -886,26 +900,45 @@ function enemyPlay(onDone){
     onDone();
   });
 }
+function fanOpen(cb){
+  const alive=cards.filter(c=>!c.played);
+  if(!alive.length){ if(cb)cb(); return; }
+  const ca=alive.indexOf(cards[centerIdx]);
+  alive.forEach((c,ai)=>{
+    const d=ai-ca;
+    c.wrap.style.transition='transform 0.38s cubic-bezier(0.34,1.56,0.64,1)';
+    c.wrap.style.transform=`rotate(${d*15}deg) translateY(${Math.abs(d)*26}px) scale(${d===0?1.12:0.93-Math.abs(d)*0.03})`;
+  });
+  setTimeout(()=>{
+    alive.forEach(c=>{ c.wrap.style.transition='transform 0.28s ease-in-out'; });
+    updateFan();
+    setTimeout(()=>{ alive.forEach(c=>{ c.wrap.style.transition=''; }); if(cb)cb(); },300);
+  },560);
+}
 function startPlayerTurn(){
   phase='standby'; outer.classList.remove('locked');
   showTurnBanner('自分のターン',()=>{
-    phaseLabel.textContent='スタンバイ：2枚ドロー中…';
-    drawToPlayer(()=>{ setTimeout(()=>{
-      drawToPlayer(()=>{ phase='player'; placedThisTurn=0; phaseLabel.textContent='あなたのターン：カードを置いてください'; });
-    },180); });
+    fanOpen(()=>{
+      phaseLabel.textContent='スタンバイ：2枚ドロー中…';
+      drawToPlayer(()=>{ setTimeout(()=>{
+        drawToPlayer(()=>{ phase='player'; placedThisTurn=0; phaseLabel.textContent='あなたのターン：カードを置いてください'; });
+      },180); });
+    });
   });
 }
 function updateFan(){
-  cards.forEach((c,i)=>{
-    if(c.played) return;
-    const d=i-centerIdx;
-    c.wrap.style.transform=`rotate(${d*FAN_DEG}deg) translateY(${Math.abs(d)*9}px) scale(${d===0?(c.zoomed?1.42:1.16):1-Math.abs(d)*0.08})`;
+  const alive=cards.filter(c=>!c.played);
+  const ca=alive.indexOf(cards[centerIdx]);
+  alive.forEach((c,ai)=>{
+    const d=ai-ca;
+    c.wrap.style.transform=`rotate(${d*FAN_DEG}deg) translateY(${Math.abs(d)*9}px) scale(${d===0?(c.zoomed?1.9:1.3):1-Math.abs(d)*0.08})`;
   });
 }
 function updateClasses(){
-  cards.forEach((c,i)=>{
-    if(c.played) return;
-    const d=Math.abs(i-centerIdx);
+  const alive=cards.filter(c=>!c.played);
+  const ca=alive.indexOf(cards[centerIdx]);
+  alive.forEach((c,ai)=>{
+    const d=Math.abs(ai-ca);
     c.wrap.classList.remove('center','near','far');
     c.wrap.classList.add(d===0?'center':d===1?'near':'far');
   });
@@ -915,7 +948,9 @@ function snapTo(idx,anim=true){
   idx=Math.max(0,Math.min(cards.length-1,idx));
   if(cards[idx]&&cards[idx].played) idx=cards.indexOf(alive.reduce((b,c)=>Math.abs(cards.indexOf(c)-idx)<Math.abs(cards.indexOf(b)-idx)?c:b));
   if(cards[centerIdx]){cards[centerIdx].zoomed=false;cards[centerIdx].wrap.classList.remove('zoomed');}
-  centerIdx=idx; offsetX=outer.offsetWidth/2-CARD_W/2-idx*CARD_W;
+  centerIdx=idx;
+  const ai=alive.indexOf(cards[idx]);
+  offsetX=outer.offsetWidth/2-CARD_HALF-ai*CARD_W;
   track.style.transition=anim?'transform 0.3s cubic-bezier(0.25,1,0.5,1)':'none';
   track.style.transform=`translateX(${offsetX}px)`;
   updateClasses(); updateFan();
@@ -928,12 +963,19 @@ function onMove(e){
   const dx=getX(e)-dragStartX;
   if(Math.abs(dx)>6){dragMoved=true;cards.forEach(c=>{c.zoomed=false;c.wrap.classList.remove('zoomed');});}
   offsetX=dragStartOffset+dx; track.style.transform=`translateX(${offsetX}px)`;
-  const ni=Math.round((outer.offsetWidth/2-CARD_W/2-offsetX)/CARD_W);
+  const alive=cards.filter(c=>!c.played);
+  const ai=Math.max(0,Math.min(alive.length-1,Math.round((outer.offsetWidth/2-CARD_HALF-offsetX)/CARD_W)));
+  const ni=alive.length?cards.indexOf(alive[ai]):0;
   if(ni!==centerIdx){centerIdx=ni;updateClasses();updateFan();}
 }
 window.addEventListener('mousemove',onMove);
 window.addEventListener('touchmove',e=>onMove(e),{passive:true});
-function endDrag(){if(!dragging)return;dragging=false;snapTo(Math.round((outer.offsetWidth/2-CARD_W/2-offsetX)/CARD_W));}
+function endDrag(){
+  if(!dragging)return;dragging=false;
+  const alive=cards.filter(c=>!c.played);
+  const ai=Math.max(0,Math.min(alive.length-1,Math.round((outer.offsetWidth/2-CARD_HALF-offsetX)/CARD_W)));
+  snapTo(alive.length?cards.indexOf(alive[ai]):0);
+}
 window.addEventListener('mouseup',endDrag);
 window.addEventListener('touchend',endDrag,{passive:true});
 function onBtn(btn,fn){
@@ -980,11 +1022,15 @@ onBtn(shobuBtn,()=>{
   });
 });
 
-buildGrids(); buildDeck();
+buildGrids(); buildDeck(); positionDeck();
 let dealCount=0;
 function dealInit(){
-  if(dealCount>=5){ startPlayerTurn(); return; }
-  drawToPlayer(()=>{ dealCount++; setTimeout(dealInit,150); });
+  if(dealCount>=10){ startPlayerTurn(); return; }
+  if(dealCount%2===0){
+    drawToPlayer(()=>{ dealCount++; setTimeout(dealInit,150); });
+  } else {
+    drawToEnemy(()=>{ dealCount++; setTimeout(dealInit,150); });
+  }
 }
 dealInit();
 </script>
