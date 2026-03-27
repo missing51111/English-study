@@ -69,7 +69,7 @@
   /* 下段ラッパー：margin-topで上段の裏に押し込み、底辺だけ覗かせる */
   .lower-row-clip {
     position:relative; z-index:1;
-    margin-top:-100px;   /* 上段の高さぶん引き上げ、13px前後が覗く */
+    margin-top:-88px;   /* peek ≈ 22px（上段高さ106px - 88px = 18px スタート） */
     pointer-events:none;
     transition:margin-top 0.42s cubic-bezier(0.25,1,0.5,1);
   }
@@ -80,27 +80,29 @@
   /* 下段パネル：ロック状態（暗め）→ こいこいで明るくなる */
   .lower-row-panel {
     padding:4px;
-    background:radial-gradient(ellipse at 50% 70%,rgba(20,50,14,0.95) 0%,rgba(8,22,6,0.97) 100%);
-    border:1.5px solid rgba(100,220,100,0.5);  /* peek が見えるよう明るく */
-    border-top:none;
+    background:rgba(4,12,3,0.98);   /* ほぼ黒の緑 — 上段と明確に区別 */
+    border:1.5px solid rgba(100,220,100,0.45);
+    border-top:1px solid rgba(100,220,100,0.18);   /* 上辺も薄く */
     border-radius:0 0 8px 8px;
-    box-shadow:0 4px 12px rgba(0,0,0,0.6);
+    box-shadow:0 4px 12px rgba(0,0,0,0.7);
     transition:background 0.45s, border-color 0.45s, box-shadow 0.45s;
   }
   .lower-row-clip.show .lower-row-panel {
     background:radial-gradient(ellipse at 50% 70%,rgba(55,115,38,0.98) 0%,rgba(18,46,13,0.99) 100%);
     border-color:rgba(100,220,100,0.5);
+    border-top-color:rgba(100,220,100,0.3);
     box-shadow:0 10px 28px rgba(0,0,0,0.85);
   }
   /* Enemy lower panel — 赤系 */
   .lower-row-panel.enemy-lower-panel {
-    background:radial-gradient(ellipse at 50% 30%,rgba(50,14,14,0.95) 0%,rgba(22,6,6,0.97) 100%);
-    border-color:rgba(220,100,100,0.2);
-    border-top:none;
+    background:rgba(12,4,3,0.98);   /* ほぼ黒の赤 */
+    border-color:rgba(220,100,100,0.4);
+    border-top:1px solid rgba(220,100,100,0.15);
   }
   .lower-row-clip.show .lower-row-panel.enemy-lower-panel {
     background:radial-gradient(ellipse at 50% 30%,rgba(115,38,38,0.98) 0%,rgba(46,13,13,0.99) 100%);
     border-color:rgba(220,100,100,0.5);
+    border-top-color:rgba(220,100,100,0.3);
   }
   /* Enemy sent bar — 赤系テキスト */
   .row-sent-bar.enemy-sent-bar { color:rgba(255,160,160,0.92); }
