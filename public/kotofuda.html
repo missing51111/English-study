@@ -44,17 +44,31 @@
     grid-template-rows:repeat(2,1fr); gap:3px; width:100%;
   }
   .card-grid.one-row { grid-template-rows:1fr; }
-  .prow-wrap { position:relative; }
+  /* prow-wrap：下段の上に不透明な蓋を被せるstacking context */
+  .prow-wrap { position:relative; isolation:isolate; }
+  /* 蓋（z-index:2）：下段(z-index:1)を完全遮蔽、はみ出した8pxだけ見える */
+  .field-player .prow-wrap::before {
+    content:''; position:absolute; inset:0; z-index:2; pointer-events:none;
+    background:radial-gradient(ellipse at 50% 70%,rgb(60,120,40) 0%,rgb(20,50,15) 100%);
+    border-radius:8px;
+  }
+  .field-enemy .prow-wrap::before {
+    content:''; position:absolute; inset:0; z-index:2; pointer-events:none;
+    background:radial-gradient(ellipse at 50% 30%,rgb(120,40,40) 0%,rgb(40,15,15) 100%);
+    border-radius:8px;
+  }
+  /* sent-bar と上段グリッドは蓋より前面 */
   .row-sent-bar {
     display:none; height:22px;
     align-items:center; justify-content:center;
     font-size:9px; color:rgba(255,220,100,0.92); letter-spacing:0.4px;
     text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
     padding:0 4px; background:rgba(0,0,0,0.3); border-radius:6px 6px 0 0;
+    position:relative; z-index:3;
   }
   .row-sent-bar.show { display:flex; }
-  /* 上段グリッドを前面に */
-  #gridPlayerUpper, #gridEnemyUpper { position:relative; z-index:2; }
+  #gridPlayerUpper, #gridEnemyUpper { position:relative; z-index:3; }
+  /* 下段パネル：上段の裏(z-index:1)、下端8pxが蓋の外へ覗く */
   .lower-row-panel {
     position:absolute; left:0; right:0; top:0; z-index:1;
     padding:4px;
@@ -64,11 +78,10 @@
     border-radius:0 0 8px 8px;
     box-shadow:0 10px 28px rgba(0,0,0,0.85);
     pointer-events:none;
-    /* 上段の裏に重なり、枠下部だけ8px覗かせる */
     transform:translateY(8px);
     transition:transform 0.4s cubic-bezier(0.25,1,0.5,1);
   }
-  /* こいこい後：上段の真下へスライドアウト（sent-bar 22px分を加算） */
+  /* こいこい後：上段の真下へスライドアウト */
   .lower-row-panel.show {
     transform:translateY(calc(100% + 22px));
     pointer-events:auto;
