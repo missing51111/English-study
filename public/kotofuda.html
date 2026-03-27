@@ -8,10 +8,13 @@
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
     background: radial-gradient(ellipse at center, #1a3a1a 0%, #060e06 100%);
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; min-height: 100vh;
-    font-family: sans-serif; user-select: none; overflow: hidden; gap: 2px;
-    padding-bottom: 62px;
+    min-height: 100vh; font-family: sans-serif; user-select: none;
+    overflow: hidden; position: relative;
+  }
+  #gameRoot {
+    width: 390px; display: flex; flex-direction: column;
+    align-items: center; gap: 2px; padding-bottom: 62px;
+    position: absolute; transform-origin: top left;
   }
   .enemy-hand { display:flex; justify-content:center; height:52px; position:relative; z-index:1; }
   .enemy-card {
@@ -89,7 +92,7 @@
                  0 0 10px rgba(0,0,0,0.95);
   }
   .hand-hint { color:rgba(255,220,100,0.3); font-size:10px; letter-spacing:1px; position:relative; z-index:1; }
-  .hand-outer { position:relative; width:100vw; height:132px; overflow:visible; cursor:grab; z-index:10; }
+  .hand-outer { position:relative; width:100%; height:132px; overflow:visible; cursor:grab; z-index:10; }
   .hand-outer:active { cursor:grabbing; }
   .hand-outer::before {
     content:''; position:absolute; left:50%; top:0; transform:translateX(-50%);
@@ -204,6 +207,7 @@
 </head>
 <body>
 
+<div id="gameRoot">
 <div class="enemy-hand" id="enemyHand"></div>
 <div class="scene">
   <div class="fields-wrap">
@@ -237,6 +241,8 @@
     <button class="turn-btn" id="turnBtn">ターン終了 ▶</button>
   </div>
 </div>
+</div><!-- /#gameRoot -->
+
 <div class="score-display" id="scoreDisplay">🏆 0pt</div>
 <div class="yaku-toast" id="yakuToast"></div>
 <div class="yaku-overlay" id="yakuOverlay">
@@ -456,7 +462,8 @@ let deckCount=48, pSlots=[], eSlots=[];
 let phase='init', enemyCardData=[], placedThisTurn=0, lowerUnlocked=false;
 let playerScore=0, koikoiActive=false, koikoiCount=0, achievedYaku=new Set(), toastTimer=null;
 let upperLocked=false, enemyKoikoiDeclared=false, counterKoikoi=false;
-const CARD_W=38, CARD_HALF=30, FAN_DEG=3;
+const CARD_W=38, CARD_HALF=19, FAN_DEG=3;
+let currentScale=1;
 
 function getTheme(tmpl){ return tmpl?(WORD_THEMES[tmpl.word]||'common'):'common'; }
 
@@ -767,17 +774,21 @@ function flyAnim(fromX,fromY,toX,toY,imgSrc,w,h,arcH,onDone){
 function positionDeck(){
   const ef=document.getElementById('fieldEnemy').getBoundingClientRect();
   const pf=document.getElementById('fieldPlayer').getBoundingClientRect();
-  deckEl.style.top=((ef.bottom+pf.top)/2-28)+'px';
+  const gr=document.getElementById('gameRoot').getBoundingClientRect();
+  const midVP=(ef.bottom+pf.top)/2;
+  const localY=(midVP-gr.top)/currentScale;
+  deckEl.style.top=(localY-28)+'px';
 }
 function drawToPlayer(onDone){
   const tmpl=TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
   const imgSrc=makeCardImg(tmpl);
   const dr=deckEl.getBoundingClientRect();
   const outerRect=outer.getBoundingClientRect();
-  const toX=outerRect.left+outerRect.width/2-CARD_HALF;
-  const toY=outerRect.bottom-90-8;
+  const fw=60*currentScale, fh=90*currentScale;
+  const toX=outerRect.left+outerRect.width/2-fw/2;
+  const toY=outerRect.bottom-fh-8*currentScale;
   deckCount--; buildDeck();
-  flyAnim(dr.left+dr.width/2-CARD_HALF,dr.top+dr.height/2-45,toX,toY,imgSrc,60,90,100,()=>{ addHandCard(tmpl,imgSrc); onDone(); });
+  flyAnim(dr.left+dr.width/2-fw/2,dr.top+dr.height/2-fh/2,toX,toY,imgSrc,fw,fh,100*currentScale,()=>{ addHandCard(tmpl,imgSrc); onDone(); });
 }
 function drawToEnemy(onDone){
   const tmpl=TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
@@ -785,8 +796,9 @@ function drawToEnemy(onDone){
   const dr=deckEl.getBoundingClientRect();
   const eh=enemyHandEl.getBoundingClientRect();
   const n=enemyHandEl.children.length;
+  const fw=32*currentScale, fh=48*currentScale;
   deckCount--; buildDeck();
-  flyAnim(dr.left+dr.width/2-16,dr.top+dr.height/2-24,eh.left+eh.width/2+(n-n/2)*22,eh.top,imgSrc,32,48,80,()=>{
+  flyAnim(dr.left+dr.width/2-fw/2,dr.top+dr.height/2-fh/2,eh.left+eh.width/2+(n-n/2)*22*currentScale,eh.top,imgSrc,fw,fh,80*currentScale,()=>{
     const w=document.createElement('div'); w.className='enemy-card';
     enemyHandEl.appendChild(w); enemyCardData.push(tmpl); layoutEnemyHand(); onDone();
   });
@@ -859,7 +871,7 @@ function placeCard(card,slot){
     const next=aliveNow.reduce((b,c)=>Math.abs(cards.indexOf(c)-centerIdx)<Math.abs(cards.indexOf(b)-centerIdx)?c:b);
     snapTo(cards.indexOf(next),false);
   }
-  flyAnim(fr.left,fr.top,pr.left,pr.top,card.imgSrc,slotW,slotH,90,()=>{
+  flyAnim(fr.left,fr.top,pr.left,pr.top,card.imgSrc,slotW*currentScale,slotH*currentScale,90*currentScale,()=>{
     const img=document.createElement('img'); img.src=card.imgSrc;
     slot.el.appendChild(img); slot.el.classList.add('filled');
     placedThisTurn++; checkUpperComplete();
@@ -943,7 +955,7 @@ function enemyPlay(onDone){
   const imgSrc=isV?makeBackImg(slotPref.el.offsetWidth||38,slotPref.el.offsetHeight||57):makeCardImg(tmpl,slotPref.el.offsetWidth||38,slotPref.el.offsetHeight||57);
   const tr=getSlotRect(slotPref.el); const slotW=slotPref.el.offsetWidth||38, slotH=slotPref.el.offsetHeight||57;
   wrap.style.opacity='0';
-  flyAnim(fr.left,fr.top,tr.left,tr.top,imgSrc,slotW,slotH,80,()=>{
+  flyAnim(fr.left,fr.top,tr.left,tr.top,imgSrc,slotW*currentScale,slotH*currentScale,80*currentScale,()=>{
     const img=document.createElement('img'); img.src=imgSrc;
     slotPref.el.appendChild(img); slotPref.el.classList.add('filled');
     wrap.remove(); layoutEnemyHand();
@@ -1083,7 +1095,23 @@ onBtn(shobuBtn,()=>{
   });
 });
 
-buildGrids(); buildDeck(); positionDeck();
+function scaleGame(){
+  const gr=document.getElementById('gameRoot');
+  gr.style.transform='none'; gr.style.left='0'; gr.style.top='0';
+  const vw=window.innerWidth, vh=window.innerHeight;
+  const natW=390, natH=gr.scrollHeight||760;
+  const S=Math.min(vw/natW, vh/natH);
+  currentScale=S;
+  const scaledW=natW*S, scaledH=natH*S;
+  const ox=Math.max(0,(vw-scaledW)/2);
+  const oy=Math.max(0,(vh-scaledH)/2);
+  gr.style.transformOrigin='top left';
+  gr.style.transform=`scale(${S})`;
+  gr.style.left=ox+'px'; gr.style.top=oy+'px';
+}
+window.addEventListener('resize',()=>{ scaleGame(); positionDeck(); });
+
+buildGrids(); buildDeck(); scaleGame(); positionDeck();
 let dealCount=0;
 function dealInit(){
   if(dealCount>=10){ startPlayerTurn(); return; }
