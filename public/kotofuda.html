@@ -54,13 +54,14 @@
   }
   .row-sent-bar.show { display:flex; }
   .lower-row-panel {
-    position:relative; padding:4px; margin-top:4px;
+    position:absolute; left:0; right:0; top:22px; z-index:5;
+    padding:4px;
     background:radial-gradient(ellipse at 50% 70%,rgba(55,115,38,0.98) 0%,rgba(18,46,13,0.99) 100%);
     border:1.5px solid rgba(100,220,100,0.5);
-    border-radius:8px;
-    box-shadow:0 6px 18px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
-    opacity:0.18; transform:translateY(6px); pointer-events:none;
-    transition:opacity 0.4s, transform 0.35s cubic-bezier(0.25,1,0.5,1);
+    border-radius:0 0 8px 8px;
+    box-shadow:0 10px 28px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.07);
+    opacity:0.30; transform:translateY(10px); pointer-events:none;
+    transition:opacity 0.4s, transform 0.38s cubic-bezier(0.25,1,0.5,1);
   }
   .lower-row-panel.show { opacity:1; transform:translateY(0); pointer-events:auto; }
   /* Enemy lower panel — 赤系 */
