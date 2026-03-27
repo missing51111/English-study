@@ -54,17 +54,22 @@
   }
   .row-sent-bar.show { display:flex; }
   .lower-row-panel {
-    overflow:hidden; max-height:0;
-    padding:0 4px;
+    display:none;
+    padding:4px;
     background:radial-gradient(ellipse at 50% 70%,rgba(55,115,38,0.98) 0%,rgba(18,46,13,0.99) 100%);
     border:1.5px solid rgba(100,220,100,0.5);
     border-top:none;
     border-radius:0 0 8px 8px;
     box-shadow:0 10px 28px rgba(0,0,0,0.85);
-    pointer-events:none;
-    transition:max-height 0.38s cubic-bezier(0.25,1,0.5,1), padding 0.25s;
   }
-  .lower-row-panel.show { max-height:120px; padding:4px; pointer-events:auto; }
+  .lower-row-panel.show {
+    display:block; pointer-events:auto;
+    animation:lowerSlideIn 0.38s cubic-bezier(0.25,1,0.5,1) both;
+  }
+  @keyframes lowerSlideIn {
+    from { opacity:0; transform:translateY(-8px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
   /* Enemy lower panel — 赤系 */
   .lower-row-panel.enemy-lower-panel {
     background:radial-gradient(ellipse at 50% 30%,rgba(115,38,38,0.98) 0%,rgba(46,13,13,0.99) 100%);
@@ -73,10 +78,6 @@
   }
   /* Enemy sent bar — 赤系テキスト */
   .row-sent-bar.enemy-sent-bar { color:rgba(255,160,160,0.92); }
-  @keyframes lower-slide {
-    from { opacity:0; transform:translateY(-8px); }
-    to   { opacity:1; transform:translateY(0); }
-  }
   .card-slot {
     aspect-ratio:2/3; border-radius:5px;
     border:1px dashed rgba(255,255,255,0.15); background:rgba(0,0,0,0.2);
