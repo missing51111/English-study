@@ -1317,28 +1317,15 @@ function snapTo(idx,anim=true){
   updateClasses(); updateFan();
 }
 function getX(e){return e.touches?e.touches[0].clientX:e.clientX;}
-outer.addEventListener('mousedown',e=>{dragging=true;dragMoved=false;dragStartX=getX(e);dragStartOffset=offsetX;track.style.transition='none';});
-outer.addEventListener('touchstart',e=>{dragging=true;dragMoved=false;dragStartX=getX(e);dragStartOffset=offsetX;track.style.transition='none';},{passive:true});
-function onMove(e){
-  if(!dragging) return;
-  const dx=getX(e)-dragStartX;
-  if(Math.abs(dx)>6){dragMoved=true;cards.forEach(c=>{c.zoomed=false;c.wrap.classList.remove('zoomed');});}
-  offsetX=dragStartOffset+dx; track.style.transform=`translateX(${offsetX}px)`;
-  const alive=cards.filter(c=>!c.played);
-  const ai=Math.max(0,Math.min(alive.length-1,Math.round((outer.offsetWidth/2-CARD_HALF-offsetX)/CARD_W)));
-  const ni=alive.length?cards.indexOf(alive[ai]):0;
-  if(ni!==centerIdx){centerIdx=ni;updateClasses();updateFan();}
-}
-window.addEventListener('mousemove',onMove);
-window.addEventListener('touchmove',e=>onMove(e),{passive:true});
-function endDrag(){
-  if(!dragging)return;dragging=false;
-  const alive=cards.filter(c=>!c.played);
-  const ai=Math.max(0,Math.min(alive.length-1,Math.round((outer.offsetWidth/2-CARD_HALF-offsetX)/CARD_W)));
-  snapTo(alive.length?cards.indexOf(alive[ai]):0);
-}
-window.addEventListener('mouseup',endDrag);
-window.addEventListener('touchend',endDrag,{passive:true});
+// スワイプ無効化中（クリック選択に統一）
+// outer.addEventListener('mousedown', ...);
+// outer.addEventListener('touchstart', ...);
+function onMove(e){}
+// window.addEventListener('mousemove', onMove);
+// window.addEventListener('touchmove', ...);
+function endDrag(){}
+// window.addEventListener('mouseup', endDrag);
+// window.addEventListener('touchend', endDrag);
 function onBtn(btn,fn){
   btn.addEventListener('click',fn);
   btn.addEventListener('touchend',e=>{e.preventDefault();fn();},{passive:false});
