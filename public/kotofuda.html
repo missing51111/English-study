@@ -16,9 +16,9 @@
     align-items: center; gap: 2px; padding-bottom: 62px;
     position: absolute; transform-origin: top left;
   }
-  .enemy-hand { display:flex; justify-content:center; height:52px; position:relative; z-index:1; }
+  .enemy-hand { display:flex; justify-content:center; height:96px; position:relative; z-index:1; }
   .enemy-card {
-    width:32px; height:48px; border-radius:5px; margin:0 -5px;
+    width:60px; height:90px; border-radius:9px; margin:0 -11px;
     background:linear-gradient(135deg,#2a1a4a,#1a0a2a); border:2px solid #8855cc;
     box-shadow:0 3px 8px rgba(0,0,0,0.5); transform-origin:bottom center; transition:transform 0.3s;
   }
@@ -81,8 +81,7 @@
     position:relative; display:flex; align-items:flex-end; justify-content:center;
     padding-bottom:2px; transition:opacity 0.4s, border-color 0.3s, background 0.3s;
   }
-  .card-slot.row1 { opacity:0.3; }
-  .card-slot.row1.unlocked { opacity:1; }
+  .card-slot.row1 { opacity:1; }
   .card-slot .slot-label { font-size:7px; color:rgba(255,255,255,0.35); pointer-events:none; }
   .card-slot.filled { border:none; }
   .card-slot.filled .slot-label { display:none; }
@@ -860,13 +859,13 @@ function drawToPlayer(onDone){
 }
 function drawToEnemy(onDone){
   const tmpl=TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
-  const imgSrc=makeBackImg();
+  const fw=60*currentScale, fh=90*currentScale;
+  const imgSrc=makeBackImg(60,90);
   const dr=deckEl.getBoundingClientRect();
   const eh=enemyHandEl.getBoundingClientRect();
   const n=enemyHandEl.children.length;
-  const fw=32*currentScale, fh=48*currentScale;
   deckCount--; buildDeck();
-  flyAnim(dr.left+dr.width/2-fw/2,dr.top+dr.height/2-fh/2,eh.left+eh.width/2+(n-n/2)*22*currentScale,eh.top,imgSrc,fw,fh,80*currentScale,()=>{
+  flyAnim(dr.left+dr.width/2-fw/2,dr.top+dr.height/2-fh/2,eh.left+eh.width/2+(n-n/2)*32*currentScale,eh.top,imgSrc,fw,fh,80*currentScale,()=>{
     const w=document.createElement('div'); w.className='enemy-card';
     enemyHandEl.appendChild(w); enemyCardData.push(tmpl); layoutEnemyHand(); onDone();
   });
@@ -1251,7 +1250,7 @@ function updateFan(){
   const ca=alive.indexOf(cards[centerIdx]);
   alive.forEach((c,ai)=>{
     const d=ai-ca;
-    c.wrap.style.transform=`rotate(${d*FAN_DEG}deg) translateY(${Math.abs(d)*9}px) scale(${d===0?(c.zoomed?2.5:1.9):1.1-Math.abs(d)*0.08})`;
+    c.wrap.style.transform=`rotate(${d*FAN_DEG}deg) translateY(${Math.abs(d)*9}px) scale(${d===0?(c.zoomed?2.2:1.9):1.0-Math.abs(d)*0.06})`;
   });
 }
 function updateClasses(){
