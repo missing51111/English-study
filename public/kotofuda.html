@@ -915,7 +915,12 @@ function addHandCard(tmpl,imgSrc){
   const idx=cards.length; cards.push(card);
   function onTap(){
     if(phase!=='player'||card.played) return;
-    if(idx!==centerIdx){ snapTo(idx); return; }
+    if(idx!==centerIdx){
+      // 非中央カードをクリック → 中央に移動 + 即ズーム（選択状態）
+      snapTo(idx);
+      card.zoomed=true; wrap.classList.add('zoomed'); updateFan();
+      return;
+    }
     if(!card.zoomed){ card.zoomed=true; wrap.classList.add('zoomed'); updateFan(); }
     else {
       if(placedThisTurn>=2){
