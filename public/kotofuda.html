@@ -44,33 +44,24 @@
     grid-template-rows:repeat(2,1fr); gap:3px; width:100%;
   }
   .card-grid.one-row { grid-template-rows:1fr; }
-  /* prow-wrap：下段の上に不透明な蓋を被せるstacking context */
-  .prow-wrap { position:relative; isolation:isolate; }
-  /* 蓋（z-index:2）：下段(z-index:1)を完全遮蔽、はみ出した8pxだけ見える */
-  .field-player .prow-wrap::before {
-    content:''; position:absolute; inset:0; z-index:2; pointer-events:none;
-    background:radial-gradient(ellipse at 50% 70%,rgb(60,120,40) 0%,rgb(20,50,15) 100%);
-    border-radius:8px;
-  }
-  .field-enemy .prow-wrap::before {
-    content:''; position:absolute; inset:0; z-index:2; pointer-events:none;
-    background:radial-gradient(ellipse at 50% 30%,rgb(120,40,40) 0%,rgb(40,15,15) 100%);
-    border-radius:8px;
-  }
-  /* sent-bar と上段グリッドは蓋より前面 */
+  .prow-wrap { position:relative; }
   .row-sent-bar {
     display:none; height:22px;
     align-items:center; justify-content:center;
     font-size:9px; color:rgba(255,220,100,0.92); letter-spacing:0.4px;
     text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
     padding:0 4px; background:rgba(0,0,0,0.3); border-radius:6px 6px 0 0;
-    position:relative; z-index:3;
   }
   .row-sent-bar.show { display:flex; }
-  #gridPlayerUpper, #gridEnemyUpper { position:relative; z-index:3; }
-  /* 下段パネル：上段の裏(z-index:1)、下端8pxが蓋の外へ覗く */
+  /* クリップラッパー：overflow:hidden で下段を 8px だけ見せる */
+  .lower-row-clip {
+    overflow:hidden;
+    height:8px;
+    transition:height 0.4s cubic-bezier(0.25,1,0.5,1);
+  }
+  .lower-row-clip.show { height:140px; pointer-events:auto; }
+  /* 下段パネル：ラッパー内で上にずらし、下端8pxだけがクリップ領域に残る */
   .lower-row-panel {
-    position:absolute; left:0; right:0; top:0; z-index:1;
     padding:4px;
     background:radial-gradient(ellipse at 50% 70%,rgba(55,115,38,0.98) 0%,rgba(18,46,13,0.99) 100%);
     border:1.5px solid rgba(100,220,100,0.5);
@@ -78,12 +69,11 @@
     border-radius:0 0 8px 8px;
     box-shadow:0 10px 28px rgba(0,0,0,0.85);
     pointer-events:none;
-    transform:translateY(8px);
+    transform:translateY(calc(-100% + 8px));
     transition:transform 0.4s cubic-bezier(0.25,1,0.5,1);
   }
-  /* こいこい後：上段の真下へスライドアウト */
-  .lower-row-panel.show {
-    transform:translateY(calc(100% + 22px));
+  .lower-row-clip.show .lower-row-panel {
+    transform:translateY(0);
     pointer-events:auto;
   }
   /* Enemy lower panel — 赤系 */
@@ -268,8 +258,10 @@
       <div class="prow-wrap" id="prowWrapEnemy">
         <div class="row-sent-bar enemy-sent-bar" id="rowSentBarEnemy"><span id="rowSentTextEnemy"></span></div>
         <div class="card-grid one-row" id="gridEnemyUpper"></div>
-        <div class="lower-row-panel enemy-lower-panel" id="lowerRowPanelEnemy">
-          <div class="card-grid one-row" id="gridEnemyLower"></div>
+        <div class="lower-row-clip enemy-lower-clip" id="lowerRowClipEnemy">
+          <div class="lower-row-panel enemy-lower-panel" id="lowerRowPanelEnemy">
+            <div class="card-grid one-row" id="gridEnemyLower"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -277,8 +269,10 @@
       <div class="prow-wrap" id="prowWrap">
         <div class="row-sent-bar" id="rowSentBar"><span id="rowSentText"></span></div>
         <div class="card-grid one-row" id="gridPlayerUpper"></div>
-        <div class="lower-row-panel" id="lowerRowPanel">
-          <div class="card-grid one-row" id="gridPlayerLower"></div>
+        <div class="lower-row-clip" id="lowerRowClip">
+          <div class="lower-row-panel" id="lowerRowPanel">
+            <div class="card-grid one-row" id="gridPlayerLower"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -996,11 +990,11 @@ function checkUpperComplete(){
             enemyCpuLowerUnlocked=false; enemyTurnAlt=false; enemyCpuDeclareShobu=false;
             // プレイヤー下段UIリセット
             document.getElementById('rowSentBar').classList.remove('show');
-            document.getElementById('lowerRowPanel').classList.remove('show');
+            document.getElementById('lowerRowClip').classList.remove('show');
             pSlots.filter(s=>s.row===1).forEach(s=>{ s.el.classList.remove('unlocked'); s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'22'; });
             // 相手下段UIリセット
             document.getElementById('rowSentBarEnemy').classList.remove('show');
-            document.getElementById('lowerRowPanelEnemy').classList.remove('show');
+            document.getElementById('lowerRowClipEnemy').classList.remove('show');
             eSlots.filter(s=>s.row===1).forEach(s=>{ s.el.classList.remove('unlocked'); s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'22'; });
             koikoiBtn.textContent='こいこい 🌸';
             phaseLabel.textContent=`スコア ${playerScore}pt — 次のターンへ`;
@@ -1020,7 +1014,7 @@ function unlockLower(){
   sentText.textContent=(s0?(s0+(j0?' / '+j0:'')):'上段ロック中');
   sentBar.classList.add('show');
   // 下段パネルを上段に重ねて表示
-  document.getElementById('lowerRowPanel').classList.add('show');
+  document.getElementById('lowerRowClip').classList.add('show');
   // 下段スロットを有効化
   pSlots.filter(s=>s.row===1).forEach(s=>{
     s.el.classList.add('unlocked');
@@ -1038,7 +1032,7 @@ function unlockEnemyLower(){
   const s0=sentArr?.[0]||''; const j0=jpArr?.[0]||'';
   document.getElementById('rowSentTextEnemy').textContent=s0?(s0+(j0?' / '+j0:'')):'上段ロック中';
   document.getElementById('rowSentBarEnemy').classList.add('show');
-  document.getElementById('lowerRowPanelEnemy').classList.add('show');
+  document.getElementById('lowerRowClipEnemy').classList.add('show');
   eSlots.filter(s=>s.row===1).forEach(s=>{
     s.el.classList.add('unlocked');
     s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'55';
@@ -1367,11 +1361,11 @@ function doShobu(isCpuTriggered){
       enemyCpuLowerUnlocked=false; enemyTurnAlt=false; enemyCpuDeclareShobu=false;
       // プレイヤー下段リセット
       document.getElementById('rowSentBar').classList.remove('show');
-      document.getElementById('lowerRowPanel').classList.remove('show');
+      document.getElementById('lowerRowClip').classList.remove('show');
       pSlots.filter(s=>s.row===1).forEach(s=>{ s.el.classList.remove('unlocked'); s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'22'; });
       // 相手下段リセット
       document.getElementById('rowSentBarEnemy').classList.remove('show');
-      document.getElementById('lowerRowPanelEnemy').classList.remove('show');
+      document.getElementById('lowerRowClipEnemy').classList.remove('show');
       eSlots.filter(s=>s.row===1).forEach(s=>{ s.el.classList.remove('unlocked'); s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'22'; });
       koikoiBtn.textContent='こいこい 🌸';
       phaseLabel.textContent=`スコア ${playerScore}pt`;
