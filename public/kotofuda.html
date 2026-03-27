@@ -54,21 +54,19 @@
   }
   .row-sent-bar.show { display:flex; }
   .lower-row-panel {
-    display:none;
     padding:4px;
     background:radial-gradient(ellipse at 50% 70%,rgba(55,115,38,0.98) 0%,rgba(18,46,13,0.99) 100%);
     border:1.5px solid rgba(100,220,100,0.5);
     border-top:none;
     border-radius:0 0 8px 8px;
     box-shadow:0 10px 28px rgba(0,0,0,0.85);
+    pointer-events:none;
+    clip-path:inset(0 0 calc(100% - 8px) 0);
+    transition:clip-path 0.4s cubic-bezier(0.25,1,0.5,1);
   }
   .lower-row-panel.show {
-    display:block; pointer-events:auto;
-    animation:lowerSlideIn 0.38s cubic-bezier(0.25,1,0.5,1) both;
-  }
-  @keyframes lowerSlideIn {
-    from { opacity:0; transform:translateY(-8px); }
-    to   { opacity:1; transform:translateY(0); }
+    clip-path:inset(0 0 0 0);
+    pointer-events:auto;
   }
   /* Enemy lower panel — 赤系 */
   .lower-row-panel.enemy-lower-panel {
