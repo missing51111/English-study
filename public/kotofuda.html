@@ -305,7 +305,7 @@
 <div class="deck-wrap" id="deckMain"></div>
 
 <div class="phase-label" id="phaseLabel">手札を配っています…</div>
-<div class="hand-hint">← スライドして選ぶ →</div>
+<div class="hand-hint">クリックでカードを選ぶ</div>
 <div class="hand-outer" id="handOuter">
   <div class="hand-track" id="handTrack"></div>
 </div>
@@ -1259,32 +1259,21 @@ function fanOpen(cb){
 function startPlayerTurn(){
   phase='standby'; outer.classList.remove('locked');
   showTurnBanner('自分のターン',()=>{
-    gatherHand(()=>{
-      standbyDrawing=true;
-      phaseLabel.textContent='スタンバイ：2枚ドロー中…';
-      drawToPlayer(()=>{ setTimeout(()=>{
-        drawToPlayer(()=>{
-          standbyDrawing=false;
-          // 全7枚を改めて中央1点に集約してからファンオープン
-          const alive=cards.filter(c=>!c.played);
-          const midAi=Math.floor(alive.length/2);
-          const midCard=alive[midAi];
-          centerIdx=cards.indexOf(midCard);
-          offsetX=outer.offsetWidth/2-CARD_HALF-midAi*CARD_W;
-          track.style.transition='none';
-          track.style.transform=`translateX(${offsetX}px)`;
-          alive.forEach((c,ai)=>{
-            c.wrap.style.transition='none';
-            c.wrap.style.transform=`translateX(${(midAi-ai)*CARD_W}px) scale(1.0)`;
-          });
-          updateClasses();
-          fanOpen(()=>{
-            phase='player'; placedThisTurn=0;
-            phaseLabel.textContent='あなたのターン：カードを置いてください';
-          });
-        });
-      },180); });
-    });
+    standbyDrawing=true;
+    drawToPlayer(()=>{ setTimeout(()=>{
+      drawToPlayer(()=>{
+        standbyDrawing=false;
+        const alive=cards.filter(c=>!c.played);
+        const midAi=Math.floor(alive.length/2);
+        centerIdx=cards.indexOf(alive[midAi]);
+        offsetX=outer.offsetWidth/2-CARD_HALF-midAi*CARD_W;
+        track.style.transition='none';
+        track.style.transform=`translateX(${offsetX}px)`;
+        updateClasses(); updateFan();
+        phase='player'; placedThisTurn=0;
+        phaseLabel.textContent='あなたのターン：カードを置いてください';
+      });
+    },180); });
   });
 }
 function updateFan(){
