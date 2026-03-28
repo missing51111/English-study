@@ -612,21 +612,40 @@ const yakuToast   = document.getElementById('yakuToast');
 let cards=[], centerIdx=0;
 let offsetX=0, dragging=false, dragMoved=false, dragStartX=0, dragStartOffset=0;
 let deckCount=48, pSlots=[], eSlots=[];
-let phase='init', enemyCardData=[], placedThisTurn=0, lowerUnlocked=false;
-let playerScore=0, koikoiActive=false, koikoiCount=0, achievedYaku=new Set(), toastTimer=null;
-let upperLocked=false, enemyKoikoiDeclared=false, counterKoikoi=false;
+let phase='init', enemyCardData=[], placedThisTurn=0;
+let toastTimer=null;
 let standbyDrawing=false;
 let difficulty='normal';
-let enemyScore=0;
-let enemyCpuLowerUnlocked=false;
-let enemyTurnAlt=false;
-let enemyCpuDeclareShobu=false;
-let enemyShobuPending=false;
 let autoPlay=false;
-let gameEnded=false;
-let playerShobuPending=false;
 const CARD_W=38, CARD_HALF=19, FAN_DEG=3;
 let currentScale=1;
+
+let playerScore=0;   // 確定点
+let enemyScore=0;    // 確定点
+let achievedYaku=new Set();
+
+let enemyShobuPending=false;
+let playerShobuPending=false;
+let gameEnded=false;
+
+// 左右対称の状態
+const playerState = {
+  upperLocked: false,
+  lowerUnlocked: false,
+  koikoiCount: 0,
+  counterKoikoi: false,
+  koikoiDeclaredByOpponent: false,
+  turnAlt: false
+};
+
+const enemyState = {
+  upperLocked: false,
+  lowerUnlocked: false,
+  koikoiCount: 0,
+  counterKoikoi: false,
+  koikoiDeclaredByOpponent: false,
+  turnAlt: false
+};
 
 // ===== UI ユーティリティ =====
 function getTheme(tmpl){ return tmpl?(WORD_THEMES[tmpl.word]||'common'):'common'; }
@@ -666,7 +685,13 @@ function showSentReveal(sentArr, jpArr, who, onDone){
 }
 
 // ===== スコアシステム =====
-function calcScore(slots){
+function calcScore(slots, opts={}){
+  const {
+    lowerUnlocked=false,
+    koikoiCount=0,
+    counterKoikoi=false
+  } = opts;
+
   const res=[];
   const gw=(row,type)=>slots.find(s=>s.row===row&&s.type===type&&s.filled)?.tmpl||null;
   let score=0;
@@ -677,21 +702,28 @@ function calcScore(slots){
     const Stmpl=gw(row,'S'),Vtmpl=gw(row,'V'),Otmpl=gw(row,'O');
     const AdjTmpl=gw(row,'Adj'),AdvTmpl=gw(row,'Adv');
     if(!Stmpl||!Vtmpl||!Otmpl) return 0;
+
     const S=Stmpl.word,V=Vtmpl.word,O=Otmpl.word;
     const Adj=AdjTmpl?.word,Adv=AdvTmpl?.word;
+
     const svOk=SV_SET.has(`${S}|${V}`);
     const voOk=VO_SET.has(`${V}|${O}`);
     const adjOk=!!(Adj&&ADJO_SET.has(`${Adj}|${O}`));
     const advOk=!!(Adv&&ADVV_SET.has(`${Adv}|${V}`));
     const lb=row===0?'上段':'下段';
+
     if(!svOk){
-      res.push({name:'× 無効',note:`${lb}: ${S}+${V}は不自然`,pts:0,invalid:1}); return 0;
+      res.push({name:'× 無効',note:`${lb}: ${S}+${V}は不自然`,pts:0,invalid:1});
+      return 0;
     }
     if(!voOk){
-      res.push({name:'× 無効',note:`${lb}: ${V}+${O}は不自然`,pts:0,invalid:1}); return 0;
+      res.push({name:'× 無効',note:`${lb}: ${V}+${O}は不自然`,pts:0,invalid:1});
+      return 0;
     }
+
     let rowPts=2;
     res.push({name:'SVO文',note:`${lb} +2pt`,pts:2});
+
     const p=[S];
     if(advOk&&FREQ_ADV.has(Adv)) p.push(Adv);
     p.push(V);
@@ -699,6 +731,7 @@ function calcScore(slots){
     p.push(O);
     if(advOk&&!FREQ_ADV.has(Adv)) p.push(Adv);
     sentArr[row]=p.join(' ')+'.';
+
     const Sm=Stmpl.meaning,Vm=Vtmpl.meaning,Om=Otmpl.meaning;
     const Adjm=AdjTmpl?.meaning,Advm=AdvTmpl?.meaning;
     let jp=[Sm+'は'];
@@ -708,15 +741,18 @@ function calcScore(slots){
     if(advOk&&Advm&&!FREQ_ADV.has(Adv)) jp.push(Advm);
     jp.push(Vm+'。');
     jpArr[row]=jp.join('');
+
     const used=[Stmpl,Vtmpl,Otmpl];
     if(adjOk) used.push(AdjTmpl);
     if(advOk) used.push(AdvTmpl);
+
     used.forEach(t=>{
       if(t.word.length>=5){
         res.push({name:`長単語「${t.word}」`,note:`${t.word.length}文字`,pts:t.word.length});
         rowPts+=t.word.length;
       }
     });
+
     return rowPts;
   }
 
@@ -733,20 +769,73 @@ function calcScore(slots){
       score+=10;
     }
   }
+
   if(counterKoikoi){
     res.push({name:'カウンターこいこい',note:'+1pt',pts:1});
     score+=1;
   }
-  if(koikoiActive&&score>0){
+
+  if(koikoiCount>0 && score>0){
     const b=2*koikoiCount;
     res.push({name:'こいこい成功',note:`続行×${koikoiCount}`,pts:b,bonus:1});
     score+=b;
   }
-  return{res,score,sentArr,jpArr};
+
+  return {res,score,sentArr,jpArr};
+}
+
+function calcPlayerCurrentScore(){
+  return calcScore(pSlots,{
+    lowerUnlocked: playerState.lowerUnlocked,
+    koikoiCount: playerState.koikoiCount,
+    counterKoikoi: playerState.counterKoikoi
+  });
+}
+
+function calcEnemyCurrentScore(){
+  return calcScore(eSlots,{
+    lowerUnlocked: enemyState.lowerUnlocked,
+    koikoiCount: enemyState.koikoiCount,
+    counterKoikoi: enemyState.counterKoikoi
+  });
+}
+
+function svoOrFull(rowSlots){
+  const svo=['S','V','O'].every(t=>rowSlots.some(s=>s.type===t&&s.filled));
+  const full=rowSlots.every(s=>s.filled);
+  return svo||full;
+}
+
+function playerDeclareReady(){
+  const row=playerState.lowerUnlocked?1:0;
+  return svoOrFull(pSlots.filter(s=>s.row===row));
+}
+
+function enemyDeclareReady(){
+  const row=enemyState.lowerUnlocked?1:0;
+  return svoOrFull(eSlots.filter(s=>s.row===row));
+}
+
+function hasPendingFinal(){
+  return enemyShobuPending || playerShobuPending;
+}
+
+function forceFinalByDeckOut(){
+  if(gameEnded) return;
+  gameEnded=true;
+  showToast('🂠 山札切れ！その時点のポイントで勝敗を判定します','#ffeeaa');
+  setTimeout(()=>finalJudgement('deckout'), 400);
+}
+
+function triggerPlayerCpuShobu(){
+  if(gameEnded) return;
+  playerShobuPending=true;
+  setTimeout(()=>showToast('⚔️ 自動CPUが勝負を宣言！相手の最後のターンへ','#aaffaa'),200);
+  enemyTurn();
 }
 
 function checkLiveYaku(){
-  for(let row=0;row<=(lowerUnlocked?1:0);row++){
+  for(let row=0;row<=(playerState.lowerUnlocked?1:0);row++){
     const gw=type=>pSlots.find(s=>s.row===row&&s.type===type&&s.filled)?.tmpl?.word;
     const S=gw('S'),V=gw('V'),O=gw('O'),Adj=gw('Adj'),Adv=gw('Adv');
     const svOk=!!(S&&V&&SV_SET.has(`${S}|${V}`));
@@ -952,6 +1041,10 @@ function positionDeck(){
   deckEl.style.top=(localY-28)+'px';
 }
 function drawToPlayer(onDone){
+  if(deckCount<=0){
+    forceFinalByDeckOut();
+    return;
+  }
   const tmpl=TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
   const imgSrc=makeCardImg(tmpl);
   const dr=deckEl.getBoundingClientRect();
@@ -959,20 +1052,33 @@ function drawToPlayer(onDone){
   const fw=60*currentScale, fh=90*currentScale;
   const toX=outerRect.left+outerRect.width/2-fw/2;
   const toY=outerRect.bottom-fh-8*currentScale;
-  deckCount--; buildDeck();
-  flyAnim(dr.left+dr.width/2-fw/2,dr.top+dr.height/2-fh/2,toX,toY,imgSrc,fw,fh,100*currentScale,()=>{ addHandCard(tmpl,imgSrc); onDone(); });
+  deckCount--;
+  buildDeck();
+  flyAnim(dr.left+dr.width/2-fw/2,dr.top+dr.height/2-fh/2,toX,toY,imgSrc,fw,fh,100*currentScale,()=>{
+    addHandCard(tmpl,imgSrc);
+    if(onDone) onDone();
+  });
 }
 function drawToEnemy(onDone){
+  if(deckCount<=0){
+    forceFinalByDeckOut();
+    return;
+  }
   const tmpl=TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
   const fw=60*currentScale, fh=90*currentScale;
   const imgSrc=makeBackImg(60,90);
   const dr=deckEl.getBoundingClientRect();
   const eh=enemyHandEl.getBoundingClientRect();
   const n=enemyHandEl.children.length;
-  deckCount--; buildDeck();
+  deckCount--;
+  buildDeck();
   flyAnim(dr.left+dr.width/2-fw/2,dr.top+dr.height/2-fh/2,eh.left+eh.width/2+(n-n/2)*32*currentScale,eh.top,imgSrc,fw,fh,80*currentScale,()=>{
-    const w=document.createElement('div'); w.className='enemy-card';
-    enemyHandEl.appendChild(w); enemyCardData.push(tmpl); layoutEnemyHand(); onDone();
+    const w=document.createElement('div');
+    w.className='enemy-card';
+    enemyHandEl.appendChild(w);
+    enemyCardData.push(tmpl);
+    layoutEnemyHand();
+    if(onDone) onDone();
   });
 }
 
@@ -1000,13 +1106,13 @@ function addHandCard(tmpl,imgSrc){
         s.filled && s.type===card.tmpl.type && s.tmpl && s.tmpl.word!==card.tmpl.word
         && (WORD_THEMES[s.tmpl.word]||'common')===(WORD_THEMES[card.tmpl.word]||'common');
       let target=
-        (!upperLocked?pSlots.find(s=>s.type===card.tmpl.type&&s.row===0&&!s.filled):null)
-        ||(lowerUnlocked?pSlots.find(s=>s.type===card.tmpl.type&&s.row===1&&!s.filled):null)
-        ||(!upperLocked?pSlots.find(s=>s.row===0&&canOverwrite(s)):null)
-        ||(lowerUnlocked?pSlots.find(s=>s.row===1&&canOverwrite(s)):null);
+        (!playerState.upperLocked?pSlots.find(s=>s.type===card.tmpl.type&&s.row===0&&!s.filled):null)
+        ||(playerState.lowerUnlocked?pSlots.find(s=>s.type===card.tmpl.type&&s.row===1&&!s.filled):null)
+        ||(!playerState.upperLocked?pSlots.find(s=>s.row===0&&canOverwrite(s)):null)
+        ||(playerState.lowerUnlocked?pSlots.find(s=>s.row===1&&canOverwrite(s)):null);
       card.zoomed=false; wrap.classList.remove('zoomed'); updateFan();
       if(!target){
-        phaseLabel.textContent=upperLocked?'上段はロック中です':'置けるスロットがありません';
+        phaseLabel.textContent=playerState.upperLocked?'上段はロック中です':'置けるスロットがありません';
         setTimeout(()=>{ phaseLabel.textContent='あなたのターン：カードを置いてください'; },1200);
         return;
       }
@@ -1073,72 +1179,76 @@ function svoOrFull(rowSlots){
   return svo||full;
 }
 function cpuDeclareReady(){
-  const row=enemyCpuLowerUnlocked?1:0;
+  const row=enemyState.lowerUnlocked?1:0;
   return svoOrFull(eSlots.filter(s=>s.row===row));
 }
 
 // ===== 完成チェック（プレイヤー） =====
 function checkUpperComplete(){
   checkLiveYaku();
-  if(!lowerUnlocked){
+
+  if(!playerState.lowerUnlocked){
     const row0Slots=pSlots.filter(s=>s.row===0);
     if(svoOrFull(row0Slots)){
       koikoiBtn.classList.add('pulse');
+      shobuBtn.classList.add('pulse');
     } else {
       koikoiBtn.classList.remove('pulse');
+      shobuBtn.classList.remove('pulse');
     }
-  }
-  if(lowerUnlocked){
+  } else {
     const row1Slots=pSlots.filter(s=>s.row===1);
     if(svoOrFull(row1Slots)){
-      phaseLabel.textContent='下段完成！役を確定します…';
-      setTimeout(()=>{
-        const {sentArr,jpArr}=calcScore(pSlots);
-        showSentReveal(sentArr,jpArr,'player',()=>{
-          showYakuResult('つづける ▶',()=>{
-            achievedYaku.clear(); koikoiActive=false; koikoiCount=0;
-            upperLocked=false; lowerUnlocked=false; enemyKoikoiDeclared=false; counterKoikoi=false;
-            enemyCpuLowerUnlocked=false; enemyTurnAlt=false; enemyCpuDeclareShobu=false; enemyShobuPending=false;
-            document.getElementById('rowSentBar').classList.remove('show');
-            document.getElementById('lowerRowClip').classList.remove('show');
-            pSlots.filter(s=>s.row===1).forEach(s=>{ s.el.classList.remove('unlocked'); s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'22'; });
-            document.getElementById('rowSentBarEnemy').classList.remove('show');
-            document.getElementById('lowerRowClipEnemy').classList.remove('show');
-            eSlots.filter(s=>s.row===1).forEach(s=>{ s.el.classList.remove('unlocked'); s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'22'; });
-            koikoiBtn.textContent='こいこい 🌸';
-            phaseLabel.textContent=`スコア ${playerScore}pt — 次のターンへ`;
-            if(autoPlay) setTimeout(()=>enemyTurn(), 500);
-          });
-        });
-      },500);
+      shobuBtn.classList.add('pulse');
+    } else {
+      shobuBtn.classList.remove('pulse');
     }
+    koikoiBtn.classList.remove('pulse');
   }
 }
-function unlockLower(){
-  lowerUnlocked=true; koikoiBtn.classList.remove('pulse');
-  const {sentArr,jpArr}=calcScore(pSlots.filter(s=>s.row===0));
-  const s0=sentArr[0]||''; const j0=(jpArr&&jpArr[0])||'';
+function unlockPlayerLower(){
+  playerState.lowerUnlocked=true;
+  playerState.upperLocked=true;
+
+  const {sentArr,jpArr}=calcScore(pSlots,{
+    lowerUnlocked:false,
+    koikoiCount:playerState.koikoiCount,
+    counterKoikoi:playerState.counterKoikoi
+  });
+
+  const s0=sentArr[0]||'';
+  const j0=(jpArr&&jpArr[0])||'';
   const sentBar=document.getElementById('rowSentBar');
   const sentText=document.getElementById('rowSentText');
   sentText.textContent=(s0?(s0+(j0?' / '+j0:'')):'上段ロック中');
   sentBar.classList.add('show');
   document.getElementById('lowerRowClip').classList.add('show');
+
   pSlots.filter(s=>s.row===1).forEach(s=>{
     s.el.classList.add('unlocked');
     s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'55';
   });
+
   phaseLabel.textContent='🌸 2段目が開放！同じ構造で文を作ろう';
 }
+
 function unlockEnemyLower(){
-  const sL=lowerUnlocked,sC=counterKoikoi,sK=koikoiActive,sN=koikoiCount;
-  lowerUnlocked=false; counterKoikoi=false; koikoiActive=false; koikoiCount=0;
-  const {sentArr,jpArr}=calcScore(eSlots);
-  lowerUnlocked=sL; counterKoikoi=sC; koikoiActive=sK; koikoiCount=sN;
-  enemyCpuLowerUnlocked=true;
-  const s0=sentArr?.[0]||''; const j0=jpArr?.[0]||'';
+  enemyState.lowerUnlocked=true;
+  enemyState.upperLocked=true;
+
+  const {sentArr,jpArr}=calcScore(eSlots,{
+    lowerUnlocked:false,
+    koikoiCount:enemyState.koikoiCount,
+    counterKoikoi:enemyState.counterKoikoi
+  });
+
+  const s0=sentArr?.[0]||'';
+  const j0=jpArr?.[0]||'';
+
   document.getElementById('rowSentTextEnemy').textContent=s0?(s0+(j0?' / '+j0:'')):'上段ロック中';
   document.getElementById('rowSentBarEnemy').classList.add('show');
   document.getElementById('lowerRowClipEnemy').classList.add('show');
+
   eSlots.filter(s=>s.row===1).forEach(s=>{
     s.el.classList.add('unlocked');
     s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'55';
@@ -1158,8 +1268,8 @@ function selectAutoPlay(){
   dealInit();
 }
 function getValidSlotsForPlayerCard(tmpl){
-  const row0=!upperLocked?pSlots.filter(s=>s.row===0&&s.type===tmpl.type&&!s.filled):[];
-  const row1=lowerUnlocked?pSlots.filter(s=>s.row===1&&s.type===tmpl.type&&!s.filled):[];
+  const row0=!playerState.upperLocked ? pSlots.filter(s=>s.row===0&&s.type===tmpl.type&&!s.filled) : [];
+  const row1=playerState.lowerUnlocked ? pSlots.filter(s=>s.row===1&&s.type===tmpl.type&&!s.filled) : [];
   return [...row0,...row1];
 }
 function evalRowPotential_p(row){
@@ -1173,79 +1283,132 @@ function evalRowPotential_p(row){
   if(S&&V&&O&&SV_SET.has(`${S}|${V}`)&&VO_SET.has(`${V}|${O}`)) p+=5;
   return p;
 }
+
 function autoPlayerChoosePlays(maxPlays){
   const handCopy=cards.filter(c=>!c.played);
-  const picks=[]; const usedCards=new Set(), usedSlots=new Set();
-  const baseScore=calcScore(pSlots).score;
+  const picks=[];
+  const usedCards=new Set(), usedSlots=new Set();
+  const baseScore=calcPlayerCurrentScore().score;
   const cpuField=calcEnemyCurrentScore().score;
   const ahead=(playerScore+baseScore)>(enemyScore+cpuField);
+
   for(let i=0;i<maxPlays;i++){
     let best=null, bestKey=null;
+
     handCopy.forEach((card,ci)=>{
       if(usedCards.has(ci)) return;
       const slots=getValidSlotsForPlayerCard(card.tmpl);
+
       slots.forEach(slot=>{
         const si=pSlots.indexOf(slot);
         if(usedSlots.has(si)) return;
-        picks.forEach(p=>{p.slot.tmpl=p.card.tmpl; p.slot.filled=true;});
+
+        picks.forEach(p=>{
+          p.slot.tmpl=p.card.tmpl;
+          p.slot.filled=true;
+        });
+
         const prevFilled=slot.filled, prevTmpl=slot.tmpl;
-        slot.filled=true; slot.tmpl=card.tmpl;
-        const newScore=calcScore(pSlots).score;
-        slot.filled=prevFilled; slot.tmpl=prevTmpl;
-        picks.forEach(p=>{p.slot.filled=p.prevFilled; p.slot.tmpl=p.prevTmpl;});
+        slot.filled=true;
+        slot.tmpl=card.tmpl;
+
+        const newScore=calcPlayerCurrentScore().score;
+
+        slot.filled=prevFilled;
+        slot.tmpl=prevTmpl;
+
+        picks.forEach(p=>{
+          p.slot.filled=p.prevFilled;
+          p.slot.tmpl=p.prevTmpl;
+        });
+
         const gain=newScore-baseScore;
         const potential=evalRowPotential_p(slot.row);
         const typeMatch=(slot.type===card.tmpl.type)?1:0;
         const useful=(gain>0||potential>0)?0:-1;
-        const canOvertake=(!ahead&&playerScore+newScore>enemyScore)?1:0;
+        const canOvertake=(!ahead&&playerScore+newScore>enemyScore+cpuField)?1:0;
+
         const key=ahead
-          ?[canOvertake,typeMatch,gain,potential,useful]
-          :[canOvertake,gain,potential,typeMatch,useful];
+          ? [canOvertake,typeMatch,gain,potential,useful]
+          : [canOvertake,gain,potential,typeMatch,useful];
+
         if(!bestKey||compareKeys(key,bestKey)>0){
-          best={card,slot,prevFilled:slot.filled,prevTmpl:slot.tmpl}; bestKey=key;
+          best={card,slot,prevFilled:slot.filled,prevTmpl:slot.tmpl};
+          bestKey=key;
         }
       });
     });
+
     if(!best) break;
     usedCards.add(handCopy.indexOf(best.card));
     usedSlots.add(pSlots.indexOf(best.slot));
     picks.push(best);
   }
+
   return picks;
 }
 function autoPlayerTurn(){
-  const maxPlays=getEnemyCpuPlayCount();
+  const maxPlays=getPlayerCpuPlayCount();
   const picks=autoPlayerChoosePlays(maxPlays);
+
   function doPlay(i){
     if(i>=picks.length){
       setTimeout(()=>{
-        const activeRow=lowerUnlocked?1:0;
-        const activeSlots=pSlots.filter(s=>s.row===activeRow);
-        if(svoOrFull(activeSlots)){
-          if(lowerUnlocked){
-            if(enemyShobuPending){ setTimeout(()=>finalJudgement(),400); return; }
-            enemyTurn(); return;
-          }
-          koikoiActive=true; koikoiCount++; upperLocked=true;
-          unlockLower();
-          showToast(`🌸 自動こいこい！2段目開放 (続行×${koikoiCount})`,'#aaffaa');
-          setTimeout(()=>{
-            if(enemyShobuPending){ setTimeout(()=>finalJudgement(),400); return; }
-            enemyTurn();
-          },700);
+        if(gameEnded) return;
+
+        const playerField=calcPlayerCurrentScore().score;
+        const enemyField=calcEnemyCurrentScore().score;
+        const playerTotal=playerScore+playerField;
+        const enemyTotal=enemyScore+enemyField;
+
+        if(enemyShobuPending){
+          finalJudgement('shobu');
           return;
         }
-        if(enemyShobuPending){ setTimeout(()=>finalJudgement(),400); return; }
+
+        if(playerDeclareReady() && !playerState.koikoiDeclaredByOpponent){
+          if(playerState.lowerUnlocked){
+            triggerPlayerCpuShobu();
+            return;
+          }
+
+          if(playerTotal>enemyTotal){
+            triggerPlayerCpuShobu();
+            return;
+          }else{
+            playerState.koikoiCount++;
+            playerState.koikoiDeclaredByOpponent=true;
+            enemyState.koikoiDeclaredByOpponent=true;
+            unlockPlayerLower();
+            showToast(`🌸 自動こいこい！2段目開放 (続行×${playerState.koikoiCount})`,'#aaffaa');
+            setTimeout(()=>{
+              if(gameEnded) return;
+              enemyTurn();
+            },700);
+            return;
+          }
+        }
+
         enemyTurn();
       },400);
       return;
     }
-    setTimeout(()=>placeCard(picks[i].card, picks[i].slot, ()=>doPlay(i+1)), i===0?600:450);
+
+    setTimeout(()=>{
+      if(gameEnded) return;
+      placeCard(picks[i].card,picks[i].slot,()=>doPlay(i+1));
+    },i===0?600:450);
   }
+
   if(!picks.length){
-    if(enemyShobuPending){ setTimeout(()=>finalJudgement(),600); return; }
-    setTimeout(()=>enemyTurn(),600); return;
+    if(enemyShobuPending){
+      finalJudgement('shobu');
+      return;
+    }
+    enemyTurn();
+    return;
   }
+
   doPlay(0);
 }
 
@@ -1254,29 +1417,30 @@ function selectDifficulty(diff){
   document.getElementById('difficultyScreen').style.display='none';
   dealInit();
 }
+function getPlayerCpuPlayCount(){
+  if(difficulty==='easy') return 1;
+  if(difficulty==='hard') return 2;
+  playerState.turnAlt=!playerState.turnAlt;
+  return playerState.turnAlt ? 2 : 1;
+}
+
 function getEnemyCpuPlayCount(){
   if(difficulty==='easy') return 1;
   if(difficulty==='hard') return 2;
-  enemyTurnAlt=!enemyTurnAlt; return enemyTurnAlt?2:1;
+  enemyState.turnAlt=!enemyState.turnAlt;
+  return enemyState.turnAlt ? 2 : 1;
 }
 function shouldEnemyKoikoi(){
   if(difficulty==='easy') return false;
   if(difficulty==='hard') return true;
   return enemyScore>=playerScore;
 }
-function calcEnemyCurrentScore(){
-  const sL=lowerUnlocked,sC=counterKoikoi,sK=koikoiActive,sN=koikoiCount;
-  lowerUnlocked=enemyCpuLowerUnlocked; counterKoikoi=false; koikoiActive=false; koikoiCount=0;
-  const r=calcScore(eSlots);
-  lowerUnlocked=sL; counterKoikoi=sC; koikoiActive=sK; koikoiCount=sN;
-  return r;
-}
 function updateEnemyScoreDisplay(){
   document.getElementById('enemyScoreDisplay').textContent=`🤖 ${enemyScore}pt`;
 }
 function getValidSlotsForCard(tmpl){
-  const r0=eSlots.filter(s=>s.row===0&&s.type===tmpl.type&&!s.filled);
-  const r1=enemyCpuLowerUnlocked?eSlots.filter(s=>s.row===1&&s.type===tmpl.type&&!s.filled):[];
+  const r0=!enemyState.upperLocked ? eSlots.filter(s=>s.row===0&&s.type===tmpl.type&&!s.filled) : [];
+  const r1=enemyState.lowerUnlocked ? eSlots.filter(s=>s.row===1&&s.type===tmpl.type&&!s.filled) : [];
   return [...r0,...r1];
 }
 function evalRowPotential(row){
@@ -1290,13 +1454,16 @@ function evalRowPotential(row){
   if(S&&V&&O&&SV_SET.has(`${S}|${V}`)&&VO_SET.has(`${V}|${O}`)) p+=5;
   return p;
 }
+
 function evaluatePlacement(tmpl,slot){
   const pF=slot.filled,pT=slot.tmpl;
-  slot.filled=true; slot.tmpl=tmpl;
+  slot.filled=true;
+  slot.tmpl=tmpl;
   const newFieldScore=calcEnemyCurrentScore().score;
   const potential=evalRowPotential(slot.row);
   const longBonus=tmpl.word.length>=5?tmpl.word.length:0;
-  slot.filled=pF; slot.tmpl=pT;
+  slot.filled=pF;
+  slot.tmpl=pT;
   return {newFieldScore,potential,longBonus};
 }
 // 優先度キー配列の比較（大きいほど優先）
@@ -1310,39 +1477,56 @@ function chooseBestEnemyPlays(maxPlays){
   const usedCards=new Set(), usedSlots=new Set();
   const baseScore=calcEnemyCurrentScore().score;
   const cpuTotal=enemyScore+baseScore;
-  const ahead=cpuTotal>playerScore;
+  const playerTotal=playerScore+calcPlayerCurrentScore().score;
+  const ahead=cpuTotal>playerTotal;
 
   for(let i=0;i<maxPlays;i++){
     let best=null, bestKey=null;
+
     for(let ci=0;ci<handCopy.length;ci++){
       if(usedCards.has(ci)) continue;
       const tmpl=handCopy[ci];
+
       for(const slot of getValidSlotsForCard(tmpl)){
         const si=eSlots.indexOf(slot);
         if(usedSlots.has(si)) continue;
-        picks.forEach(p=>{p.slot.tmpl=p.tmpl; p.slot.filled=true;});
-        const {newFieldScore, potential, longBonus}=evaluatePlacement(tmpl, slot);
-        picks.forEach(p=>{p.slot.filled=p.prevFilled; p.slot.tmpl=p.prevTmpl;});
+
+        picks.forEach(p=>{
+          p.slot.tmpl=p.tmpl;
+          p.slot.filled=true;
+        });
+
+        const {newFieldScore,potential,longBonus}=evaluatePlacement(tmpl,slot);
+
+        picks.forEach(p=>{
+          p.slot.filled=p.prevFilled;
+          p.slot.tmpl=p.prevTmpl;
+        });
+
         const gain=newFieldScore-baseScore;
-        const canOvertake=(!ahead&&enemyScore+newFieldScore>playerScore)?1:0;
+        const canOvertake=(!ahead&&enemyScore+newFieldScore>playerTotal)?1:0;
         const scoreGain=gain;
         const nextPot=potential+longBonus;
         const typeMatch=(slot.type===tmpl.type)?1:0;
         const useful=(gain>0||potential>0)?0:-1;
+
         const key=ahead
-          ?[canOvertake, typeMatch, scoreGain, nextPot, useful]
-          :[canOvertake, scoreGain, nextPot, typeMatch, useful];
+          ? [canOvertake,typeMatch,scoreGain,nextPot,useful]
+          : [canOvertake,scoreGain,nextPot,typeMatch,useful];
+
         if(!bestKey||compareKeys(key,bestKey)>0){
           best={tmpl,slot,prevFilled:slot.filled,prevTmpl:slot.tmpl};
           bestKey=key;
         }
       }
     }
+
     if(!best) break;
     usedCards.add(handCopy.indexOf(best.tmpl));
     usedSlots.add(eSlots.indexOf(best.slot));
     picks.push(best);
   }
+
   return picks;
 }
 function smartEnemyPlay(pick,onDone){
@@ -1371,25 +1555,51 @@ function triggerCpuShobu(){
   setTimeout(()=>showToast('⚔️ 相手が勝負を宣言！最後のターンをどうぞ','#ffaaaa'),200);
   startPlayerTurn();
 }
-function finalJudgement(){
-  const pField=calcScore(pSlots).score;
+function finalJudgement(reason='shobu'){
+  if(gameEnded && reason!=='deckout') return;
+  gameEnded=true;
+
+  const pField=calcPlayerCurrentScore().score;
   const eField=calcEnemyCurrentScore().score;
   const pTotal=playerScore+pField;
   const eTotal=enemyScore+eField;
+
   enemyShobuPending=false;
-  if(pField>0){ playerScore=pTotal; scoreDisplay.textContent=`🏆 ${playerScore}pt`; }
-  if(eField>0){ enemyScore=eTotal; updateEnemyScoreDisplay(); }
+  playerShobuPending=false;
+
+  playerScore=pTotal;
+  enemyScore=eTotal;
+  scoreDisplay.textContent=`🏆 ${playerScore}pt`;
+  updateEnemyScoreDisplay();
+
   revealEnemyV();
-  const {sentArr,jpArr}=calcScore(pSlots);
-  showSentReveal(sentArr,jpArr,'player',()=>{
+
+  const {sentArr,jpArr}=calcPlayerCurrentScore();
+
+  const beforeReveal=()=>{
     let verdictText, verdictColor;
-    if(pTotal>eTotal){      verdictText='🎉 あなたの勝ち！'; verdictColor='#aaffaa'; }
-    else if(pTotal<eTotal){ verdictText='😢 相手の勝ち…';   verdictColor='#ffaaaa'; }
-    else {                  verdictText='🤝 引き分け！';     verdictColor='#ffeeaa'; }
-    showTurnBanner(verdictText, ()=>{
-      showResultScreen(pTotal, eTotal, verdictText, verdictColor);
+
+    if(pTotal>eTotal){
+      verdictText='🎉 あなたの勝ち！';
+      verdictColor='#aaffaa';
+    }else if(pTotal<eTotal){
+      verdictText='😢 相手の勝ち…';
+      verdictColor='#ffaaaa';
+    }else{
+      verdictText='🤝 引き分け！';
+      verdictColor='#ffeeaa';
+    }
+
+    const bannerText = reason==='deckout'
+      ? `🂠 山札切れで終了\n${verdictText}`
+      : verdictText;
+
+    showTurnBanner(bannerText,()=>{
+      showResultScreen(pTotal,eTotal,verdictText,verdictColor);
     });
-  });
+  };
+
+  showSentReveal(sentArr,jpArr,'player',beforeReveal);
 }
 function showResultScreen(pPts, ePts, verdictText, verdictColor){
   document.getElementById('resultVerdict').textContent=verdictText;
@@ -1404,87 +1614,186 @@ function showResultScreen(pPts, ePts, verdictText, verdictColor){
 function resetAndRestart(){
   document.getElementById('resultScreen').style.display='none';
   outer.classList.remove('locked');
+
   autoPlay=false;
-  playerScore=0; enemyScore=0;
-  scoreDisplay.textContent='🏆 0pt'; updateEnemyScoreDisplay();
-  achievedYaku.clear(); koikoiActive=false; koikoiCount=0;
-  upperLocked=false; lowerUnlocked=false; enemyKoikoiDeclared=false; counterKoikoi=false;
-  enemyCpuLowerUnlocked=false; enemyTurnAlt=false; enemyCpuDeclareShobu=false; enemyShobuPending=false;
-  track.innerHTML=''; cards=[]; centerIdx=0; offsetX=0; updateFan();
-  enemyHandEl.innerHTML=''; enemyCardData=[];
-  deckCount=48; buildDeck(); buildGrids();
+  gameEnded=false;
+  enemyShobuPending=false;
+  playerShobuPending=false;
+
+  playerScore=0;
+  enemyScore=0;
+  scoreDisplay.textContent='🏆 0pt';
+  updateEnemyScoreDisplay();
+
+  achievedYaku.clear();
+
+  playerState.upperLocked=false;
+  playerState.lowerUnlocked=false;
+  playerState.koikoiCount=0;
+  playerState.counterKoikoi=false;
+  playerState.koikoiDeclaredByOpponent=false;
+  playerState.turnAlt=false;
+
+  enemyState.upperLocked=false;
+  enemyState.lowerUnlocked=false;
+  enemyState.koikoiCount=0;
+  enemyState.counterKoikoi=false;
+  enemyState.koikoiDeclaredByOpponent=false;
+  enemyState.turnAlt=false;
+
+  track.innerHTML='';
+  cards=[];
+  centerIdx=0;
+  offsetX=0;
+  updateFan();
+
+  enemyHandEl.innerHTML='';
+  enemyCardData=[];
+
+  deckCount=48;
+  buildDeck();
+  buildGrids();
+
   document.getElementById('rowSentBar').classList.remove('show');
   document.getElementById('lowerRowClip').classList.remove('show');
   document.getElementById('rowSentBarEnemy').classList.remove('show');
   document.getElementById('lowerRowClipEnemy').classList.remove('show');
+
   koikoiBtn.textContent='こいこい 🌸';
   phaseLabel.textContent='手札を配っています…';
-  phase='init'; dealCount=0;
+  phase='init';
+  dealCount=0;
+
   document.getElementById('difficultyScreen').style.display='flex';
 }
 
 // ===== ターン制御 =====
 function enemyTurn(){
-  phase='enemy'; outer.classList.add('locked');
+  if(gameEnded) return;
+
+  phase='enemy';
+  outer.classList.add('locked');
+
   showTurnBanner('相手のターン',()=>{
+    if(gameEnded) return;
+
     phaseLabel.textContent='相手スタンバイ：ドロー中…';
-    drawToEnemy(()=>{ setTimeout(()=>{
-      drawToEnemy(()=>{ setTimeout(()=>{
-        phaseLabel.textContent='相手のターン…';
-        const maxPlays=getEnemyCpuPlayCount();
-        const preScore=calcEnemyCurrentScore().score;
-        const picks=chooseBestEnemyPlays(maxPlays);
-        function doPlay(i){
-          if(i>=picks.length){
-            const postScore=calcEnemyCurrentScore().score;
-            enemyScore+=Math.max(0,postScore-preScore);
-            updateEnemyScoreDisplay();
-            // 宣言チェック：SVO揃いまたは5枚満場 → 必ず宣言
-            if(cpuDeclareReady() && !enemyKoikoiDeclared){
-              enemyKoikoiDeclared=true;
-              if(enemyScore>playerScore || enemyCpuLowerUnlocked){
-                // 勝負宣言（2段目では常に勝負）
-                setTimeout(()=>triggerCpuShobu(), 600);
-              } else {
-                // こいこい（1段目のみ）
-                unlockEnemyLower();
-                setTimeout(()=>showToast('💫 相手がこいこいを宣言！','#ffaaff'), 200);
-                koikoiBtn.textContent='カウンターこいこい 🌸';
-                setTimeout(()=>startPlayerTurn(), 500);
+
+    drawToEnemy(()=>{
+      if(gameEnded) return;
+      setTimeout(()=>{
+        drawToEnemy(()=>{
+          if(gameEnded) return;
+          setTimeout(()=>{
+            phaseLabel.textContent='相手のターン…';
+
+            const maxPlays=getEnemyCpuPlayCount();
+            const picks=chooseBestEnemyPlays(maxPlays);
+
+            function doPlay(i){
+              if(gameEnded) return;
+
+              if(i>=picks.length){
+                const enemyField=calcEnemyCurrentScore().score;
+                const playerField=calcPlayerCurrentScore().score;
+                const enemyTotal=enemyScore+enemyField;
+                const playerTotal=playerScore+playerField;
+
+                if(playerShobuPending){
+                  finalJudgement('shobu');
+                  return;
+                }
+
+                if(enemyDeclareReady() && !enemyState.koikoiDeclaredByOpponent){
+                  if(enemyState.lowerUnlocked){
+                    enemyShobuPending=true;
+                    setTimeout(()=>showToast('⚔️ 相手が勝負を宣言！最後のターンをどうぞ','#ffaaaa'),200);
+                    startPlayerTurn();
+                    return;
+                  }
+
+                  if(enemyTotal>playerTotal){
+                    enemyShobuPending=true;
+                    setTimeout(()=>showToast('⚔️ 相手が勝負を宣言！最後のターンをどうぞ','#ffaaaa'),200);
+                    startPlayerTurn();
+                    return;
+                  }else{
+                    enemyState.koikoiCount++;
+                    enemyState.koikoiDeclaredByOpponent=true;
+                    playerState.koikoiDeclaredByOpponent=true;
+                    unlockEnemyLower();
+                    setTimeout(()=>showToast('💫 相手がこいこいを宣言！','#ffaaff'),200);
+                    koikoiBtn.textContent='カウンターこいこい 🌸';
+                    setTimeout(()=>{
+                      if(gameEnded) return;
+                      startPlayerTurn();
+                    },500);
+                    return;
+                  }
+                }
+
+                setTimeout(()=>{
+                  if(gameEnded) return;
+                  startPlayerTurn();
+                },500);
+                return;
               }
-              return;
+
+              setTimeout(()=>{
+                if(gameEnded) return;
+                smartEnemyPlay(picks[i],()=>doPlay(i+1));
+              },i===0?500:400);
             }
-            setTimeout(()=>startPlayerTurn(), 500);
-            return;
-          }
-          setTimeout(()=>smartEnemyPlay(picks[i],()=>doPlay(i+1)),i===0?500:400);
-        }
-        doPlay(0);
-      },180); }); },180); });
+
+            doPlay(0);
+          },180);
+        });
+      },180);
+    });
   });
 }
 function startPlayerTurn(){
+  if(gameEnded) return;
+
   phase='standby';
   if(!autoPlay) outer.classList.remove('locked');
+
   const _alive=cards.filter(c=>!c.played);
   if(_alive.length) snapTo(cards.indexOf(_alive[Math.floor(_alive.length/2)]));
+
   showTurnBanner(autoPlay?'自動プレイ中…':'自分のターン',()=>{
+    if(gameEnded) return;
+
     standbyDrawing=true;
-    drawToPlayer(()=>{ setTimeout(()=>{
-      drawToPlayer(()=>{
-        standbyDrawing=false;
-        const alive=cards.filter(c=>!c.played);
-        const midAi=Math.floor(alive.length/2);
-        centerIdx=cards.indexOf(alive[midAi]);
-        offsetX=outer.offsetWidth/2-CARD_HALF-midAi*CARD_W;
-        track.style.transition='none';
-        track.style.transform=`translateX(${offsetX}px)`;
-        updateClasses(); updateFan();
-        phase='player'; placedThisTurn=0;
-        phaseLabel.textContent=autoPlay?'自動プレイ中…':'あなたのターン：カードを置いてください';
-        if(autoPlay) setTimeout(()=>autoPlayerTurn(), 500);
-      });
-    },180); });
+
+    drawToPlayer(()=>{
+      if(gameEnded) return;
+      setTimeout(()=>{
+        drawToPlayer(()=>{
+          if(gameEnded) return;
+
+          standbyDrawing=false;
+          const alive=cards.filter(c=>!c.played);
+          const midAi=Math.floor(alive.length/2);
+          centerIdx=cards.indexOf(alive[midAi]);
+          offsetX=outer.offsetWidth/2-CARD_HALF-midAi*CARD_W;
+          track.style.transition='none';
+          track.style.transform=`translateX(${offsetX}px)`;
+          updateClasses();
+          updateFan();
+          phase='player';
+          placedThisTurn=0;
+          phaseLabel.textContent=autoPlay?'自動プレイ中…':'あなたのターン：カードを置いてください';
+
+          if(autoPlay){
+            setTimeout(()=>{
+              if(gameEnded) return;
+              autoPlayerTurn();
+            },500);
+          }
+        });
+      },180);
+    });
   });
 }
 
@@ -1526,63 +1835,59 @@ function onBtn(btn,fn){
 }
 onBtn(turnBtn,()=>{
   if(phase!=='player'&&phase!=='standby') return;
-  if(enemyShobuPending){ finalJudgement(); return; }
+  if(gameEnded) return;
+
+  if(hasPendingFinal()){
+    finalJudgement('shobu');
+    return;
+  }
+
   enemyTurn();
 });
+
 onBtn(koikoiBtn,()=>{
-  if(enemyKoikoiDeclared&&!counterKoikoi){
-    counterKoikoi=true;
+  if(gameEnded) return;
+
+  if(playerState.koikoiDeclaredByOpponent && !playerState.counterKoikoi){
+    playerState.counterKoikoi=true;
     showToast('💪 カウンターこいこい！+1pt','#ffaaff');
     koikoiBtn.textContent='こいこい 🌸';
     return;
   }
-  if(!lowerUnlocked){
-    if(svoOrFull(pSlots.filter(s=>s.row===0))){
-      koikoiActive=true; koikoiCount++; upperLocked=true;
-      unlockLower();
-      showToast(`🌸 こいこい！2段目を開放 (続行×${koikoiCount})`,'#ffaaff');
-    } else {
-      showToast('まだ宣言条件を満たしていません','#ff8888');
-    }
+
+  if(playerState.lowerUnlocked){
+    showToast('2段目ではこいこい宣言できません','#ff8888');
+    return;
   }
-  // 2段目ではこいこい宣言不可
+
+  if(playerDeclareReady()){
+    playerState.koikoiCount++;
+    playerState.upperLocked=true;
+    playerState.koikoiDeclaredByOpponent=true;
+    enemyState.koikoiDeclaredByOpponent=true;
+    unlockPlayerLower();
+    showToast(`🌸 こいこい！2段目を開放 (続行×${playerState.koikoiCount})`,'#ffaaff');
+  }else{
+    showToast('まだ宣言条件を満たしていません','#ff8888');
+  }
 });
+
 function doShobu(isCpuTriggered){
-  if(!isCpuTriggered){
-    const filled0=pSlots.filter(s=>s.row===0&&s.filled).length;
-    if(filled0===0){ showToast('まだカードが置かれていません','#ff8888'); return; }
-    if(enemyShobuPending){ finalJudgement(); return; }
+  if(gameEnded) return;
+
+  const activeReady = playerDeclareReady();
+  if(!isCpuTriggered && !activeReady){
+    showToast('まだ勝負条件を満たしていません','#ff8888');
+    return;
   }
-  if(isCpuTriggered){
-    const eFinal=calcEnemyCurrentScore().score;
-    enemyScore=Math.max(enemyScore,eFinal);
-    updateEnemyScoreDisplay();
+
+  if(hasPendingFinal()){
+    finalJudgement('shobu');
+    return;
   }
-  let koikoiFail=false;
-  if(koikoiActive){
-    const {score}=calcScore(pSlots);
-    if(score===0) koikoiFail=true;
-  }
-  revealEnemyV();
-  const {sentArr,jpArr}=calcScore(pSlots);
-  const penaltyNote=koikoiFail?' (こいこい失敗 -50%)':'';
-  showSentReveal(sentArr,jpArr,'player',()=>{
-    showYakuResult('OK'+penaltyNote,()=>{
-      if(koikoiFail){ playerScore=Math.floor(playerScore/2); scoreDisplay.textContent=`🏆 ${playerScore}pt`; }
-      achievedYaku.clear(); koikoiActive=false; koikoiCount=0;
-      upperLocked=false; lowerUnlocked=false; enemyKoikoiDeclared=false; counterKoikoi=false;
-      enemyCpuLowerUnlocked=false; enemyTurnAlt=false; enemyCpuDeclareShobu=false; enemyShobuPending=false;
-      document.getElementById('rowSentBar').classList.remove('show');
-      document.getElementById('lowerRowClip').classList.remove('show');
-      pSlots.filter(s=>s.row===1).forEach(s=>{ s.el.classList.remove('unlocked'); s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'22'; });
-      document.getElementById('rowSentBarEnemy').classList.remove('show');
-      document.getElementById('lowerRowClipEnemy').classList.remove('show');
-      eSlots.filter(s=>s.row===1).forEach(s=>{ s.el.classList.remove('unlocked'); s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'22'; });
-      koikoiBtn.textContent='こいこい 🌸';
-      phaseLabel.textContent=`スコア ${playerScore}pt`;
-      if(isCpuTriggered) startPlayerTurn();
-    });
-  });
+
+  playerShobuPending=true;
+  enemyTurn();
 }
 onBtn(shobuBtn,()=>doShobu(false));
 
@@ -1615,463 +1920,6 @@ function dealInit(){
 }
 // dealInit() は selectDifficulty() から呼ぶ
 
-function isDeckEmpty(){
-  return deckCount<=0;
-}
-
-function hasPendingFinal(){
-  return enemyShobuPending || playerShobuPending;
-}
-
-function forceFinalByDeckOut(){
-  if(gameEnded) return;
-  gameEnded=true;
-  showToast('🂠 山札切れ！その時点のポイントで勝敗を判定します','#ffeeaa');
-  setTimeout(()=>finalJudgement('deckout'), 500);
-}
-
-function triggerPlayerCpuShobu(){
-  if(gameEnded) return;
-  playerShobuPending=true;
-  setTimeout(()=>showToast('⚔️ 自動CPUが勝負を宣言！相手の最後のターンへ','#aaffaa'),200);
-  enemyTurn();
-}
-
-function drawToPlayer(onDone){
-  if(deckCount<=0){
-    forceFinalByDeckOut();
-    return;
-  }
-  const tmpl=TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
-  const imgSrc=makeCardImg(tmpl);
-  const dr=deckEl.getBoundingClientRect();
-  const outerRect=outer.getBoundingClientRect();
-  const fw=60*currentScale, fh=90*currentScale;
-  const toX=outerRect.left+outerRect.width/2-fw/2;
-  const toY=outerRect.bottom-fh-8*currentScale;
-  deckCount--;
-  buildDeck();
-  flyAnim(
-    dr.left+dr.width/2-fw/2,
-    dr.top+dr.height/2-fh/2,
-    toX,
-    toY,
-    imgSrc,
-    fw,
-    fh,
-    100*currentScale,
-    ()=>{
-      addHandCard(tmpl,imgSrc);
-      if(onDone) onDone();
-    }
-  );
-}
-
-function drawToEnemy(onDone){
-  if(deckCount<=0){
-    forceFinalByDeckOut();
-    return;
-  }
-  const tmpl=TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
-  const fw=60*currentScale, fh=90*currentScale;
-  const imgSrc=makeBackImg(60,90);
-  const dr=deckEl.getBoundingClientRect();
-  const eh=enemyHandEl.getBoundingClientRect();
-  const n=enemyHandEl.children.length;
-  deckCount--;
-  buildDeck();
-  flyAnim(
-    dr.left+dr.width/2-fw/2,
-    dr.top+dr.height/2-fh/2,
-    eh.left+eh.width/2+(n-n/2)*32*currentScale,
-    eh.top,
-    imgSrc,
-    fw,
-    fh,
-    80*currentScale,
-    ()=>{
-      const w=document.createElement('div');
-      w.className='enemy-card';
-      enemyHandEl.appendChild(w);
-      enemyCardData.push(tmpl);
-      layoutEnemyHand();
-      if(onDone) onDone();
-    }
-  );
-}
-
-function finalJudgement(reason='shobu'){
-  if(gameEnded && reason!=='deckout') return;
-  gameEnded=true;
-
-  const pField=calcScore(pSlots).score;
-  const eField=calcEnemyCurrentScore().score;
-  const pTotal=playerScore+pField;
-  const eTotal=enemyScore+eField;
-
-  enemyShobuPending=false;
-  playerShobuPending=false;
-
-  playerScore=pTotal;
-  enemyScore=eTotal;
-  scoreDisplay.textContent=`🏆 ${playerScore}pt`;
-  updateEnemyScoreDisplay();
-
-  revealEnemyV();
-
-  const {sentArr,jpArr}=calcScore(pSlots);
-
-  const beforeReveal=()=>{
-    let verdictText, verdictColor;
-
-    if(pTotal>eTotal){
-      verdictText='🎉 あなたの勝ち！';
-      verdictColor='#aaffaa';
-    }else if(pTotal<eTotal){
-      verdictText='😢 相手の勝ち…';
-      verdictColor='#ffaaaa';
-    }else{
-      verdictText='🤝 引き分け！';
-      verdictColor='#ffeeaa';
-    }
-
-    const bannerText =
-      reason==='deckout'
-        ? `🂠 山札切れで終了\n${verdictText}`
-        : verdictText;
-
-    showTurnBanner(bannerText, ()=>{
-      showResultScreen(pTotal, eTotal, verdictText, verdictColor);
-    });
-  };
-
-  showSentReveal(sentArr,jpArr,'player',beforeReveal);
-}
-
-function autoPlayerTurn(){
-  const maxPlays=getEnemyCpuPlayCount();
-  const picks=autoPlayerChoosePlays(maxPlays);
-
-  function doPlay(i){
-    if(i>=picks.length){
-      setTimeout(()=>{
-        if(gameEnded) return;
-
-        const activeRow=lowerUnlocked?1:0;
-        const activeSlots=pSlots.filter(s=>s.row===activeRow);
-
-        // 相手CPUが先に勝負宣言済みなら、このターン終了で最終判定
-        if(enemyShobuPending){
-          finalJudgement('shobu');
-          return;
-        }
-
-        // 自動プレイ側CPUの宣言判定
-        if(svoOrFull(activeSlots)){
-          const pField=calcScore(pSlots).score;
-          const eField=calcEnemyCurrentScore().score;
-          const pTotal=playerScore+pField;
-          const eTotal=enemyScore+eField;
-
-          if(lowerUnlocked){
-            // 2段目は勝負
-            triggerPlayerCpuShobu();
-            return;
-          }
-
-          // 1段目は、勝っていれば勝負、そうでなければこいこい
-          if(pTotal>eTotal){
-            triggerPlayerCpuShobu();
-            return;
-          }else{
-            koikoiActive=true;
-            koikoiCount++;
-            upperLocked=true;
-            unlockLower();
-            showToast(`🌸 自動こいこい！2段目開放 (続行×${koikoiCount})`,'#aaffaa');
-            setTimeout(()=>{
-              if(gameEnded) return;
-              enemyTurn();
-            },700);
-            return;
-          }
-        }
-
-        enemyTurn();
-      },400);
-      return;
-    }
-
-    setTimeout(()=>{
-      if(gameEnded) return;
-      placeCard(picks[i].card, picks[i].slot, ()=>doPlay(i+1));
-    }, i===0?600:450);
-  }
-
-  if(!picks.length){
-    if(enemyShobuPending){
-      finalJudgement('shobu');
-      return;
-    }
-    enemyTurn();
-    return;
-  }
-
-  doPlay(0);
-}
-
-function enemyTurn(){
-  if(gameEnded) return;
-
-  phase='enemy';
-  outer.classList.add('locked');
-
-  showTurnBanner('相手のターン',()=>{
-    if(gameEnded) return;
-
-    phaseLabel.textContent='相手スタンバイ：ドロー中…';
-
-    drawToEnemy(()=>{
-      if(gameEnded) return;
-      setTimeout(()=>{
-        drawToEnemy(()=>{
-          if(gameEnded) return;
-          setTimeout(()=>{
-            phaseLabel.textContent='相手のターン…';
-            const maxPlays=getEnemyCpuPlayCount();
-            const preScore=calcEnemyCurrentScore().score;
-            const picks=chooseBestEnemyPlays(maxPlays);
-
-            function doPlay(i){
-              if(gameEnded) return;
-
-              if(i>=picks.length){
-                const postScore=calcEnemyCurrentScore().score;
-                enemyScore+=Math.max(0,postScore-preScore);
-                updateEnemyScoreDisplay();
-
-                // 自動プレイ側CPUが先に勝負宣言済みなら、このターン終了で最終判定
-                if(playerShobuPending){
-                  finalJudgement('shobu');
-                  return;
-                }
-
-                // 相手CPUの宣言チェック
-                if(cpuDeclareReady() && !enemyKoikoiDeclared){
-                  enemyKoikoiDeclared=true;
-
-                  if(enemyScore>playerScore || enemyCpuLowerUnlocked){
-                    setTimeout(()=>triggerCpuShobu(),600);
-                  }else{
-                    unlockEnemyLower();
-                    setTimeout(()=>showToast('💫 相手がこいこいを宣言！','#ffaaff'),200);
-                    koikoiBtn.textContent='カウンターこいこい 🌸';
-                    setTimeout(()=>{
-                      if(gameEnded) return;
-                      startPlayerTurn();
-                    },500);
-                  }
-                  return;
-                }
-
-                setTimeout(()=>{
-                  if(gameEnded) return;
-                  startPlayerTurn();
-                },500);
-                return;
-              }
-
-              setTimeout(()=>{
-                if(gameEnded) return;
-                smartEnemyPlay(picks[i],()=>doPlay(i+1));
-              }, i===0?500:400);
-            }
-
-            doPlay(0);
-          },180);
-        });
-      },180);
-    });
-  });
-}
-
-function startPlayerTurn(){
-  if(gameEnded) return;
-
-  phase='standby';
-  if(!autoPlay) outer.classList.remove('locked');
-
-  const _alive=cards.filter(c=>!c.played);
-  if(_alive.length) snapTo(cards.indexOf(_alive[Math.floor(_alive.length/2)]));
-
-  showTurnBanner(autoPlay?'自動プレイ中…':'自分のターン',()=>{
-    if(gameEnded) return;
-
-    standbyDrawing=true;
-
-    drawToPlayer(()=>{
-      if(gameEnded) return;
-      setTimeout(()=>{
-        drawToPlayer(()=>{
-          if(gameEnded) return;
-
-          standbyDrawing=false;
-          const alive=cards.filter(c=>!c.played);
-          const midAi=Math.floor(alive.length/2);
-          centerIdx=cards.indexOf(alive[midAi]);
-          offsetX=outer.offsetWidth/2-CARD_HALF-midAi*CARD_W;
-          track.style.transition='none';
-          track.style.transform=`translateX(${offsetX}px)`;
-          updateClasses();
-          updateFan();
-          phase='player';
-          placedThisTurn=0;
-          phaseLabel.textContent=autoPlay?'自動プレイ中…':'あなたのターン：カードを置いてください';
-
-          if(autoPlay) setTimeout(()=>{
-            if(gameEnded) return;
-            autoPlayerTurn();
-          },500);
-        });
-      },180);
-    });
-  });
-}
-
-onBtn(turnBtn,()=>{
-  if(phase!=='player'&&phase!=='standby') return;
-  if(gameEnded) return;
-
-  if(hasPendingFinal()){
-    finalJudgement('shobu');
-    return;
-  }
-  enemyTurn();
-});
-
-function doShobu(isCpuTriggered){
-  if(gameEnded) return;
-
-  if(!isCpuTriggered){
-    const filled0=pSlots.filter(s=>s.row===0&&s.filled).length;
-    if(filled0===0){
-      showToast('まだカードが置かれていません','#ff8888');
-      return;
-    }
-    if(hasPendingFinal()){
-      finalJudgement('shobu');
-      return;
-    }
-  }
-
-  if(isCpuTriggered){
-    const eFinal=calcEnemyCurrentScore().score;
-    enemyScore=Math.max(enemyScore,eFinal);
-    updateEnemyScoreDisplay();
-  }
-
-  let koikoiFail=false;
-  if(koikoiActive){
-    const {score}=calcScore(pSlots);
-    if(score===0) koikoiFail=true;
-  }
-
-  revealEnemyV();
-  const {sentArr,jpArr}=calcScore(pSlots);
-  const penaltyNote=koikoiFail?' (こいこい失敗 -50%)':'';
-
-  showSentReveal(sentArr,jpArr,'player',()=>{
-    showYakuResult('OK'+penaltyNote,()=>{
-      if(koikoiFail){
-        playerScore=Math.floor(playerScore/2);
-        scoreDisplay.textContent=`🏆 ${playerScore}pt`;
-      }
-
-      achievedYaku.clear();
-      koikoiActive=false;
-      koikoiCount=0;
-      upperLocked=false;
-      lowerUnlocked=false;
-      enemyKoikoiDeclared=false;
-      counterKoikoi=false;
-      enemyCpuLowerUnlocked=false;
-      enemyTurnAlt=false;
-      enemyCpuDeclareShobu=false;
-      enemyShobuPending=false;
-      playerShobuPending=false;
-
-      document.getElementById('rowSentBar').classList.remove('show');
-      document.getElementById('lowerRowClip').classList.remove('show');
-      pSlots.filter(s=>s.row===1).forEach(s=>{
-        s.el.classList.remove('unlocked');
-        s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'22';
-      });
-
-      document.getElementById('rowSentBarEnemy').classList.remove('show');
-      document.getElementById('lowerRowClipEnemy').classList.remove('show');
-      eSlots.filter(s=>s.row===1).forEach(s=>{
-        s.el.classList.remove('unlocked');
-        s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'22';
-      });
-
-      koikoiBtn.textContent='こいこい 🌸';
-      phaseLabel.textContent=`スコア ${playerScore}pt`;
-
-      if(isCpuTriggered) startPlayerTurn();
-    });
-  });
-}
-
-function resetAndRestart(){
-  document.getElementById('resultScreen').style.display='none';
-  outer.classList.remove('locked');
-
-  autoPlay=false;
-  gameEnded=false;
-  playerShobuPending=false;
-
-  playerScore=0;
-  enemyScore=0;
-  scoreDisplay.textContent='🏆 0pt';
-  updateEnemyScoreDisplay();
-
-  achievedYaku.clear();
-  koikoiActive=false;
-  koikoiCount=0;
-  upperLocked=false;
-  lowerUnlocked=false;
-  enemyKoikoiDeclared=false;
-  counterKoikoi=false;
-  enemyCpuLowerUnlocked=false;
-  enemyTurnAlt=false;
-  enemyCpuDeclareShobu=false;
-  enemyShobuPending=false;
-
-  track.innerHTML='';
-  cards=[];
-  centerIdx=0;
-  offsetX=0;
-  updateFan();
-
-  enemyHandEl.innerHTML='';
-  enemyCardData=[];
-
-  deckCount=48;
-  buildDeck();
-  buildGrids();
-
-  document.getElementById('rowSentBar').classList.remove('show');
-  document.getElementById('lowerRowClip').classList.remove('show');
-  document.getElementById('rowSentBarEnemy').classList.remove('show');
-  document.getElementById('lowerRowClipEnemy').classList.remove('show');
-
-  koikoiBtn.textContent='こいこい 🌸';
-  phaseLabel.textContent='手札を配っています…';
-  phase='init';
-  dealCount=0;
-
-  document.getElementById('difficultyScreen').style.display='flex';
-}
 </script>
 </body>
 </html>
