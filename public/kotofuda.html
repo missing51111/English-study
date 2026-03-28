@@ -263,6 +263,8 @@
   .diff-btn.easy   { background:linear-gradient(135deg,#2a8a4a,#1a5a2a); color:#afffaf; }
   .diff-btn.normal { background:linear-gradient(135deg,#2a4a8a,#1a2a5a); color:#afc5ff; }
   .diff-btn.hard   { background:linear-gradient(135deg,#8a2a2a,#5a1a1a); color:#ffafaf; }
+  .diff-btn.auto   { background:linear-gradient(135deg,#6a5a00,#3a3200); color:#ffe97a; border:1px solid rgba(255,220,80,0.3); }
+  .diff-sep { width:100%; border:none; border-top:1px solid rgba(255,255,255,0.1); margin:4px 0; }
   /* 結果画面 */
   #resultScreen {
     position:fixed; inset:0; background:rgba(0,0,0,0.94);
@@ -368,6 +370,8 @@
     <button class="diff-btn easy"   onclick="selectDifficulty('easy')">😊 やさしい<span>1枚 / ターン</span></button>
     <button class="diff-btn normal" onclick="selectDifficulty('normal')">🎯 ふつう<span>交互（1→2→1→2…）</span></button>
     <button class="diff-btn hard"   onclick="selectDifficulty('hard')">🔥 むずかしい<span>2枚 / ターン</span></button>
+    <hr class="diff-sep">
+    <button class="diff-btn auto"   onclick="selectAutoPlay()">🤖 オートプレイ<span>CPU同士のデモ対戦</span></button>
   </div>
 </div>
 <div id="resultScreen">
@@ -617,6 +621,7 @@ let enemyCpuLowerUnlocked=false;
 let enemyTurnAlt=false;
 let enemyCpuDeclareShobu=false;
 let enemyShobuPending=false; // CPU勝負宣言後、プレイヤーの最終ターン待ち
+let autoPlay=false;           // CPU同士のデモプレイモード
 const CARD_W=38, CARD_HALF=19, FAN_DEG=3;
 let currentScale=1;
 
@@ -805,6 +810,7 @@ function showYakuResult(closeBtnLabel, onClose){
   yakuCloseBtn.textContent=closeBtnLabel||'つづける ▶';
   yakuOverlay.classList.add('show');
   yakuCloseCallback=onClose;
+  if(autoPlay) setTimeout(()=>{ if(yakuOverlay.classList.contains('show')) closeYaku(); }, 2200);
 }
 function closeYaku(){ yakuOverlay.classList.remove('show'); if(yakuCloseCallback) yakuCloseCallback(); yakuCloseCallback=null; }
 yakuCloseBtn.addEventListener('click',closeYaku);
@@ -1032,7 +1038,7 @@ function rebuildTrack(){
   track.innerHTML='';
   cards.filter(c=>!c.played).forEach(c=>track.appendChild(c.wrap));
 }
-function placeCard(card,slot){
+function placeCard(card,slot,cb=null){
   if(slot.filled){
     const oldImg=slot.el.querySelector('img');
     if(oldImg) oldImg.remove();
@@ -1055,6 +1061,7 @@ function placeCard(card,slot){
     const img=document.createElement('img'); img.src=card.imgSrc;
     slot.el.appendChild(img); slot.el.classList.add('filled');
     placedThisTurn++; checkUpperComplete();
+    if(cb) setTimeout(cb, 80);
   });
 }
 function checkUpperComplete(){
@@ -1089,6 +1096,7 @@ function checkUpperComplete(){
             eSlots.filter(s=>s.row===1).forEach(s=>{ s.el.classList.remove('unlocked'); s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'22'; });
             koikoiBtn.textContent='こいこい 🌸';
             phaseLabel.textContent=`スコア ${playerScore}pt — 次のターンへ`;
+            if(autoPlay) setTimeout(()=>enemyTurn(), 500);
           });
         });
       },500);
@@ -1136,6 +1144,101 @@ function revealEnemyV(){
   });
 }
 // ── CPU行動ロジック ──────────────────────────────────────────
+// ===== オートプレイ（CPU同士デモ）=====
+function selectAutoPlay(){
+  autoPlay=true; difficulty='normal';
+  document.getElementById('difficultyScreen').style.display='none';
+  dealInit();
+}
+function getValidSlotsForPlayerCard(tmpl){
+  const row0=!upperLocked?pSlots.filter(s=>s.row===0&&s.type===tmpl.type&&!s.filled):[];
+  const row1=lowerUnlocked?pSlots.filter(s=>s.row===1&&s.type===tmpl.type&&!s.filled):[];
+  const anyRow0=!upperLocked?pSlots.filter(s=>s.row===0&&!s.filled):[];
+  const anyRow1=lowerUnlocked?pSlots.filter(s=>s.row===1&&!s.filled):[];
+  return [...row0,...row1,...anyRow0,...anyRow1].filter((v,i,a)=>a.indexOf(v)===i);
+}
+function evalRowPotential_p(row){
+  const rs=pSlots.filter(s=>s.row===row);
+  const S=rs.find(s=>s.type==='S'&&s.filled)?.tmpl?.word;
+  const V=rs.find(s=>s.type==='V'&&s.filled)?.tmpl?.word;
+  const O=rs.find(s=>s.type==='O'&&s.filled)?.tmpl?.word;
+  let p=0;
+  if(S&&V&&SV_SET.has(`${S}|${V}`)) p+=3;
+  if(V&&O&&VO_SET.has(`${V}|${O}`)) p+=3;
+  if(S&&V&&O&&SV_SET.has(`${S}|${V}`)&&VO_SET.has(`${V}|${O}`)) p+=5;
+  return p;
+}
+function autoPlayerChoosePlays(maxPlays){
+  const handCopy=cards.filter(c=>!c.played);
+  const picks=[]; const usedCards=new Set(), usedSlots=new Set();
+  const baseScore=calcScore(pSlots).score;
+  const cpuField=calcEnemyCurrentScore().score;
+  const ahead=(playerScore+baseScore)>(enemyScore+cpuField);
+  for(let i=0;i<maxPlays;i++){
+    let best=null, bestKey=null;
+    handCopy.forEach((card,ci)=>{
+      if(usedCards.has(ci)) return;
+      const slots=getValidSlotsForPlayerCard(card.tmpl);
+      slots.forEach(slot=>{
+        const si=pSlots.indexOf(slot);
+        if(usedSlots.has(si)) return;
+        picks.forEach(p=>{p.slot.tmpl=p.card.tmpl; p.slot.filled=true;});
+        const prevFilled=slot.filled, prevTmpl=slot.tmpl;
+        slot.filled=true; slot.tmpl=card.tmpl;
+        const newScore=calcScore(pSlots).score;
+        slot.filled=prevFilled; slot.tmpl=prevTmpl;
+        picks.forEach(p=>{p.slot.filled=p.prevFilled; p.slot.tmpl=p.prevTmpl;});
+        const gain=newScore-baseScore;
+        const potential=evalRowPotential_p(slot.row);
+        const typeMatch=(slot.type===card.tmpl.type)?1:0;
+        const useful=(gain>0||potential>0)?0:-1;
+        const canOvertake=(!ahead&&playerScore+newScore>enemyScore)?1:0;
+        const key=ahead
+          ?[canOvertake,typeMatch,gain,potential,useful]
+          :[canOvertake,gain,potential,typeMatch,useful];
+        if(!bestKey||compareKeys(key,bestKey)>0){
+          best={card,slot,prevFilled:slot.filled,prevTmpl:slot.tmpl}; bestKey=key;
+        }
+      });
+    });
+    if(!best) break;
+    usedCards.add(handCopy.indexOf(best.card));
+    usedSlots.add(pSlots.indexOf(best.slot));
+    picks.push(best);
+  }
+  return picks;
+}
+function autoPlayerTurn(){
+  // 難易度に応じた枚数（normalは交互）
+  const maxPlays=getEnemyCpuPlayCount();
+  const picks=autoPlayerChoosePlays(maxPlays);
+  function doPlay(i){
+    if(i>=picks.length){
+      setTimeout(()=>{
+        // 上段スコアがあればこいこい
+        if(!lowerUnlocked&&!upperLocked){
+          const {score}=calcScore(pSlots.filter(s=>s.row===0));
+          if(score>0){
+            koikoiActive=true; koikoiCount++; upperLocked=true;
+            unlockLower();
+            showToast(`🌸 自動こいこい！2段目開放 (続行×${koikoiCount})`,'#aaffaa');
+            setTimeout(()=>{
+              if(enemyShobuPending){ setTimeout(()=>finalJudgement(),400); return; }
+              enemyTurn();
+            },700);
+            return;
+          }
+        }
+        if(enemyShobuPending){ setTimeout(()=>finalJudgement(),400); return; }
+        enemyTurn();
+      },400);
+      return;
+    }
+    setTimeout(()=>placeCard(picks[i].card, picks[i].slot, ()=>doPlay(i+1)), i===0?600:450);
+  }
+  if(!picks.length){ setTimeout(()=>enemyTurn(),600); return; }
+  doPlay(0);
+}
 function selectDifficulty(diff){
   difficulty=diff;
   document.getElementById('difficultyScreen').style.display='none';
@@ -1326,6 +1429,7 @@ function showResultScreen(pPts, ePts, verdictText, verdictColor){
 function resetAndRestart(){
   document.getElementById('resultScreen').style.display='none';
   outer.classList.remove('locked');
+  autoPlay=false;
   // 全フラグリセット
   playerScore=0; enemyScore=0;
   scoreDisplay.textContent='🏆 0pt'; updateEnemyScoreDisplay();
@@ -1412,11 +1516,12 @@ function fanOpen(cb){
   },560);
 }
 function startPlayerTurn(){
-  phase='standby'; outer.classList.remove('locked');
+  phase='standby';
+  if(!autoPlay) outer.classList.remove('locked');
   // ファン展開したまま中央カードへスクロール
   const _alive=cards.filter(c=>!c.played);
   if(_alive.length) snapTo(cards.indexOf(_alive[Math.floor(_alive.length/2)]));
-  showTurnBanner('自分のターン',()=>{
+  showTurnBanner(autoPlay?'自動プレイ中…':'自分のターン',()=>{
     standbyDrawing=true;
     drawToPlayer(()=>{ setTimeout(()=>{
       drawToPlayer(()=>{
@@ -1429,7 +1534,8 @@ function startPlayerTurn(){
         track.style.transform=`translateX(${offsetX}px)`;
         updateClasses(); updateFan();
         phase='player'; placedThisTurn=0;
-        phaseLabel.textContent='あなたのターン：カードを置いてください';
+        phaseLabel.textContent=autoPlay?'自動プレイ中…':'あなたのターン：カードを置いてください';
+        if(autoPlay) setTimeout(()=>autoPlayerTurn(), 500);
       });
     },180); });
   }); // showTurnBanner
