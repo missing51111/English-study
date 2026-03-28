@@ -1258,6 +1258,7 @@ function fanOpen(cb){
 }
 function startPlayerTurn(){
   phase='standby'; outer.classList.remove('locked');
+  gatherHand(()=>{
   showTurnBanner('自分のターン',()=>{
     standbyDrawing=true;
     drawToPlayer(()=>{ setTimeout(()=>{
@@ -1274,7 +1275,8 @@ function startPlayerTurn(){
         phaseLabel.textContent='あなたのターン：カードを置いてください';
       });
     },180); });
-  });
+  }); // showTurnBanner
+  }); // gatherHand
 }
 function updateFan(){
   const alive=cards.filter(c=>!c.played);
