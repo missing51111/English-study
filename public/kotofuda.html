@@ -1126,30 +1126,66 @@ function evaluatePlacement(tmpl,slot){
   slot.filled=pF; slot.tmpl=pT;
   return {newFieldScore,potential,longBonus};
 }
+// 優先度キー配列の比較（大きいほど優先）
+function compareKeys(a,b){
+  for(let i=0;i<a.length;i++){ if(a[i]!==b[i]) return a[i]>b[i]?1:-1; }
+  return 0;
+}
 function chooseBestEnemyPlays(maxPlays){
   const handCopy=[...enemyCardData];
   const picks=[];
-  const usedCards=new Set(),usedSlots=new Set();
-  const baseFieldScore=calcEnemyCurrentScore().score;
+  const usedCards=new Set(), usedSlots=new Set();
+  const baseScore=calcEnemyCurrentScore().score;
+  // CPU累計 vs プレイヤー累計
+  const cpuTotal=enemyScore+baseScore;
+  const ahead=cpuTotal>playerScore; // CPUが現在リード中
+
   for(let i=0;i<maxPlays;i++){
-    let best=null,bestKey=[-Infinity,-Infinity,-Infinity];
-    for(const tmpl of handCopy){
-      const ci=handCopy.indexOf(tmpl);
+    let best=null, bestKey=null;
+
+    for(let ci=0;ci<handCopy.length;ci++){
       if(usedCards.has(ci)) continue;
+      const tmpl=handCopy[ci];
+
       for(const slot of getValidSlotsForCard(tmpl)){
         const si=eSlots.indexOf(slot);
         if(usedSlots.has(si)) continue;
-        picks.forEach(p=>{p.slot.tmpl=p.tmpl;p.slot.filled=true;});
-        const {newFieldScore,potential,longBonus}=evaluatePlacement(tmpl,slot);
-        picks.forEach(p=>{p.slot.filled=p.prevFilled;p.slot.tmpl=p.prevTmpl;});
-        const scoreDelta=newFieldScore-baseFieldScore;
-        const canReverse=(newFieldScore>playerScore)&&(enemyScore<playerScore)?1:0;
-        const key=[canReverse,scoreDelta,potential+longBonus];
-        if(key[0]>bestKey[0]||(key[0]===bestKey[0]&&key[1]>bestKey[1])||(key[0]===bestKey[0]&&key[1]===bestKey[1]&&key[2]>bestKey[2])){
-          best={tmpl,slot,prevFilled:slot.filled,prevTmpl:slot.tmpl}; bestKey=key;
+
+        // 過去のpicksを仮適用してからスコア評価
+        picks.forEach(p=>{p.slot.tmpl=p.tmpl; p.slot.filled=true;});
+        const {newFieldScore, potential, longBonus}=evaluatePlacement(tmpl, slot);
+        picks.forEach(p=>{p.slot.filled=p.prevFilled; p.slot.tmpl=p.prevTmpl;});
+
+        const gain=newFieldScore-baseScore; // このターンの得点増加分
+
+        // 優先度1: このターンで逆転できるか（追いかけ中のみ有効）
+        const canOvertake=(!ahead&&enemyScore+newFieldScore>playerScore)?1:0;
+
+        // 優先度2: このターンの得点が高いか
+        const scoreGain=gain;
+
+        // 優先度3: 次ターンへのつながり（SVO役の期待値）
+        const nextPot=potential+longBonus;
+
+        // 優先度4: タイプ一致スロット = 役に直結、低リスク
+        const typeMatch=(slot.type===tmpl.type)?1:0;
+
+        // 優先度5: 不要札処理（得点もポテンシャルも0の最終手段、マイナス評価）
+        const useful=(gain>0||potential>0)?0:-1;
+
+        // リード中は安全重視：タイプ一致→得点→ポテンシャル
+        // 追撃中は逆転重視：逆転可否→得点→ポテンシャル→タイプ一致
+        const key=ahead
+          ?[canOvertake, typeMatch, scoreGain, nextPot, useful]
+          :[canOvertake, scoreGain, nextPot, typeMatch, useful];
+
+        if(!bestKey||compareKeys(key,bestKey)>0){
+          best={tmpl,slot,prevFilled:slot.filled,prevTmpl:slot.tmpl};
+          bestKey=key;
         }
       }
     }
+
     if(!best) break;
     usedCards.add(handCopy.indexOf(best.tmpl));
     usedSlots.add(eSlots.indexOf(best.slot));
