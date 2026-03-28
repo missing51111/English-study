@@ -296,6 +296,13 @@
   .result-score-row.you  .rs-pts { color:#aaffcc; }
   .result-score-row.cpu  .rs-pts { color:#ffaaff; }
   .result-vs { font-size:0.85rem; color:rgba(180,180,180,0.5); letter-spacing:2px; }
+  .rs-detail { width:100%; margin-top:4px; display:flex; flex-direction:column; gap:2px; }
+  .rs-detail-row { display:flex; justify-content:space-between; font-size:0.78rem; padding:2px 4px; }
+  .rs-detail-row.invalid { color:#ff7766; }
+  .rs-detail-row.bonus   { color:#ff8844; }
+  .rs-detail-row span:first-child { color:rgba(200,200,200,0.7); }
+  .result-score-row.you .rs-detail-row span:last-child { color:#aaffcc; }
+  .result-score-row.cpu .rs-detail-row span:last-child { color:#ffaaff; }
   .result-btns { display:flex; flex-direction:column; align-items:center; gap:10px; width:100%; }
   .result-btn {
     width:100%; padding:13px 18px; border:none; border-radius:14px;
@@ -379,13 +386,19 @@
     <div class="result-verdict" id="resultVerdict">🎉 あなたの勝ち！</div>
     <div class="result-scores">
       <div class="result-score-row you" id="resultYouRow">
-        <span class="rs-label">🏆 あなた</span>
-        <span class="rs-pts" id="resultYouPts">0pt</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+          <span class="rs-label">🏆 あなた</span>
+          <span class="rs-pts" id="resultYouPts">0pt</span>
+        </div>
+        <div class="rs-detail" id="resultYouDetail"></div>
       </div>
       <div class="result-vs">VS</div>
       <div class="result-score-row cpu" id="resultCpuRow">
-        <span class="rs-label">🤖 CPU</span>
-        <span class="rs-pts" id="resultCpuPts">0pt</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+          <span class="rs-label">🤖 CPU</span>
+          <span class="rs-pts" id="resultCpuPts">0pt</span>
+        </div>
+        <div class="rs-detail" id="resultCpuDetail"></div>
       </div>
     </div>
     <div class="result-btns">
@@ -1351,64 +1364,25 @@ function autoPlayerTurn(){
   const maxPlays=getPlayerCpuPlayCount();
   const picks=autoPlayerChoosePlays(maxPlays);
 
+  function afterPlay(){
+    if(gameEnded) return;
+    if(enemyShobuPending){ finalJudgement('shobu'); return; }
+    if(resolvePlayerCpuDeclare()) return;
+    enemyTurn();
+  }
+
   function doPlay(i){
     if(i>=picks.length){
-      setTimeout(()=>{
-        if(gameEnded) return;
-
-        const playerField=calcPlayerCurrentScore().score;
-        const enemyField=calcEnemyCurrentScore().score;
-        const playerTotal=playerScore+playerField;
-        const enemyTotal=enemyScore+enemyField;
-
-        if(enemyShobuPending){
-          finalJudgement('shobu');
-          return;
-        }
-
-        if(playerDeclareReady()){
-          if(playerState.lowerUnlocked){
-            triggerPlayerCpuShobu();
-            return;
-          }
-
-          if(playerTotal>enemyTotal){
-            triggerPlayerCpuShobu();
-            return;
-          }else{
-            playerState.koikoiCount++;
-            playerState.koikoiDeclaredByOpponent=true;
-            enemyState.koikoiDeclaredByOpponent=true;
-            unlockPlayerLower();
-            showToast(`🌸 自動こいこい！2段目開放 (続行×${playerState.koikoiCount})`,'#aaffaa');
-            setTimeout(()=>{
-              if(gameEnded) return;
-              enemyTurn();
-            },700);
-            return;
-          }
-        }
-
-        enemyTurn();
-      },400);
+      setTimeout(afterPlay, 400);
       return;
     }
-
     setTimeout(()=>{
       if(gameEnded) return;
       placeCard(picks[i].card,picks[i].slot,()=>doPlay(i+1));
     },i===0?600:450);
   }
 
-  if(!picks.length){
-    if(enemyShobuPending){
-      finalJudgement('shobu');
-      return;
-    }
-    enemyTurn();
-    return;
-  }
-
+  if(!picks.length){ afterPlay(); return; }
   doPlay(0);
 }
 
@@ -1549,12 +1523,53 @@ function smartEnemyPlay(pick,onDone){
     onDone();
   });
 }
-function triggerCpuShobu(){
-  enemyCpuDeclareShobu=false;
-  enemyShobuPending=true;
-  setTimeout(()=>showToast('⚔️ 相手が勝負を宣言！最後のターンをどうぞ','#ffaaaa'),200);
-  startPlayerTurn();
+// ===== CPU宣言共通ロジック =====
+function shouldCpuDeclareShobu(selfTotal, oppTotal, selfState){
+  if(selfState.lowerUnlocked) return true;
+  return selfTotal > oppTotal;
 }
+
+function resolvePlayerCpuDeclare(){
+  if(!playerDeclareReady()) return false;
+  const playerField=calcPlayerCurrentScore().score;
+  const enemyField=calcEnemyCurrentScore().score;
+  const playerTotal=playerScore+playerField;
+  const enemyTotal=enemyScore+enemyField;
+  if(shouldCpuDeclareShobu(playerTotal, enemyTotal, playerState)){
+    triggerPlayerCpuShobu();
+  } else {
+    playerState.koikoiCount++;
+    playerState.koikoiDeclaredByOpponent=true;
+    enemyState.koikoiDeclaredByOpponent=true;
+    unlockPlayerLower();
+    showToast(`🌸 自動こいこい！2段目開放 (続行×${playerState.koikoiCount})`,'#aaffaa');
+    setTimeout(()=>{ if(gameEnded) return; enemyTurn(); },700);
+  }
+  return true;
+}
+
+function resolveEnemyCpuDeclare(){
+  if(!enemyDeclareReady()) return false;
+  const enemyField=calcEnemyCurrentScore().score;
+  const playerField=calcPlayerCurrentScore().score;
+  const enemyTotal=enemyScore+enemyField;
+  const playerTotal=playerScore+playerField;
+  if(shouldCpuDeclareShobu(enemyTotal, playerTotal, enemyState)){
+    enemyShobuPending=true;
+    setTimeout(()=>showToast('⚔️ 相手が勝負を宣言！最後のターンをどうぞ','#ffaaaa'),200);
+    startPlayerTurn();
+  } else {
+    enemyState.koikoiCount++;
+    enemyState.koikoiDeclaredByOpponent=true;
+    playerState.koikoiDeclaredByOpponent=true;
+    unlockEnemyLower();
+    setTimeout(()=>showToast('💫 相手がこいこいを宣言！','#ffaaff'),200);
+    koikoiBtn.textContent='カウンターこいこい 🌸';
+    setTimeout(()=>{ if(gameEnded) return; startPlayerTurn(); },500);
+  }
+  return true;
+}
+
 function finalJudgement(reason='shobu'){
   if(gameEnded && reason!=='deckout') return;
   gameEnded=true;
@@ -1605,19 +1620,30 @@ function finalJudgement(reason='shobu'){
       : verdictText;
 
     showTurnBanner(bannerText,()=>{
-      showResultScreen(pTotal,eTotal,verdictText,verdictColor);
+      showResultScreen(pTotal,eTotal,verdictText,verdictColor,pResult.res,eResult.res);
     });
   };
 
   showSentReveal(sentArr,jpArr,'player',beforeReveal);
 }
-function showResultScreen(pPts, ePts, verdictText, verdictColor){
+function buildDetailHTML(res){
+  if(!res||res.length===0) return '';
+  return res.map(r=>{
+    const cls=r.invalid?'invalid':r.bonus?'bonus':'';
+    const sign=r.pts>0?'+':r.pts<0?'':r.pts===0&&r.invalid?'-2':'';
+    const ptsText=r.invalid?'-2pt':(r.pts>0?`+${r.pts}pt`:`${r.pts}pt`);
+    return `<div class="rs-detail-row${cls?' '+cls:''}"><span>${r.name}${r.note?'（'+r.note+'）':''}</span><span>${ptsText}</span></div>`;
+  }).join('');
+}
+function showResultScreen(pPts, ePts, verdictText, verdictColor, pRes, eRes){
   document.getElementById('resultVerdict').textContent=verdictText;
   document.getElementById('resultVerdict').style.color=verdictColor;
   document.getElementById('resultYouPts').textContent=pPts+'pt';
   document.getElementById('resultCpuPts').textContent=ePts+'pt';
   document.getElementById('resultYouRow').classList.toggle('winner', pPts>ePts);
   document.getElementById('resultCpuRow').classList.toggle('winner', ePts>pPts);
+  document.getElementById('resultYouDetail').innerHTML=buildDetailHTML(pRes);
+  document.getElementById('resultCpuDetail').innerHTML=buildDetailHTML(eRes);
   document.getElementById('resultScreen').style.display='flex';
   outer.classList.add('locked');
 }
@@ -1704,48 +1730,9 @@ function enemyTurn(){
               if(gameEnded) return;
 
               if(i>=picks.length){
-                const enemyField=calcEnemyCurrentScore().score;
-                const playerField=calcPlayerCurrentScore().score;
-                const enemyTotal=enemyScore+enemyField;
-                const playerTotal=playerScore+playerField;
-
-                if(playerShobuPending){
-                  finalJudgement('shobu');
-                  return;
-                }
-
-                if(enemyDeclareReady() && !enemyState.koikoiDeclaredByOpponent){
-                  if(enemyState.lowerUnlocked){
-                    enemyShobuPending=true;
-                    setTimeout(()=>showToast('⚔️ 相手が勝負を宣言！最後のターンをどうぞ','#ffaaaa'),200);
-                    startPlayerTurn();
-                    return;
-                  }
-
-                  if(enemyTotal>playerTotal){
-                    enemyShobuPending=true;
-                    setTimeout(()=>showToast('⚔️ 相手が勝負を宣言！最後のターンをどうぞ','#ffaaaa'),200);
-                    startPlayerTurn();
-                    return;
-                  }else{
-                    enemyState.koikoiCount++;
-                    enemyState.koikoiDeclaredByOpponent=true;
-                    playerState.koikoiDeclaredByOpponent=true;
-                    unlockEnemyLower();
-                    setTimeout(()=>showToast('💫 相手がこいこいを宣言！','#ffaaff'),200);
-                    koikoiBtn.textContent='カウンターこいこい 🌸';
-                    setTimeout(()=>{
-                      if(gameEnded) return;
-                      startPlayerTurn();
-                    },500);
-                    return;
-                  }
-                }
-
-                setTimeout(()=>{
-                  if(gameEnded) return;
-                  startPlayerTurn();
-                },500);
+                if(playerShobuPending){ finalJudgement('shobu'); return; }
+                if(resolveEnemyCpuDeclare()) return;
+                setTimeout(()=>{ if(gameEnded) return; startPlayerTurn(); },500);
                 return;
               }
 
