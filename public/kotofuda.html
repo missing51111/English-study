@@ -263,6 +263,47 @@
   .diff-btn.easy   { background:linear-gradient(135deg,#2a8a4a,#1a5a2a); color:#afffaf; }
   .diff-btn.normal { background:linear-gradient(135deg,#2a4a8a,#1a2a5a); color:#afc5ff; }
   .diff-btn.hard   { background:linear-gradient(135deg,#8a2a2a,#5a1a1a); color:#ffafaf; }
+  /* 結果画面 */
+  #resultScreen {
+    position:fixed; inset:0; background:rgba(0,0,0,0.94);
+    display:none; align-items:center; justify-content:center; z-index:9999;
+  }
+  .result-box {
+    display:flex; flex-direction:column; align-items:center; gap:18px;
+    padding:32px 28px; max-width:320px; width:90%;
+    background:linear-gradient(160deg,#0e1a2e,#1a0e2e);
+    border:1.5px solid rgba(180,150,255,0.3); border-radius:20px;
+    box-shadow:0 0 60px rgba(120,80,255,0.25);
+  }
+  .result-verdict {
+    font-size:1.6rem; font-weight:bold; letter-spacing:0.08em;
+    text-align:center; text-shadow:0 0 24px currentColor;
+  }
+  .result-scores {
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    width:100%; background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:16px 20px;
+  }
+  .result-score-row {
+    display:flex; justify-content:space-between; align-items:center; width:100%;
+    padding:8px 12px; border-radius:8px;
+  }
+  .result-score-row.winner { background:rgba(255,255,100,0.1); outline:1px solid rgba(255,255,100,0.35); }
+  .rs-label { font-size:1rem; color:rgba(200,200,200,0.85); }
+  .rs-pts   { font-size:1.4rem; font-weight:bold; color:#fff; }
+  .result-score-row.you  .rs-pts { color:#aaffcc; }
+  .result-score-row.cpu  .rs-pts { color:#ffaaff; }
+  .result-vs { font-size:0.85rem; color:rgba(180,180,180,0.5); letter-spacing:2px; }
+  .result-btns { display:flex; flex-direction:column; align-items:center; gap:10px; width:100%; }
+  .result-btn {
+    width:100%; padding:13px 18px; border:none; border-radius:14px;
+    font-size:1.05rem; font-weight:bold; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    transition:transform 0.15s, box-shadow 0.15s;
+  }
+  .result-btn:hover { transform:scale(1.04); box-shadow:0 6px 22px rgba(0,0,0,0.5); }
+  .result-btn.retry  { background:linear-gradient(135deg,#2a4a8a,#1a2a5a); color:#afc5ff; }
+  .result-btn.home   { background:linear-gradient(135deg,#2a2a2a,#111); color:#aaa; border:1px solid rgba(255,255,255,0.1); }
   /* CPUスコア表示 */
   .enemy-score-display {
     position:fixed; top:12px; left:12px; z-index:200;
@@ -327,6 +368,26 @@
     <button class="diff-btn easy"   onclick="selectDifficulty('easy')">😊 やさしい<span>1枚 / ターン</span></button>
     <button class="diff-btn normal" onclick="selectDifficulty('normal')">🎯 ふつう<span>交互（1→2→1→2…）</span></button>
     <button class="diff-btn hard"   onclick="selectDifficulty('hard')">🔥 むずかしい<span>2枚 / ターン</span></button>
+  </div>
+</div>
+<div id="resultScreen">
+  <div class="result-box">
+    <div class="result-verdict" id="resultVerdict">🎉 あなたの勝ち！</div>
+    <div class="result-scores">
+      <div class="result-score-row you" id="resultYouRow">
+        <span class="rs-label">🏆 あなた</span>
+        <span class="rs-pts" id="resultYouPts">0pt</span>
+      </div>
+      <div class="result-vs">VS</div>
+      <div class="result-score-row cpu" id="resultCpuRow">
+        <span class="rs-label">🤖 CPU</span>
+        <span class="rs-pts" id="resultCpuPts">0pt</span>
+      </div>
+    </div>
+    <div class="result-btns">
+      <button class="result-btn retry" onclick="resetAndRestart()">🔄 もう一度（難易度選択へ）</button>
+      <button class="result-btn home"  onclick="window.location.href='/'">🏠 ホームに戻る</button>
+    </div>
   </div>
 </div>
 <div class="enemy-score-display" id="enemyScoreDisplay">🤖 0pt</div>
@@ -1238,32 +1299,54 @@ function finalJudgement(){
   const pTotal=playerScore+pField;
   const eTotal=enemyScore+eField;
   enemyShobuPending=false;
-  // スコア確定
   if(pField>0){ playerScore=pTotal; scoreDisplay.textContent=`🏆 ${playerScore}pt`; }
   if(eField>0){ enemyScore=eTotal; updateEnemyScoreDisplay(); }
   revealEnemyV();
   const {sentArr,jpArr}=calcScore(pSlots);
   showSentReveal(sentArr,jpArr,'player',()=>{
-    let resultMsg, resultColor;
-    if(pTotal>eTotal){      resultMsg=`🎉 あなたの勝ち！ ${pTotal}pt vs ${eTotal}pt`; resultColor='#aaffaa'; }
-    else if(pTotal<eTotal){ resultMsg=`😢 相手の勝ち… ${eTotal}pt vs ${pTotal}pt`; resultColor='#ffaaaa'; }
-    else {                  resultMsg=`🤝 引き分け ${pTotal}pt`;                    resultColor='#ffeeaa'; }
-    showToast(resultMsg, resultColor);
-    showYakuResult('つづける ▶',()=>{
-      achievedYaku.clear(); koikoiActive=false; koikoiCount=0;
-      upperLocked=false; lowerUnlocked=false; enemyKoikoiDeclared=false; counterKoikoi=false;
-      enemyCpuLowerUnlocked=false; enemyTurnAlt=false; enemyCpuDeclareShobu=false; enemyShobuPending=false;
-      document.getElementById('rowSentBar').classList.remove('show');
-      document.getElementById('lowerRowClip').classList.remove('show');
-      pSlots.filter(s=>s.row===1).forEach(s=>{ s.el.classList.remove('unlocked'); s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'22'; });
-      document.getElementById('rowSentBarEnemy').classList.remove('show');
-      document.getElementById('lowerRowClipEnemy').classList.remove('show');
-      eSlots.filter(s=>s.row===1).forEach(s=>{ s.el.classList.remove('unlocked'); s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'22'; });
-      koikoiBtn.textContent='こいこい 🌸';
-      phaseLabel.textContent=`スコア ${playerScore}pt`;
-      startPlayerTurn();
-    },resultColor);
+    let verdictText, verdictColor;
+    if(pTotal>eTotal){      verdictText='🎉 あなたの勝ち！'; verdictColor='#aaffaa'; }
+    else if(pTotal<eTotal){ verdictText='😢 相手の勝ち…';   verdictColor='#ffaaaa'; }
+    else {                  verdictText='🤝 引き分け！';     verdictColor='#ffeeaa'; }
+    showTurnBanner(verdictText, ()=>{
+      showResultScreen(pTotal, eTotal, verdictText, verdictColor);
+    });
   });
+}
+function showResultScreen(pPts, ePts, verdictText, verdictColor){
+  document.getElementById('resultVerdict').textContent=verdictText;
+  document.getElementById('resultVerdict').style.color=verdictColor;
+  document.getElementById('resultYouPts').textContent=pPts+'pt';
+  document.getElementById('resultCpuPts').textContent=ePts+'pt';
+  document.getElementById('resultYouRow').classList.toggle('winner', pPts>ePts);
+  document.getElementById('resultCpuRow').classList.toggle('winner', ePts>pPts);
+  document.getElementById('resultScreen').style.display='flex';
+  outer.classList.add('locked');
+}
+function resetAndRestart(){
+  document.getElementById('resultScreen').style.display='none';
+  outer.classList.remove('locked');
+  // 全フラグリセット
+  playerScore=0; enemyScore=0;
+  scoreDisplay.textContent='🏆 0pt'; updateEnemyScoreDisplay();
+  achievedYaku.clear(); koikoiActive=false; koikoiCount=0;
+  upperLocked=false; lowerUnlocked=false; enemyKoikoiDeclared=false; counterKoikoi=false;
+  enemyCpuLowerUnlocked=false; enemyTurnAlt=false; enemyCpuDeclareShobu=false; enemyShobuPending=false;
+  // 手札クリア
+  track.innerHTML=''; cards=[]; centerIdx=0; offsetX=0; updateFan();
+  enemyHandEl.innerHTML=''; enemyCardData=[];
+  // デッキ・グリッド再構築
+  deckCount=48; buildDeck(); buildGrids();
+  // UI リセット
+  document.getElementById('rowSentBar').classList.remove('show');
+  document.getElementById('lowerRowClip').classList.remove('show');
+  document.getElementById('rowSentBarEnemy').classList.remove('show');
+  document.getElementById('lowerRowClipEnemy').classList.remove('show');
+  koikoiBtn.textContent='こいこい 🌸';
+  phaseLabel.textContent='手札を配っています…';
+  phase='init'; dealCount=0;
+  // 難易度選択へ
+  document.getElementById('difficultyScreen').style.display='flex';
 }
 function enemyTurn(){
   phase='enemy'; outer.classList.add('locked');
