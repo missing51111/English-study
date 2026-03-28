@@ -1375,18 +1375,6 @@ function smartEnemyPlay(pick,onDone){
     const img=document.createElement('img'); img.src=imgSrc;
     slot.el.appendChild(img); slot.el.classList.add('filled');
     wrap.remove(); layoutEnemyHand();
-    const eFilled=eSlots.filter(s=>s.row===0&&s.filled).length;
-    if(eFilled===5&&!enemyKoikoiDeclared){
-      enemyKoikoiDeclared=true;
-      if(shouldEnemyKoikoi()){
-        unlockEnemyLower();
-        setTimeout(()=>showToast('💫 相手がこいこいを宣言！','#ffaaff'),200);
-        koikoiBtn.textContent='カウンターこいこい 🌸';
-      } else {
-        enemyCpuDeclareShobu=true;
-        setTimeout(()=>showToast('🤖 相手が勝負を宣言！','#ffaaaa'),200);
-      }
-    }
     onDone();
   });
 }
@@ -1467,10 +1455,23 @@ function enemyTurn(){
             const postScore=calcEnemyCurrentScore().score;
             enemyScore+=Math.max(0,postScore-preScore);
             updateEnemyScoreDisplay();
-            if(enemyCpuDeclareShobu&&postScore>0){
-              setTimeout(()=>triggerCpuShobu(),600); return;
+            // 役成立チェック：未宣言の場合は必ず宣言処理
+            if(postScore>0 && !enemyKoikoiDeclared){
+              enemyKoikoiDeclared=true;
+              if(enemyScore>playerScore){
+                // 勝負宣言
+                setTimeout(()=>triggerCpuShobu(), 600);
+              } else {
+                // こいこい
+                unlockEnemyLower();
+                setTimeout(()=>showToast('💫 相手がこいこいを宣言！','#ffaaff'), 200);
+                koikoiBtn.textContent='カウンターこいこい 🌸';
+                setTimeout(()=>startPlayerTurn(), 500);
+              }
+              return;
             }
-            setTimeout(()=>startPlayerTurn(),500); return;
+            setTimeout(()=>startPlayerTurn(), 500);
+            return;
           }
           setTimeout(()=>smartEnemyPlay(picks[i],()=>doPlay(i+1)),i===0?500:400);
         }
