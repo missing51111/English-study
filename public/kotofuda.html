@@ -1153,9 +1153,7 @@ function selectAutoPlay(){
 function getValidSlotsForPlayerCard(tmpl){
   const row0=!upperLocked?pSlots.filter(s=>s.row===0&&s.type===tmpl.type&&!s.filled):[];
   const row1=lowerUnlocked?pSlots.filter(s=>s.row===1&&s.type===tmpl.type&&!s.filled):[];
-  const anyRow0=!upperLocked?pSlots.filter(s=>s.row===0&&!s.filled):[];
-  const anyRow1=lowerUnlocked?pSlots.filter(s=>s.row===1&&!s.filled):[];
-  return [...row0,...row1,...anyRow0,...anyRow1].filter((v,i,a)=>a.indexOf(v)===i);
+  return [...row0,...row1];
 }
 function evalRowPotential_p(row){
   const rs=pSlots.filter(s=>s.row===row);
@@ -1267,9 +1265,7 @@ function updateEnemyScoreDisplay(){
 function getValidSlotsForCard(tmpl){
   const r0=eSlots.filter(s=>s.row===0&&s.type===tmpl.type&&!s.filled);
   const r1=enemyCpuLowerUnlocked?eSlots.filter(s=>s.row===1&&s.type===tmpl.type&&!s.filled):[];
-  const a0=eSlots.filter(s=>s.row===0&&!s.filled);
-  const a1=enemyCpuLowerUnlocked?eSlots.filter(s=>s.row===1&&!s.filled):[];
-  return [...r0,...r1,...a0,...a1].filter((v,i,a)=>a.indexOf(v)===i);
+  return [...r0,...r1];
 }
 function evalRowPotential(row){
   const rs=eSlots.filter(s=>s.row===row);
