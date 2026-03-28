@@ -1258,7 +1258,9 @@ function fanOpen(cb){
 }
 function startPlayerTurn(){
   phase='standby'; outer.classList.remove('locked');
-  gatherHand(()=>{
+  // ファン展開したまま中央カードへスクロール
+  const _alive=cards.filter(c=>!c.played);
+  if(_alive.length) snapTo(cards.indexOf(_alive[Math.floor(_alive.length/2)]));
   showTurnBanner('自分のターン',()=>{
     standbyDrawing=true;
     drawToPlayer(()=>{ setTimeout(()=>{
@@ -1276,7 +1278,6 @@ function startPlayerTurn(){
       });
     },180); });
   }); // showTurnBanner
-  }); // gatherHand
 }
 function updateFan(){
   const alive=cards.filter(c=>!c.played);
