@@ -955,7 +955,7 @@ function addHandCard(tmpl,imgSrc){
     wrap.style.transform=`translateX(${(midAi-ai)*CARD_W}px) scale(1.0)`;
     updateClasses();
   } else {
-    snapTo(idx);
+    snapTo(idx, false);  // スライドアニメなしで即配置
   }
 }
 function layoutEnemyHand(){
