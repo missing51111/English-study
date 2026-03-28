@@ -1238,7 +1238,10 @@ function autoPlayerTurn(){
     }
     setTimeout(()=>placeCard(picks[i].card, picks[i].slot, ()=>doPlay(i+1)), i===0?600:450);
   }
-  if(!picks.length){ setTimeout(()=>enemyTurn(),600); return; }
+  if(!picks.length){
+    if(enemyShobuPending){ setTimeout(()=>finalJudgement(),600); return; }
+    setTimeout(()=>enemyTurn(),600); return;
+  }
   doPlay(0);
 }
 function selectDifficulty(diff){
