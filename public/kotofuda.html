@@ -1366,7 +1366,7 @@ function autoPlayerTurn(){
           return;
         }
 
-        if(playerDeclareReady() && !playerState.koikoiDeclaredByOpponent){
+        if(playerDeclareReady()){
           if(playerState.lowerUnlocked){
             triggerPlayerCpuShobu();
             return;
@@ -1559,10 +1559,20 @@ function finalJudgement(reason='shobu'){
   if(gameEnded && reason!=='deckout') return;
   gameEnded=true;
 
-  const pField=calcPlayerCurrentScore().score;
-  const eField=calcEnemyCurrentScore().score;
+  const pResult=calcPlayerCurrentScore();
+  const eResult=calcEnemyCurrentScore();
+
+  // 無効行ペナルティ（最終判定時のみ）：無効行1行につき -2pt
+  const pInvalidPenalty=pResult.res.filter(r=>r.invalid).length * 2;
+  const eInvalidPenalty=eResult.res.filter(r=>r.invalid).length * 2;
+
+  const pField=Math.max(0, pResult.score - pInvalidPenalty);
+  const eField=Math.max(0, eResult.score - eInvalidPenalty);
   const pTotal=playerScore+pField;
   const eTotal=enemyScore+eField;
+
+  if(pInvalidPenalty>0) showToast(`⚠️ 無効行あり！あなた -${pInvalidPenalty}pt`,'#ff8844');
+  if(eInvalidPenalty>0) setTimeout(()=>showToast(`⚠️ 無効行あり！相手 -${eInvalidPenalty}pt`,'#ff8844'),600);
 
   enemyShobuPending=false;
   playerShobuPending=false;
@@ -1574,7 +1584,7 @@ function finalJudgement(reason='shobu'){
 
   revealEnemyV();
 
-  const {sentArr,jpArr}=calcPlayerCurrentScore();
+  const {sentArr,jpArr}=pResult;
 
   const beforeReveal=()=>{
     let verdictText, verdictColor;
@@ -1887,7 +1897,8 @@ function doShobu(isCpuTriggered){
   }
 
   playerShobuPending=true;
-  enemyTurn();
+  showToast('⚔️ 勝負を宣言！相手の最後のターンです','#ffeeaa');
+  setTimeout(()=>enemyTurn(), 400);
 }
 onBtn(shobuBtn,()=>doShobu(false));
 
