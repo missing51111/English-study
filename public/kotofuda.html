@@ -1212,19 +1212,24 @@ function autoPlayerTurn(){
   function doPlay(i){
     if(i>=picks.length){
       setTimeout(()=>{
-        // 上段スコアがあればこいこい
-        if(!lowerUnlocked&&!upperLocked){
-          const {score}=calcScore(pSlots.filter(s=>s.row===0));
-          if(score>0){
-            koikoiActive=true; koikoiCount++; upperLocked=true;
-            unlockLower();
-            showToast(`🌸 自動こいこい！2段目開放 (続行×${koikoiCount})`,'#aaffaa');
-            setTimeout(()=>{
-              if(enemyShobuPending){ setTimeout(()=>finalJudgement(),400); return; }
-              enemyTurn();
-            },700);
-            return;
+        // 宣言チェック：SVO揃い or 5枚満場
+        const activeRow=lowerUnlocked?1:0;
+        const activeSlots=pSlots.filter(s=>s.row===activeRow);
+        if(svoOrFull(activeSlots)){
+          if(lowerUnlocked){
+            // 下段完成 → こいこい不可、最終判定へ
+            if(enemyShobuPending){ setTimeout(()=>finalJudgement(),400); return; }
+            enemyTurn(); return;
           }
+          // 上段宣言: プレイヤー側はこいこい固定（デモ）
+          koikoiActive=true; koikoiCount++; upperLocked=true;
+          unlockLower();
+          showToast(`🌸 自動こいこい！2段目開放 (続行×${koikoiCount})`,'#aaffaa');
+          setTimeout(()=>{
+            if(enemyShobuPending){ setTimeout(()=>finalJudgement(),400); return; }
+            enemyTurn();
+          },700);
+          return;
         }
         if(enemyShobuPending){ setTimeout(()=>finalJudgement(),400); return; }
         enemyTurn();
