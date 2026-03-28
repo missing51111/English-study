@@ -1471,11 +1471,11 @@ function enemyTurn(){
             // 宣言チェック：SVO揃いまたは5枚満場 → 必ず宣言
             if(cpuDeclareReady() && !enemyKoikoiDeclared){
               enemyKoikoiDeclared=true;
-              if(enemyScore>playerScore){
-                // 勝負宣言
+              if(enemyScore>playerScore || enemyCpuLowerUnlocked){
+                // 勝負宣言（2段目では常に勝負）
                 setTimeout(()=>triggerCpuShobu(), 600);
               } else {
-                // こいこい
+                // こいこい（1段目のみ）
                 unlockEnemyLower();
                 setTimeout(()=>showToast('💫 相手がこいこいを宣言！','#ffaaff'), 200);
                 koikoiBtn.textContent='カウンターこいこい 🌸';
@@ -1611,15 +1611,15 @@ onBtn(koikoiBtn,()=>{
     return;
   }
   if(!lowerUnlocked){
-    const {score}=calcScore(pSlots.filter(s=>s.row===0));
-    if(score>0){
+    if(svoOrFull(pSlots.filter(s=>s.row===0))){
       koikoiActive=true; koikoiCount++; upperLocked=true;
       unlockLower();
       showToast(`🌸 こいこい！2段目を開放 (続行×${koikoiCount})`,'#ffaaff');
     } else {
-      showToast('まだ役が成立していません','#ff8888');
+      showToast('まだ宣言条件を満たしていません','#ff8888');
     }
   }
+  // 2段目ではこいこい宣言不可
 });
 function doShobu(isCpuTriggered){
   if(!isCpuTriggered){
