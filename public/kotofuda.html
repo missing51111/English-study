@@ -555,6 +555,7 @@ let enemyScore=0;
 let enemyCpuLowerUnlocked=false;
 let enemyTurnAlt=false;
 let enemyCpuDeclareShobu=false;
+let enemyShobuPending=false; // CPU勝負宣言後、プレイヤーの最終ターン待ち
 const CARD_W=38, CARD_HALF=19, FAN_DEG=3;
 let currentScale=1;
 
@@ -1016,7 +1017,7 @@ function checkUpperComplete(){
           showYakuResult('つづける ▶',()=>{
             achievedYaku.clear(); koikoiActive=false; koikoiCount=0;
             upperLocked=false; lowerUnlocked=false; enemyKoikoiDeclared=false; counterKoikoi=false;
-            enemyCpuLowerUnlocked=false; enemyTurnAlt=false; enemyCpuDeclareShobu=false;
+            enemyCpuLowerUnlocked=false; enemyTurnAlt=false; enemyCpuDeclareShobu=false; enemyShobuPending=false;
             // プレイヤー下段UIリセット
             document.getElementById('rowSentBar').classList.remove('show');
             document.getElementById('lowerRowClip').classList.remove('show');
@@ -1227,7 +1228,42 @@ function smartEnemyPlay(pick,onDone){
 }
 function triggerCpuShobu(){
   enemyCpuDeclareShobu=false;
-  doShobu(true);
+  enemyShobuPending=true;
+  setTimeout(()=>showToast('⚔️ 相手が勝負を宣言！最後のターンをどうぞ','#ffaaaa'),200);
+  startPlayerTurn();
+}
+function finalJudgement(){
+  const pField=calcScore(pSlots).score;
+  const eField=calcEnemyCurrentScore().score;
+  const pTotal=playerScore+pField;
+  const eTotal=enemyScore+eField;
+  enemyShobuPending=false;
+  // スコア確定
+  if(pField>0){ playerScore=pTotal; scoreDisplay.textContent=`🏆 ${playerScore}pt`; }
+  if(eField>0){ enemyScore=eTotal; updateEnemyScoreDisplay(); }
+  revealEnemyV();
+  const {sentArr,jpArr}=calcScore(pSlots);
+  showSentReveal(sentArr,jpArr,'player',()=>{
+    let resultMsg, resultColor;
+    if(pTotal>eTotal){      resultMsg=`🎉 あなたの勝ち！ ${pTotal}pt vs ${eTotal}pt`; resultColor='#aaffaa'; }
+    else if(pTotal<eTotal){ resultMsg=`😢 相手の勝ち… ${eTotal}pt vs ${pTotal}pt`; resultColor='#ffaaaa'; }
+    else {                  resultMsg=`🤝 引き分け ${pTotal}pt`;                    resultColor='#ffeeaa'; }
+    showToast(resultMsg, resultColor);
+    showYakuResult('つづける ▶',()=>{
+      achievedYaku.clear(); koikoiActive=false; koikoiCount=0;
+      upperLocked=false; lowerUnlocked=false; enemyKoikoiDeclared=false; counterKoikoi=false;
+      enemyCpuLowerUnlocked=false; enemyTurnAlt=false; enemyCpuDeclareShobu=false; enemyShobuPending=false;
+      document.getElementById('rowSentBar').classList.remove('show');
+      document.getElementById('lowerRowClip').classList.remove('show');
+      pSlots.filter(s=>s.row===1).forEach(s=>{ s.el.classList.remove('unlocked'); s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'22'; });
+      document.getElementById('rowSentBarEnemy').classList.remove('show');
+      document.getElementById('lowerRowClipEnemy').classList.remove('show');
+      eSlots.filter(s=>s.row===1).forEach(s=>{ s.el.classList.remove('unlocked'); s.el.style.borderColor=TYPES.find(t=>t.key===s.type).color+'22'; });
+      koikoiBtn.textContent='こいこい 🌸';
+      phaseLabel.textContent=`スコア ${playerScore}pt`;
+      startPlayerTurn();
+    },resultColor);
+  });
 }
 function enemyTurn(){
   phase='enemy'; outer.classList.add('locked');
@@ -1358,7 +1394,11 @@ function onBtn(btn,fn){
   btn.addEventListener('click',fn);
   btn.addEventListener('touchend',e=>{e.preventDefault();fn();},{passive:false});
 }
-onBtn(turnBtn,()=>{ if(phase==='player'||phase==='standby') enemyTurn(); });
+onBtn(turnBtn,()=>{
+  if(phase!=='player'&&phase!=='standby') return;
+  if(enemyShobuPending){ finalJudgement(); return; }
+  enemyTurn();
+});
 onBtn(koikoiBtn,()=>{
   // カウンターこいこい
   if(enemyKoikoiDeclared&&!counterKoikoi){
@@ -1382,6 +1422,8 @@ function doShobu(isCpuTriggered){
   if(!isCpuTriggered){
     const filled0=pSlots.filter(s=>s.row===0&&s.filled).length;
     if(filled0===0){ showToast('まだカードが置かれていません','#ff8888'); return; }
+    // CPU勝負宣言中にプレイヤーも勝負 → 最終判定へ
+    if(enemyShobuPending){ finalJudgement(); return; }
   }
   // CPUスコア確定
   if(isCpuTriggered){
@@ -1402,7 +1444,7 @@ function doShobu(isCpuTriggered){
       if(koikoiFail){ playerScore=Math.floor(playerScore/2); scoreDisplay.textContent=`🏆 ${playerScore}pt`; }
       achievedYaku.clear(); koikoiActive=false; koikoiCount=0;
       upperLocked=false; lowerUnlocked=false; enemyKoikoiDeclared=false; counterKoikoi=false;
-      enemyCpuLowerUnlocked=false; enemyTurnAlt=false; enemyCpuDeclareShobu=false;
+      enemyCpuLowerUnlocked=false; enemyTurnAlt=false; enemyCpuDeclareShobu=false; enemyShobuPending=false;
       // プレイヤー下段リセット
       document.getElementById('rowSentBar').classList.remove('show');
       document.getElementById('lowerRowClip').classList.remove('show');
