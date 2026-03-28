@@ -1068,16 +1068,15 @@ function checkUpperComplete(){
   checkLiveYaku();
   if(!lowerUnlocked){
     const row0Slots=pSlots.filter(s=>s.row===0);
-    const {score}=calcScore(row0Slots);
-    if(score>0){
+    if(svoOrFull(row0Slots)){
       koikoiBtn.classList.add('pulse');
     } else {
       koikoiBtn.classList.remove('pulse');
     }
   }
   if(lowerUnlocked){
-    const filled1=pSlots.filter(s=>s.row===1&&s.filled).length;
-    if(filled1===5){
+    const row1Slots=pSlots.filter(s=>s.row===1);
+    if(svoOrFull(row1Slots)){
       phaseLabel.textContent='下段完成！役を確定します…';
       setTimeout(()=>{
         const {sentArr,jpArr}=calcScore(pSlots);
@@ -1251,6 +1250,16 @@ function shouldEnemyKoikoi(){
   if(difficulty==='easy') return false;
   if(difficulty==='hard') return true;
   return enemyScore>=playerScore;
+}
+// 宣言トリガー：SVO揃い または 5枚満場
+function svoOrFull(rowSlots){
+  const svo=['S','V','O'].every(t=>rowSlots.some(s=>s.type===t&&s.filled));
+  const full=rowSlots.every(s=>s.filled);
+  return svo||full;
+}
+function cpuDeclareReady(){
+  const row=enemyCpuLowerUnlocked?1:0;
+  return svoOrFull(eSlots.filter(s=>s.row===row));
 }
 function calcEnemyCurrentScore(){
   const sL=lowerUnlocked,sC=counterKoikoi,sK=koikoiActive,sN=koikoiCount;
@@ -1451,8 +1460,8 @@ function enemyTurn(){
             const postScore=calcEnemyCurrentScore().score;
             enemyScore+=Math.max(0,postScore-preScore);
             updateEnemyScoreDisplay();
-            // 役成立チェック：未宣言の場合は必ず宣言処理
-            if(postScore>0 && !enemyKoikoiDeclared){
+            // 宣言チェック：SVO揃いまたは5枚満場 → 必ず宣言
+            if(cpuDeclareReady() && !enemyKoikoiDeclared){
               enemyKoikoiDeclared=true;
               if(enemyScore>playerScore){
                 // 勝負宣言
