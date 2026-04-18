@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import StudyItemImage from "@/components/StudyItemImage";
+import { EMOJI_MAP } from "@/lib/emojiMap";
 import { isPhraseItem, primaryPartOfSpeech } from "@/lib/vocabularyPlan";
 import type { Theme } from "@/lib/themes";
 
@@ -63,6 +64,7 @@ export default function VocabularyWordCard({
 }: VocabularyWordCardProps) {
   const isPhrase = isPhraseItem(word);
   const pos = primaryPartOfSpeech(word.part_of_speech);
+  const emoji = !isPhrase ? (EMOJI_MAP[word.word.toLowerCase()] ?? null) : null;
   const posLabel = pos
     ? level === "baby"
       ? (POS_BABY[pos] ?? null)
@@ -86,15 +88,23 @@ export default function VocabularyWordCard({
       } ${acquired ? "" : "opacity-50"}`}
     >
       <div className={`relative flex-shrink-0 ${acquired ? emojiBg : "bg-gray-200"}`} style={{ width: "5rem" }}>
-        <StudyItemImage
-          id={word.id}
-          kind="words"
-          alt={`${word.word} image`}
-          imageName={word.image_name}
-          imageStatus={word.image_status}
-          className="h-full min-h-[88px] rounded-none"
-          sizes="80px"
-        />
+        {emoji ? (
+          <div className="flex h-full min-h-[88px] items-center justify-center rounded-none">
+            <span aria-hidden="true" className="select-none" style={{ fontSize: "2.7rem", lineHeight: 1 }}>
+              {emoji}
+            </span>
+          </div>
+        ) : (
+          <StudyItemImage
+            id={word.id}
+            kind="words"
+            alt={`${word.word} image`}
+            imageName={word.image_name}
+            imageStatus={word.image_status}
+            className="h-full min-h-[88px] rounded-none"
+            sizes="80px"
+          />
+        )}
         {!acquired && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gray-200/55">
             <span style={{ fontSize: "1.6rem" }}>🔒</span>
