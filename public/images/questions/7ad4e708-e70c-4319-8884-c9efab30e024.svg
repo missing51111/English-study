@@ -17,8 +17,12 @@
     <rect x="156" y="156" width="712" height="712" rx="188" fill="white" fill-opacity="0.94"/>
   </g>
   <circle cx="512" cy="512" r="250" fill="#c7d2fe" fill-opacity="0.28"/>
-  <circle cx="512" cy="512" r="198" fill="white" fill-opacity="0.94"/>
-  <text x="512" y="590" text-anchor="middle" font-family="Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif" font-size="252">📘</text>
-  <text x="740" y="310" text-anchor="middle" font-family="Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif" font-size="72" fill-opacity="0.92">✨</text>
-  <text x="286" y="760" text-anchor="middle" font-family="Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif" font-size="64" fill-opacity="0.82">✨</text>
+  <circle cx="512" cy="512" r="206" fill="white" fill-opacity="0.96"/>
+  
+  <path d="M344 404C344 382 362 364 384 364H500C528 364 552 388 552 416V652H396C368 652 344 628 344 600V404Z" fill="#ffffff"/>
+  <path d="M680 404C680 382 662 364 640 364H524C496 364 472 388 472 416V652H628C656 652 680 628 680 600V404Z" fill="#c7d2fe"/>
+  <path d="M512 382V652" stroke="#4f46e5" stroke-width="22" stroke-linecap="round"/>
+  <path d="M394 456H468M394 516H468M556 456H630M556 516H630" stroke="#4f46e5" stroke-width="16" stroke-linecap="round"/>
+  <path d="M744 274L756 304L786 316L756 328L744 358L732 328L702 316L732 304L744 274Z" fill="#ffffff" fill-opacity="0.82"/>
+  <path d="M286 720L298 748L326 760L298 772L286 800L274 772L246 760L274 748L286 720Z" fill="#ffffff" fill-opacity="0.68"/>
 </svg>
