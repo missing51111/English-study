@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="128" y1="96" x2="896" y2="928" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#60a5fa"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="card" x1="192" y1="160" x2="832" y2="864" gradientUnits="userSpaceOnUse">
+      <stop stop-color="rgba(255,255,255,0.96)"/>
+      <stop offset="1" stop-color="rgba(255,255,255,0.88)"/>
+    </linearGradient>
+    <filter id="shadow" x="150" y="124" width="724" height="776" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-color="#0f172a" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+  <circle cx="180" cy="168" r="96" fill="#bfdbfe" fill-opacity="0.24"/>
+  <circle cx="856" cy="200" r="64" fill="white" fill-opacity="0.14"/>
+  <circle cx="840" cy="832" r="110" fill="#bfdbfe" fill-opacity="0.18"/>
+  <g filter="url(#shadow)">
+    <rect x="144" y="132" width="736" height="760" rx="180" fill="white" fill-opacity="0.9"/>
+  </g>
+  <rect x="208" y="192" width="608" height="88" rx="44" fill="#bfdbfe" fill-opacity="0.95"/>
+  <text x="512" y="247" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="38" font-weight="700" fill="#0f172a" letter-spacing="3.2">noun</text>
+  <circle cx="512" cy="520" r="236" fill="#bfdbfe" fill-opacity="0.3"/>
+  <circle cx="512" cy="520" r="188" fill="white" fill-opacity="0.86"/>
+  <text x="512" y="598" text-anchor="middle" font-family="Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif" font-size="232">🖊️</text>
+  <text x="512" y="806" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="64" font-weight="700" fill="#0f172a">pen</text>
+  <text x="512" y="860" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="600" fill="#475569">ペン</text>
+</svg>

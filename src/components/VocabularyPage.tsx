@@ -5,6 +5,17 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { THEMES, type Theme } from "@/lib/themes";
 import { EMOJI_MAP } from "@/lib/emojiMap";
+import { GENERATED_WORD_IMAGE_MANIFEST } from "@/lib/generatedWordImages";
+import VocabularyWordCard from "@/components/VocabularyWordCard";
+import {
+  VOCABULARY_LEVEL_TARGETS,
+  getRemainingVocabularyCount,
+  getVocabularyFocusLabel,
+  isPhraseItem,
+  isTestableWordItem,
+  primaryPartOfSpeech,
+  sortWordsForDisplay,
+} from "@/lib/vocabularyPlan";
 
 // ============================================================
 // 型定義
@@ -20,6 +31,19 @@ interface Word {
   reading: string | null;
   example_en: string | null;
   example_ja: string | null;
+  image_name?: string | null;
+  image_status?: string | null;
+}
+
+function applyGeneratedWordImage<T extends Word>(word: T): T {
+  const generatedImage = GENERATED_WORD_IMAGE_MANIFEST[word.id];
+  if (!generatedImage) return word;
+
+  return {
+    ...word,
+    image_name: generatedImage.imageName,
+    image_status: generatedImage.imageStatus,
+  };
 }
 
 interface TestLetter {
@@ -86,12 +110,12 @@ function buildTestLetters(word: Word): TestLetter[] {
 // ============================================================
 // メインコンポーネント
 // ============================================================
-type SortOrder = "az" | "kana";
+type SortOrder = "recommended" | "az" | "kana";
 
 export default function VocabularyPage() {
   const router = useRouter();
   const [selectedLevel, setSelectedLevel] = useState<Level>("baby");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("az");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("recommended");
   const letterRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [wordsByLevel, setWordsByLevel] = useState<Record<Level, Word[]>>({
     baby: [], elementary: [], junior: [], high: [], toeic: [],
@@ -162,7 +186,7 @@ export default function VocabularyPage() {
               .select("*")
               .eq("level", level)
               .order("word", { ascending: true });
-            if (data) results[level] = data as Word[];
+            if (data) results[level] = (data as Word[]).map(applyGeneratedWordImage);
           })
         );
         const total = Object.values(results).reduce((s, arr) => s + arr.length, 0);
@@ -173,7 +197,10 @@ export default function VocabularyPage() {
         const GACHA_EXCLUDED_POS = ["noun", "preposition", "conjunction", "article", "pronoun"];
         const allWords = Object.values(wordData).flat();
         const excludedWords = allWords
-          .filter(w => w.part_of_speech && GACHA_EXCLUDED_POS.includes(w.part_of_speech))
+          .filter(w => {
+            const pos = primaryPartOfSpeech(w.part_of_speech);
+            return isTestableWordItem(w) && !!pos && GACHA_EXCLUDED_POS.includes(pos);
+          })
           .map(w => w.word);
         // デバッグクリア時の復元用に保存
         localStorage.setItem("autoAcquiredWords", JSON.stringify(excludedWords));
@@ -204,7 +231,7 @@ export default function VocabularyPage() {
 
   // ── テスト操作 ───────────────────────────────────────────────
   const getAcqForLevel = useCallback((level: Level) =>
-    (wordsByLevel[level] ?? []).filter(w => acquiredWords.has(w.word)),
+    (wordsByLevel[level] ?? []).filter(w => isTestableWordItem(w) && acquiredWords.has(w.word)),
   [wordsByLevel, acquiredWords]);
 
   const openTest = useCallback(() => {
@@ -228,7 +255,7 @@ export default function VocabularyPage() {
   const openReview = useCallback(() => {
     const saved = JSON.parse(localStorage.getItem("vocabTestWrong") ?? "[]") as string[];
     if (saved.length === 0) return;
-    const allWords = Object.values(wordsByLevel).flat();
+    const allWords = Object.values(wordsByLevel).flat().filter(isTestableWordItem);
     const pool = saved
       .map(wStr => allWords.find(wd => wd.word === wStr))
       .filter((wd): wd is Word => !!wd)
@@ -347,11 +374,19 @@ export default function VocabularyPage() {
   const isKid = selectedLevel === "baby" || selectedLevel === "elementary";
 
   const rawWords = wordsByLevel[selectedLevel] ?? [];
-  const currentWords = [...rawWords].sort((a, b) =>
-    sortOrder === "az"
-      ? a.word.localeCompare(b.word)
-      : a.meaning.localeCompare(b.meaning, "ja")
-  );
+  const currentWords =
+    sortOrder === "recommended"
+      ? sortWordsForDisplay(rawWords, selectedLevel)
+      : [...rawWords].sort((a, b) =>
+          sortOrder === "az"
+            ? a.word.localeCompare(b.word)
+            : a.meaning.localeCompare(b.meaning, "ja")
+        );
+  const currentTarget = VOCABULARY_LEVEL_TARGETS[selectedLevel];
+  const currentWordCount = currentWords.filter((w) => !isPhraseItem(w)).length;
+  const currentPhraseCount = currentWords.filter((w) => isPhraseItem(w)).length;
+  const currentTestableCount = currentWords.filter((w) => isTestableWordItem(w)).length;
+  const currentRemaining = getRemainingVocabularyCount(selectedLevel, currentWords.length);
 
   // アルファベット別グループ（A-Z順 or かな順）
   const wordGroups: { key: string; words: Word[] }[] = [];
@@ -385,7 +420,7 @@ export default function VocabularyPage() {
 
   // テストで使う取得済み件数（現在レベル）
   const acqCount  = currentWords.filter(w => acquiredWords.has(w.word)).length;
-  const testAvail = acqCount > 0;
+  const testAvail = getAcqForLevel(selectedLevel).length > 0;
 
   return (
     <div className={`min-h-screen ${t.bg}`}>
@@ -738,6 +773,16 @@ export default function VocabularyPage() {
                 <span className={`text-xs ${t.subText}`}>{currentWords.length}語</span>
                 <div className="ml-auto flex gap-1">
                   <button
+                    onClick={() => setSortOrder("recommended")}
+                    className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors ${
+                      sortOrder === "recommended"
+                        ? `${t.bar} text-white`
+                        : `${t.card} ${t.bodyText} border ${t.border}`
+                    }`}
+                  >
+                    おすすめ順
+                  </button>
+                  <button
                     onClick={() => setSortOrder("az")}
                     className={`px-2 py-1 rounded-lg text-xs font-bold transition-colors ${
                       sortOrder === "az"
@@ -781,6 +826,23 @@ export default function VocabularyPage() {
               })()}
 
               {/* 単語リスト */}
+              <div className={`mb-3 rounded-xl px-3 py-3 ${t.innerCard}`}>
+                <div className="flex items-center justify-between text-xs mb-2">
+                  <span className={t.bodyText + " font-bold"}>おすすめライン</span>
+                  <span className={t.subText}>あと {currentRemaining.minimum} 件で実用ライン</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className={`rounded-lg px-2 py-2 ${t.card} border ${t.border}`}>
+                    <p className={`text-[10px] ${t.subText}`}>実用ラインまで</p>
+                    <p className={`text-sm font-black ${t.titleText}`}>{currentRemaining.minimum}</p>
+                  </div>
+                  <div className={`rounded-lg px-2 py-2 ${t.card} border ${t.border}`}>
+                    <p className={`text-[10px] ${t.subText}`}>余裕ラインまで</p>
+                    <p className={`text-sm font-black ${t.titleText}`}>{currentRemaining.comfortable}</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="flex flex-col gap-1">
                 {wordGroups.map(({ key, words }) => (
                   <div key={key} ref={key ? (el) => { letterRefs.current[key] = el; } : undefined}>
@@ -794,11 +856,11 @@ export default function VocabularyPage() {
                     )}
                     {words.map((w) => (
                       <div key={w.id} className="mb-1.5">
-                        <WordCard
+                        <VocabularyWordCard
                           word={w}
                           level={selectedLevel}
-                          levelColor={t.navActive}
                           emojiBg={t.innerCard}
+                          focusLabel={getVocabularyFocusLabel(w, selectedLevel)}
                           t={t}
                           acquired={acquiredWords.has(w.word)}
                         />
@@ -811,6 +873,28 @@ export default function VocabularyPage() {
           </div>
         )}
         {/* フッター分の余白 */}
+        <div className={`mt-4 mb-3 rounded-xl px-3 py-3 ${t.innerCard}`}>
+          <div className="flex items-center justify-between text-xs mb-2">
+            <span className={`${t.bodyText} font-bold`}>おすすめ学習ボリューム</span>
+            <span className={t.subText}>
+              単語 {currentWordCount}/{currentTarget.words} ・ 熟語 {currentPhraseCount}/{currentTarget.phrases}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className={`rounded-lg px-2 py-2 ${t.card} border ${t.border}`}>
+              <p className={`text-[10px] ${t.subText}`}>単語</p>
+              <p className={`text-sm font-black ${t.titleText}`}>{currentWordCount}</p>
+            </div>
+            <div className={`rounded-lg px-2 py-2 ${t.card} border ${t.border}`}>
+              <p className={`text-[10px] ${t.subText}`}>熟語</p>
+              <p className={`text-sm font-black ${t.titleText}`}>{currentPhraseCount}</p>
+            </div>
+            <div className={`rounded-lg px-2 py-2 ${t.card} border ${t.border}`}>
+              <p className={`text-[10px] ${t.subText}`}>テスト対象</p>
+              <p className={`text-sm font-black ${t.titleText}`}>{currentTestableCount}</p>
+            </div>
+          </div>
+        </div>
         <div style={{ height: "calc(4rem + env(safe-area-inset-bottom))" }} />
       </main>
 
@@ -881,6 +965,7 @@ function WordCard({
   word,
   level,
   emojiBg,
+  focusLabel,
   t,
   acquired,
 }: {
@@ -888,11 +973,13 @@ function WordCard({
   level: Level;
   levelColor: string;
   emojiBg: string;
+  focusLabel: string;
   t: Theme;
   acquired: boolean;
 }) {
-  const emoji = EMOJI_MAP[word.word.toLowerCase()] ?? null;
-  const pos = word.part_of_speech ?? null;
+  const isPhrase = isPhraseItem(word);
+  const emoji = !isPhrase ? (EMOJI_MAP[word.word.toLowerCase()] ?? null) : null;
+  const pos = primaryPartOfSpeech(word.part_of_speech);
 
   const speakWord = useCallback(() => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
@@ -910,7 +997,7 @@ function WordCard({
   const posColor = pos ? (POS_COLOR[pos] ?? "bg-gray-100 text-gray-600") : null;
 
   return (
-    <div className={`rounded-xl border ${t.border} shadow-sm flex items-stretch overflow-hidden transition-opacity ${acquired ? t.card : "bg-gray-100"} ${acquired ? "" : "opacity-50"}`}>
+    <div className={`relative rounded-xl border ${t.border} shadow-sm flex items-stretch overflow-hidden transition-opacity ${acquired ? t.card : "bg-gray-100"} ${acquired ? "" : "opacity-50"}`}>
 
       {/* 左：絵文字 or ロック */}
       <div className={`flex-shrink-0 flex items-center justify-center ${acquired ? emojiBg : "bg-gray-200"}`} style={{ width: "3.5rem" }}>
@@ -926,6 +1013,9 @@ function WordCard({
           {acquired ? (
             <>
               <p className={`${t.subText} text-sm leading-none truncate`}>{word.meaning}</p>
+              <span className="flex-shrink-0 rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold leading-none text-emerald-700">
+                {focusLabel}
+              </span>
               {posLabel && (
                 <span className={`flex-shrink-0 rounded-md px-1.5 py-0.5 font-bold leading-none ${posColor} ${level === "baby" ? "text-[9px]" : "text-[10px]"}`}>
                   {posLabel.replace("\n", "")}
@@ -937,10 +1027,10 @@ function WordCard({
           )}
         </div>
         {acquired ? (
-          <p className={`font-bold ${t.bodyText} text-xl leading-tight`}>{word.word}</p>
+          <p className={`font-bold ${t.bodyText} ${isPhrase ? "text-lg" : "text-xl"} leading-tight`}>{word.word}</p>
         ) : (
           <p className="font-bold text-gray-400 text-xl leading-tight tracking-widest">
-            {"*".repeat(Math.min(word.word.length, 6))}
+            {"*".repeat(Math.min(word.word.replace(/\s+/g, "").length, 8))}
           </p>
         )}
       </div>
