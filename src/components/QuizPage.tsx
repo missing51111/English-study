@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { GENERATED_QUESTION_IMAGE_MANIFEST } from "@/lib/generatedQuestionImages";
 import { supabase } from "@/lib/supabase";
 import { THEMES } from "@/lib/themes";
+import StudyItemImage from "@/components/StudyItemImage";
 import type { Question, Level } from "@/types/database";
 
 // ============================================================
@@ -60,6 +62,17 @@ const MOCK_QUESTIONS: Question[] = [
   { id: "mock-5", level: "toeic",      sentence: "The project was completed ahead of schedule .", japanese: "プロジェクトは予定より早く完了した。", words: ["The", "project", "was", "completed", "ahead", "of", "schedule"],          punctuation: ".", hint: "ahead of schedule = 予定より早く", created_at: "" },
 ];
 
+function applyGeneratedQuestionImage(question: Question): Question {
+  const generatedImage = GENERATED_QUESTION_IMAGE_MANIFEST[question.id];
+  if (!generatedImage) return question;
+
+  return {
+    ...question,
+    image_name: generatedImage.imageName,
+    image_status: generatedImage.imageStatus,
+  };
+}
+
 // ============================================================
 // QuizPage
 // ============================================================
@@ -115,15 +128,23 @@ export default function QuizPage() {
     setLoading(true);
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     if (!supabaseUrl || supabaseUrl === "your-supabase-project-url") {
-      const mocked = MOCK_QUESTIONS.filter(q => q.level === level);
-      setQuestions(shuffle(mocked.length > 0 ? mocked : MOCK_QUESTIONS));
+      const mocked = MOCK_QUESTIONS
+        .filter(q => q.level === level)
+        .map(applyGeneratedQuestionImage);
+      setQuestions(
+        shuffle(mocked.length > 0 ? mocked : MOCK_QUESTIONS.map(applyGeneratedQuestionImage))
+      );
       setLoading(false);
       return;
     }
     const { data, error } = await supabase.from("questions").select("*").eq("level", level).limit(10);
-    setQuestions(shuffle((!error && data && data.length > 0)
-      ? (data as Question[])
-      : MOCK_QUESTIONS.filter(q => q.level === level)));
+    setQuestions(
+      shuffle(
+        (!error && data && data.length > 0)
+          ? (data as Question[]).map(applyGeneratedQuestionImage)
+          : MOCK_QUESTIONS.filter(q => q.level === level).map(applyGeneratedQuestionImage)
+      )
+    );
     setLoading(false);
   }, [level]);
 
@@ -449,6 +470,8 @@ export default function QuizPage() {
   }
 
   const isBaby = level === "baby";
+  const shouldShowQuestionHintImage =
+    level === "elementary" && currentQ.image_status === "ready";
   const progressPct = ((currentIndex + 1) / questions.length) * 100;
 
   // コンフェッティのピース（固定シードで毎回同じ位置）
@@ -534,6 +557,22 @@ export default function QuizPage() {
           >🔊</button>
         </div>
         <p className={`font-bold leading-relaxed ${isBaby ? "text-lg" : "text-base"} ${t.titleText}`}>{currentQ.japanese}</p>
+        {shouldShowQuestionHintImage && (
+          <div className={`mt-3 rounded-2xl border p-2 ${t.innerCard} ${t.border}`}>
+            <p className={`mb-2 text-[11px] font-bold uppercase tracking-[0.18em] ${t.subText}`}>
+              Hint Image
+            </p>
+            <StudyItemImage
+              id={currentQ.id}
+              kind="questions"
+              alt={`${currentQ.sentence} hint image`}
+              imageName={currentQ.image_name}
+              imageStatus={currentQ.image_status}
+              className="aspect-[4/3] w-full"
+              sizes="(max-width: 768px) 100vw, 360px"
+            />
+          </div>
+        )}
         {currentQ.hint && (
           <div className="mt-2">
             <button onClick={() => setShowHint(v => !v)} className={`text-xs underline ${t.subText}`}>

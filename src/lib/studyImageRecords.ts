@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { GENERATED_QUESTION_IMAGE_MANIFEST } from "@/lib/generatedQuestionImages";
 import { GENERATED_WORD_IMAGE_MANIFEST } from "@/lib/generatedWordImages";
 
 export type StudyImageLevel = "baby" | "elementary" | "junior" | "high" | "toeic";
@@ -76,14 +77,18 @@ export async function fetchQuestionImageRecords(level?: StudyImageLevel): Promis
   const { data, error } = await query;
   if (error) throw error;
 
-  return ((data ?? []) as QuestionRow[]).map((row) => ({
-    id: row.id,
-    type: "question",
-    english_text: row.sentence,
-    japanese_text: row.japanese,
-    image_group: "questions",
-    image_name: null,
-    image_status: null,
-    level: row.level,
-  }));
+  return ((data ?? []) as QuestionRow[]).map((row) => {
+    const generatedImage = GENERATED_QUESTION_IMAGE_MANIFEST[row.id];
+
+    return {
+      id: row.id,
+      type: "question",
+      english_text: row.sentence,
+      japanese_text: row.japanese,
+      image_group: "questions",
+      image_name: generatedImage?.imageName ?? null,
+      image_status: generatedImage?.imageStatus ?? null,
+      level: row.level,
+    };
+  });
 }
