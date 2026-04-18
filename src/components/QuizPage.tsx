@@ -6,6 +6,7 @@ import { GENERATED_QUESTION_IMAGE_MANIFEST } from "@/lib/generatedQuestionImages
 import { supabase } from "@/lib/supabase";
 import { THEMES } from "@/lib/themes";
 import StudyItemImage from "@/components/StudyItemImage";
+import { buildStudyImagePath } from "@/lib/studyImages";
 import type { Question, Level } from "@/types/database";
 
 // ============================================================
@@ -92,6 +93,7 @@ export default function QuizPage() {
   const [result, setResult] = useState<"correct" | "wrong" | null>(null);
   const [showHint, setShowHint] = useState(false);
   const [score, setScore] = useState({ correct: 0, total: 0 });
+  const [questionHintAvailable, setQuestionHintAvailable] = useState(false);
 
   // 単語取得お祝い演出
   const [showCelebration, setShowCelebration] = useState(false);
@@ -164,6 +166,20 @@ export default function QuizPage() {
   }, [questions, currentIndex]);
 
   const currentQ = questions[currentIndex];
+
+  useEffect(() => {
+    if (!currentQ || level !== "elementary") {
+      setQuestionHintAvailable(false);
+      return;
+    }
+
+    const image = new window.Image();
+    const imageSrc = buildStudyImagePath("questions", currentQ.id, currentQ.image_name);
+
+    image.onload = () => setQuestionHintAvailable(true);
+    image.onerror = () => setQuestionHintAvailable(false);
+    image.src = `${imageSrc}?v=${currentQ.id}`;
+  }, [currentQ, level]);
 
   // ============================================================
   // タップ操作（タッチ/クリック共通）
@@ -470,8 +486,7 @@ export default function QuizPage() {
   }
 
   const isBaby = level === "baby";
-  const shouldShowQuestionHintImage =
-    level === "elementary" && currentQ.image_status === "ready";
+  const shouldShowQuestionHintImage = level === "elementary" && questionHintAvailable;
   const progressPct = ((currentIndex + 1) / questions.length) * 100;
 
   // コンフェッティのピース（固定シードで毎回同じ位置）
@@ -567,9 +582,10 @@ export default function QuizPage() {
               kind="questions"
               alt={`${currentQ.sentence} hint image`}
               imageName={currentQ.image_name}
-              imageStatus={currentQ.image_status}
+              imageStatus={questionHintAvailable ? "ready" : "missing"}
               className="aspect-[4/3] w-full"
               sizes="(max-width: 768px) 100vw, 360px"
+              showFallbackWhenMissing={false}
             />
           </div>
         )}

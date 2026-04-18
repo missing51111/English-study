@@ -17,6 +17,7 @@ type StudyItemImageProps = {
   imageStatus?: string | null;
   className?: string;
   sizes?: string;
+  showFallbackWhenMissing?: boolean;
 };
 
 export default function StudyItemImage({
@@ -27,6 +28,7 @@ export default function StudyItemImage({
   imageStatus,
   className = "",
   sizes = "(max-width: 768px) 100vw, 320px",
+  showFallbackWhenMissing = true,
 }: StudyItemImageProps) {
   const fallbackSrc = useMemo(() => buildStudyFallbackImagePath(kind), [kind]);
   const preferredSrc = useMemo(
@@ -34,11 +36,17 @@ export default function StudyItemImage({
     [id, imageName, kind]
   );
   const status = getStudyImageStatus(imageStatus);
-  const [src, setSrc] = useState(status === "missing" ? fallbackSrc : preferredSrc);
+  const [src, setSrc] = useState(
+    showFallbackWhenMissing && status === "missing" ? fallbackSrc : preferredSrc
+  );
+  const [isHidden, setIsHidden] = useState(false);
 
   useEffect(() => {
-    setSrc(status === "missing" ? fallbackSrc : preferredSrc);
-  }, [fallbackSrc, preferredSrc, status]);
+    setSrc(showFallbackWhenMissing && status === "missing" ? fallbackSrc : preferredSrc);
+    setIsHidden(false);
+  }, [fallbackSrc, preferredSrc, showFallbackWhenMissing, status]);
+
+  if (isHidden) return null;
 
   return (
     <div className={`relative overflow-hidden rounded-2xl bg-slate-100 ${className}`}>
@@ -49,7 +57,11 @@ export default function StudyItemImage({
         sizes={sizes}
         className="object-cover"
         onError={() => {
-          if (src !== fallbackSrc) setSrc(fallbackSrc);
+          if (showFallbackWhenMissing && src !== fallbackSrc) {
+            setSrc(fallbackSrc);
+            return;
+          }
+          setIsHidden(true);
         }}
       />
     </div>
