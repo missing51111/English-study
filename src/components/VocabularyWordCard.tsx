@@ -2,8 +2,8 @@
 
 import { useCallback } from "react";
 import StudyItemImage from "@/components/StudyItemImage";
-import { EMOJI_MAP } from "@/lib/emojiMap";
 import { isPhraseItem, primaryPartOfSpeech } from "@/lib/vocabularyPlan";
+import { getWordEmoji } from "@/lib/wordEmoji";
 import type { Theme } from "@/lib/themes";
 
 type Level = "baby" | "elementary" | "junior" | "high" | "toeic";
@@ -64,7 +64,7 @@ export default function VocabularyWordCard({
 }: VocabularyWordCardProps) {
   const isPhrase = isPhraseItem(word);
   const pos = primaryPartOfSpeech(word.part_of_speech);
-  const emoji = !isPhrase ? (EMOJI_MAP[word.word.toLowerCase()] ?? null) : null;
+  const emoji = !isPhrase ? getWordEmoji(word.word, word.part_of_speech) : null;
   const posLabel = pos
     ? level === "baby"
       ? (POS_BABY[pos] ?? null)

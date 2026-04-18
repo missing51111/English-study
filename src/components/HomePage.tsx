@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { THEMES, type Theme } from "@/lib/themes";
 import { supabase } from "@/lib/supabase";
-import { EMOJI_MAP } from "@/lib/emojiMap";
+import { getWordEmoji } from "@/lib/wordEmoji";
 type LevelUI = typeof LEVEL_UI.baby;
 
 // ============================================================
@@ -550,7 +550,7 @@ export default function HomePage() {
             {recentWords.map(w => (
               <div key={w.word} className={`rounded-xl border ${t.border} flex items-stretch overflow-hidden ${t.card} shadow-sm`}>
                 <div className={`flex-shrink-0 flex items-center justify-center ${t.innerCard}`} style={{ width: "3rem" }}>
-                  <span style={{ fontSize: "1.5rem", lineHeight: 1 }}>{EMOJI_MAP[w.word.toLowerCase()] ?? "📝"}</span>
+                  <span style={{ fontSize: "1.5rem", lineHeight: 1 }}>{getWordEmoji(w.word, w.part_of_speech) ?? "📝"}</span>
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col justify-center px-3 py-2">
                   <p className={`text-xs leading-none ${t.subText}`}>{w.meaning}</p>

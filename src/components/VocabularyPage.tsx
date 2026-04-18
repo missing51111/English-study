@@ -4,9 +4,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { THEMES, type Theme } from "@/lib/themes";
-import { EMOJI_MAP } from "@/lib/emojiMap";
 import { GENERATED_WORD_IMAGE_MANIFEST } from "@/lib/generatedWordImages";
 import VocabularyWordCard from "@/components/VocabularyWordCard";
+import { getWordEmoji } from "@/lib/wordEmoji";
 import {
   VOCABULARY_LEVEL_TARGETS,
   getRemainingVocabularyCount,
@@ -482,7 +482,7 @@ export default function VocabularyPage() {
                     : `${t.card} ${t.border}`
                 }`}>
                   <div className="text-6xl" style={{ lineHeight: 1 }}>
-                    {EMOJI_MAP[testWord.word.toLowerCase()] ?? "📝"}
+                    {getWordEmoji(testWord.word, testWord.part_of_speech) ?? "📝"}
                   </div>
                   <p className={`text-2xl font-black ${t.titleText}`}>{testWord.meaning}</p>
                   <button
@@ -571,7 +571,7 @@ export default function VocabularyPage() {
                 {/* こたえカード */}
                 <div className={`w-full rounded-2xl border-2 border-red-300 bg-red-50 px-6 py-5 text-center space-y-3`}>
                   <div className="text-5xl" style={{ lineHeight: 1 }}>
-                    {EMOJI_MAP[testWord.word.toLowerCase()] ?? "📝"}
+                    {getWordEmoji(testWord.word, testWord.part_of_speech) ?? "📝"}
                   </div>
                   <p className="text-gray-500 text-base font-bold">{testWord.meaning}</p>
                   {/* 単語を1文字ずつ大きく表示 */}
@@ -978,7 +978,7 @@ function WordCard({
   acquired: boolean;
 }) {
   const isPhrase = isPhraseItem(word);
-  const emoji = !isPhrase ? (EMOJI_MAP[word.word.toLowerCase()] ?? null) : null;
+  const emoji = !isPhrase ? getWordEmoji(word.word, word.part_of_speech) : null;
   const pos = primaryPartOfSpeech(word.part_of_speech);
 
   const speakWord = useCallback(() => {
