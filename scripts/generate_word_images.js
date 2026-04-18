@@ -64,9 +64,6 @@ function getPalette(partOfSpeech) {
 
 function buildSvg(row, emoji) {
   const palette = getPalette(row.part_of_speech);
-  const meaning = escapeXml(row.meaning);
-  const word = escapeXml(row.word);
-  const posLabel = escapeXml(palette.label);
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -88,15 +85,11 @@ function buildSvg(row, emoji) {
   <circle cx="856" cy="200" r="64" fill="white" fill-opacity="0.14"/>
   <circle cx="840" cy="832" r="110" fill="${palette.accent}" fill-opacity="0.18"/>
   <g filter="url(#shadow)">
-    <rect x="144" y="132" width="736" height="760" rx="180" fill="white" fill-opacity="0.9"/>
+    <rect x="144" y="144" width="736" height="736" rx="184" fill="white" fill-opacity="0.92"/>
   </g>
-  <rect x="208" y="192" width="608" height="88" rx="44" fill="${palette.accent}" fill-opacity="0.95"/>
-  <text x="512" y="247" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="38" font-weight="700" fill="#0f172a" letter-spacing="3.2">${posLabel}</text>
-  <circle cx="512" cy="520" r="236" fill="${palette.accent}" fill-opacity="0.3"/>
-  <circle cx="512" cy="520" r="188" fill="white" fill-opacity="0.86"/>
-  <text x="512" y="598" text-anchor="middle" font-family="Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif" font-size="232">${emoji}</text>
-  <text x="512" y="806" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="64" font-weight="700" fill="#0f172a">${word}</text>
-  <text x="512" y="860" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="600" fill="#475569">${meaning}</text>
+  <circle cx="512" cy="512" r="244" fill="${palette.accent}" fill-opacity="0.28"/>
+  <circle cx="512" cy="512" r="192" fill="white" fill-opacity="0.88"/>
+  <text x="512" y="594" text-anchor="middle" font-family="Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji, sans-serif" font-size="248">${emoji}</text>
 </svg>`;
 }
 

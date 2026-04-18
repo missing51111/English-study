@@ -2,7 +2,6 @@
 
 import { useCallback } from "react";
 import StudyItemImage from "@/components/StudyItemImage";
-import { EMOJI_MAP } from "@/lib/emojiMap";
 import { isPhraseItem, primaryPartOfSpeech } from "@/lib/vocabularyPlan";
 import type { Theme } from "@/lib/themes";
 
@@ -63,7 +62,6 @@ export default function VocabularyWordCard({
   acquired,
 }: VocabularyWordCardProps) {
   const isPhrase = isPhraseItem(word);
-  const emoji = !isPhrase ? (EMOJI_MAP[word.word.toLowerCase()] ?? null) : null;
   const pos = primaryPartOfSpeech(word.part_of_speech);
   const posLabel = pos
     ? level === "baby"
@@ -97,11 +95,6 @@ export default function VocabularyWordCard({
           className="h-full min-h-[88px] rounded-none"
           sizes="80px"
         />
-        {acquired && emoji && (
-          <div className="pointer-events-none absolute bottom-1 right-1 rounded-full bg-white/85 px-1 text-lg leading-none">
-            {emoji}
-          </div>
-        )}
         {!acquired && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-gray-200/55">
             <span style={{ fontSize: "1.6rem" }}>🔒</span>
